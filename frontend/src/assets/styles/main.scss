@@ -1,3 +1,22 @@
+/* ============================================
+   Sanctuary UI — CSS Variables & Global Styles
+   ============================================ */
+
+:root {
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Newsreader", Georgia, serif;
+
+  --color-primary: #0059b6;
+  --color-primary-container: #68a0ff;
+  --color-secondary-fixed: #8ce1f3;
+  --color-surface: #f4f7f9;
+  --color-surface-container-low: #edf1f3;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-surface: #2b2f31;
+  --color-on-surface-variant: #585c5e;
+  --color-inverse-surface: #0b0f10;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -11,11 +30,17 @@ html, body {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
-  line-height: 1.5;
-  color: #333;
-  background-color: #f7f8fa;
+  line-height: 1.6;
+  color: var(--color-on-surface);
+  background-color: var(--color-surface);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  font-family: var(--font-sans);
 }
 
 a {
@@ -32,29 +57,130 @@ img {
   height: auto;
 }
 
-/* 移动端适配 */
-@media screen and (max-width: 768px) {
-  body {
-    font-size: 16px;
+/* ============================================
+   Sanctuary Utility Classes
+   ============================================ */
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.vibrant-shadow {
+  box-shadow: 0 20px 40px -15px rgba(0, 89, 182, 0.15);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ============================================
+   Sanctuary Animations
+   ============================================ */
+
+@keyframes sanctuary-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* 滚动条样式 */
+@keyframes sanctuary-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sanctuary-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes sanctuary-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes sanctuary-glow-pulse {
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 0.2; }
+}
+
+@keyframes sanctuary-progress-fill {
+  from { width: 0; }
+}
+
+@keyframes sanctuary-bar-grow {
+  from { height: 0; }
+}
+
+.animate-fade-up {
+  animation: sanctuary-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: sanctuary-fade-in 0.4s ease forwards;
+}
+
+.animate-scale-in {
+  animation: sanctuary-scale-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-slide-right {
+  animation: sanctuary-slide-right 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Stagger delays */
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+
+/* Start hidden for animations */
+.animate-start-hidden {
+  opacity: 0;
+}
+
+/* ============================================
+   Scrollbar
+   ============================================ */
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: rgba(0, 0, 0, 0.2);
 }

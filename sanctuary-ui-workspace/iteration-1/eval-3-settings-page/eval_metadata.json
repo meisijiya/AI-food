@@ -1,0 +1,14 @@
+{
+  "eval_id": 3,
+  "eval_name": "settings-page",
+  "prompt": "Design a settings page in Sanctuary style with sections for notifications, privacy, appearance themes, and account management. Each section should have an icon, title, and toggle/dropdown controls.",
+  "assertions": [
+    "Settings grouped in rounded containers with large radius",
+    "Each setting has an icon from lucide-react in a colored rounded box",
+    "Section titles use uppercase tracking-widest labels",
+    "Cards use border border-white subtle edge",
+    "Toggle/switch controls are styled consistently",
+    "Page has motion entrance animation",
+    "Uses surface-container-lowest for card backgrounds"
+  ]
+}

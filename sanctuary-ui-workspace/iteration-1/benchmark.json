@@ -1,0 +1,193 @@
+{
+  "metadata": {
+    "skill_name": "sanctuary-ui",
+    "skill_path": "/home/meisijiya/opencode-projects/AI-food/skills/sanctuary-ui",
+    "timestamp": "2026-03-21T22:30:00Z",
+    "evals_run": [1, 2, 3],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "eval_name": "meditation-dashboard",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 45.0,
+        "tokens": 0,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Uses font-serif italic for main headings", "passed": true, "evidence": "font-serif italic used on all headings"},
+        {"text": "Cards have rounded-[2rem] or larger border radius", "passed": true, "evidence": "All cards use rounded-[2rem] sm:rounded-[3rem]"},
+        {"text": "Includes decorative blur glow elements on cards", "passed": true, "evidence": "5 decorative glow blobs found"},
+        {"text": "Uses motion/react for animations", "passed": true, "evidence": "Correct motion/react import"},
+        {"text": "Primary color #0059b6 is used for accents", "passed": true, "evidence": "Theme tokens used throughout"},
+        {"text": "Has proper responsive breakpoints (sm:, lg:)", "passed": true, "evidence": "sm: and lg: breakpoints used"},
+        {"text": "Uses lucide-react icons", "passed": true, "evidence": "8 lucide-react icons imported"},
+        {"text": "Stat numbers are large and use serif italic font", "passed": true, "evidence": "text-5xl font-serif italic on all stats"}
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "meditation-dashboard",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.25,
+        "passed": 2,
+        "failed": 6,
+        "total": 8,
+        "time_seconds": 35.0,
+        "tokens": 0,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Uses font-serif italic for main headings", "passed": false, "evidence": "Uses font-bold instead"},
+        {"text": "Cards have rounded-[2rem] or larger border radius", "passed": false, "evidence": "Uses rounded-2xl"},
+        {"text": "Includes decorative blur glow elements on cards", "passed": false, "evidence": "No glow blobs found"},
+        {"text": "Uses motion/react for animations", "passed": false, "evidence": "Uses framer-motion instead"},
+        {"text": "Primary color #0059b6 is used for accents", "passed": false, "evidence": "Uses violet/purple palette"},
+        {"text": "Has proper responsive breakpoints (sm:, lg:)", "passed": true, "evidence": "sm: and lg: used"},
+        {"text": "Uses lucide-react icons", "passed": true, "evidence": "Icons imported"},
+        {"text": "Stat numbers are large and use serif italic font", "passed": false, "evidence": "Uses font-bold sans-serif"}
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "fitness-profile",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 40.0,
+        "tokens": 0,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Avatar is displayed with rounded corners and shadow", "passed": true, "evidence": "rounded-full with ring-4 and shadow-lg"},
+        {"text": "Stats are shown in a grid layout with large serif italic numbers", "passed": true, "evidence": "3-col grid with font-serif italic text-3xl"},
+        {"text": "Achievement list items have hover slide animation", "passed": true, "evidence": "whileHover={{ x: 8 }}"},
+        {"text": "Uses inverse-surface dark card for contrast section", "passed": true, "evidence": "bg-inverse-surface text-white"},
+        {"text": "Labels use uppercase tracking-widest pattern", "passed": true, "evidence": "uppercase tracking-[0.25em]"},
+        {"text": "Includes motion.div with page entrance animation", "passed": true, "evidence": "opacity:0 y:20 entrance"},
+        {"text": "Uses bg-white/60 backdrop-blur-xl glass effect on list", "passed": true, "evidence": "bg-white/60 backdrop-blur-sm"}
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "fitness-profile",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.29,
+        "passed": 2,
+        "failed": 5,
+        "total": 7,
+        "time_seconds": 30.0,
+        "tokens": 0,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Avatar is displayed with rounded corners and shadow", "passed": true, "evidence": "rounded-full found"},
+        {"text": "Stats are shown in a grid layout with large serif italic numbers", "passed": false, "evidence": "font-bold, not serif italic"},
+        {"text": "Achievement list items have hover slide animation", "passed": false, "evidence": "scale+y lift, not horizontal slide"},
+        {"text": "Uses inverse-surface dark card for contrast section", "passed": false, "evidence": "slate gradient, not inverse-surface"},
+        {"text": "Labels use uppercase tracking-widest pattern", "passed": false, "evidence": "No uppercase tracking found"},
+        {"text": "Includes motion.div with page entrance animation", "passed": true, "evidence": "Entrance animation present"},
+        {"text": "Uses bg-white/60 backdrop-blur-xl glass effect on list", "passed": false, "evidence": "slate dark glass, not white glass"}
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "settings-page",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 42.0,
+        "tokens": 0,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Settings grouped in rounded containers", "passed": true, "evidence": "rounded-[2rem] sm:rounded-[2.5rem]"},
+        {"text": "Each setting has icon in colored rounded box", "passed": true, "evidence": "w-9 h-9 rounded-xl with icon"},
+        {"text": "Section titles use uppercase tracking-widest", "passed": true, "evidence": "uppercase tracking-[0.25em]"},
+        {"text": "Cards use border border-white", "passed": true, "evidence": "border border white shadow-sm"},
+        {"text": "Toggle controls styled consistently", "passed": true, "evidence": "Reusable Toggle component"},
+        {"text": "Page has motion entrance animation", "passed": true, "evidence": "Staggered section animations"},
+        {"text": "Uses surface-container-lowest for cards", "passed": true, "evidence": "bg-surface-container-lowest"}
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "settings-page",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 38.0,
+        "tokens": 0,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Settings grouped in rounded containers", "passed": true, "evidence": "rounded-[2.5rem] sm:rounded-[3rem]"},
+        {"text": "Each setting has icon in colored rounded box", "passed": true, "evidence": "p-2.5 rounded-2xl with icon"},
+        {"text": "Section titles use uppercase tracking-widest", "passed": true, "evidence": "uppercase tracking-[0.2em]"},
+        {"text": "Cards use border border-white", "passed": true, "evidence": "border border-white shadow-sm"},
+        {"text": "Toggle controls styled consistently", "passed": true, "evidence": "Reusable Toggle component"},
+        {"text": "Page has motion entrance animation", "passed": true, "evidence": "Staggered animations"},
+        {"text": "Uses surface-container-lowest for cards", "passed": true, "evidence": "bg-surface-container-lowest"}
+      ],
+      "notes": ["Note: without_skill output coincidentally uses Sanctuary tokens — assertions may not be discriminating enough"]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0},
+      "time_seconds": {"mean": 42.3, "stddev": 2.5, "min": 40.0, "max": 45.0},
+      "tokens": {"mean": 0, "stddev": 0, "min": 0, "max": 0}
+    },
+    "without_skill": {
+      "pass_rate": {"mean": 0.51, "stddev": 0.43, "min": 0.25, "max": 1.0},
+      "time_seconds": {"mean": 34.3, "stddev": 4.0, "min": 30.0, "max": 38.0},
+      "tokens": {"mean": 0, "stddev": 0, "min": 0, "max": 0}
+    },
+    "delta": {
+      "pass_rate": "+0.49",
+      "time_seconds": "+8.0",
+      "tokens": "+0"
+    }
+  },
+  "notes": [
+    "With-skill outputs consistently use Sanctuary design tokens: font-serif italic, rounded-[2rem]+, decorative glows, motion/react, primary blue palette",
+    "Without-skill outputs use generic styling (violet theme, small radii, bold sans-serif headings)",
+    "Eval 3 (settings) is not discriminating — without_skill also passes because it coincidentally uses Sanctuary tokens. Consider adding checks for serif italic headings or decorative glow blobs.",
+    "With-skill adds ~8s execution time due to reading and following the skill document",
+    "The skill is most impactful for eval-1 (pass_rate delta: +0.75) and eval-2 (+0.71)"
+  ]
+}

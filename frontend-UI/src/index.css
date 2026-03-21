@@ -1,0 +1,45 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Plus+Jakarta+Sans:wght@200..800&display=swap');
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Newsreader", serif;
+
+  --color-primary: #0059b6;
+  --color-primary-container: #68a0ff;
+  --color-secondary-fixed: #8ce1f3;
+  --color-surface: #f4f7f9;
+  --color-surface-container-low: #edf1f3;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-surface: #2b2f31;
+  --color-on-surface-variant: #585c5e;
+  --color-inverse-surface: #0b0f10;
+
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+  --radius-3xl: 3rem;
+}
+
+@layer base {
+  body {
+    @apply bg-surface text-on-surface font-sans antialiased;
+  }
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+}
+
+.vibrant-shadow {
+  box-shadow: 0 20px 40px -15px rgba(0, 89, 182, 0.15);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

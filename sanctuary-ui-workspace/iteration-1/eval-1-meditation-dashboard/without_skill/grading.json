@@ -1,0 +1,57 @@
+{
+  "expectations": [
+    {
+      "text": "Uses font-serif italic for main headings",
+      "passed": false,
+      "evidence": "Line 166: 'text-2xl sm:text-3xl font-bold text-gray-900' — uses bold sans-serif, not serif italic"
+    },
+    {
+      "text": "Cards have rounded-[2rem] or larger border radius",
+      "passed": false,
+      "evidence": "Line 61: 'rounded-2xl' on stat cards; Line 228: 'rounded-2xl' on weekly chart — uses standard small radii, not Sanctuary's large rounded-[2rem]+"
+    },
+    {
+      "text": "Includes decorative blur glow elements on cards",
+      "passed": false,
+      "evidence": "No decorative blur glow blobs found on any card"
+    },
+    {
+      "text": "Uses motion/react for animations",
+      "passed": false,
+      "evidence": "Line 2: 'import { motion } from \"framer-motion\"' — uses legacy framer-motion package, not motion/react"
+    },
+    {
+      "text": "Primary color #0059b6 is used for accents",
+      "passed": false,
+      "evidence": "Uses violet/purple palette throughout: 'text-violet-600', 'bg-violet-100', 'from-violet-600 to-purple-600' — not the blue primary"
+    },
+    {
+      "text": "Has proper responsive breakpoints (sm:, lg:)",
+      "passed": true,
+      "evidence": "Line 196: 'grid-cols-1 sm:grid-cols-3'; Line 162: 'px-4 sm:px-6 lg:px-8'"
+    },
+    {
+      "text": "Uses lucide-react icons",
+      "passed": true,
+      "evidence": "Lines 4-12: imports Clock, Flame, BarChart3, Play, Heart, TrendingUp, Calendar, Sparkles from lucide-react"
+    },
+    {
+      "text": "Stat numbers are large and use serif italic font",
+      "passed": false,
+      "evidence": "Line 68: 'text-3xl font-bold text-gray-900' — uses bold sans-serif, not large serif italic"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 6,
+    "total": 8,
+    "pass_rate": 0.25
+  },
+  "execution_metrics": {},
+  "timing": {},
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Without-skill output is a generic violet-themed dashboard. Fails on Sanctuary-specific design elements."
+  }
+}

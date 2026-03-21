@@ -1,0 +1,52 @@
+{
+  "expectations": [
+    {
+      "text": "Avatar is displayed with rounded corners and shadow",
+      "passed": true,
+      "evidence": "Line 53: 'w-24 h-24 sm:w-28 sm:h-28 rounded-full' with gradient border"
+    },
+    {
+      "text": "Stats are shown in a grid layout with large serif italic numbers",
+      "passed": false,
+      "evidence": "Line 102: 'text-2xl sm:text-3xl font-bold' — uses bold sans-serif, not serif italic"
+    },
+    {
+      "text": "Achievement list items have hover slide animation (whileHover: x: 10)",
+      "passed": false,
+      "evidence": "Line 125: 'whileHover={{ scale: 1.08, y: -4 }}' — uses scale+y lift, not horizontal slide"
+    },
+    {
+      "text": "Uses inverse-surface dark card for contrast section",
+      "passed": false,
+      "evidence": "Line 36: 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' — uses slate gradient, not inverse-surface token"
+    },
+    {
+      "text": "Labels use uppercase tracking-widest pattern",
+      "passed": false,
+      "evidence": "No uppercase tracking-widest labels found. Uses 'text-slate-400 text-sm' for labels instead"
+    },
+    {
+      "text": "Includes motion.div with page entrance animation",
+      "passed": true,
+      "evidence": "Lines 39-42: 'initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}'"
+    },
+    {
+      "text": "Uses bg-white/60 backdrop-blur-xl glass effect on list container",
+      "passed": false,
+      "evidence": "Line 99: 'bg-slate-800/60 backdrop-blur-sm' — uses slate dark glass, not Sanctuary white glass"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 5,
+    "total": 7,
+    "pass_rate": 0.29
+  },
+  "execution_metrics": {},
+  "timing": {},
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Without-skill output uses dark slate theme, not Sanctuary styling."
+  }
+}

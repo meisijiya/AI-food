@@ -1,0 +1,14 @@
+{
+  "eval_id": 2,
+  "eval_name": "fitness-profile",
+  "prompt": "Build a user profile page in Sanctuary style for a fitness app. Show the user's avatar, name, membership badge, stats (workouts completed, total hours, calories burned), and a list of recent achievements with icons.",
+  "assertions": [
+    "Avatar is displayed with rounded corners and shadow",
+    "Stats are shown in a grid layout with large serif italic numbers",
+    "Achievement list items have hover slide animation (whileHover: x: 10)",
+    "Uses inverse-surface dark card for contrast section",
+    "Labels use uppercase tracking-widest pattern",
+    "Includes motion.div with page entrance animation",
+    "Uses bg-white/60 backdrop-blur-xl glass effect on list container"
+  ]
+}

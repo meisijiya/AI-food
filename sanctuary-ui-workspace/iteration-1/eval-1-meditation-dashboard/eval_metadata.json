@@ -1,0 +1,15 @@
+{
+  "eval_id": 1,
+  "eval_name": "meditation-dashboard",
+  "prompt": "Create a Sanctuary-style dashboard page for a meditation app. It should show today's meditation stats (total minutes, sessions completed, current streak), a weekly progress chart, and a recommended meditation session card with an image.",
+  "assertions": [
+    "Uses font-serif italic for main headings",
+    "Cards have rounded-[2rem] or larger border radius",
+    "Includes decorative blur glow elements on cards",
+    "Uses motion/react for animations",
+    "Primary color #0059b6 is used for accents",
+    "Has proper responsive breakpoints (sm:, lg:)",
+    "Uses lucide-react icons",
+    "Stat numbers are large and use serif italic font"
+  ]
+}

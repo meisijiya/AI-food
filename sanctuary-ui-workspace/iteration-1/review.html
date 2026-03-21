@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "sanctuary-ui", "runs": [{"id": "eval-1-meditation-dashboard-with_skill", "prompt": "Create a Sanctuary-style dashboard page for a meditation app. It should show today's meditation stats (total minutes, sessions completed, current streak), a weekly progress chart, and a recommended meditation session card with an image.", "eval_id": 1, "outputs": [{"name": "MeditationDashboard.tsx", "type": "text", "content": "import { motion } from \"motion/react\";\nimport {\n  Flame,\n  Play,\n  Clock,\n  CheckCircle2,\n  Sparkles,\n  ChevronRight,\n  Bell,\n  Search,\n} from \"lucide-react\";\n\nconst weeklyData = [\n  { day: \"Mon\", minutes: 25 },\n  { day: \"Tue\", minutes: 15 },\n  { day: \"Wed\", minutes: 30 },\n  { day: \"Thu\", minutes: 0 },\n  { day: \"Fri\", minutes: 20 },\n  { day: \"Sat\", minutes: 35 },\n  { day: \"Sun\", minutes: 18 },\n];\n\nconst maxMinutes = Math.max(...weeklyData.map((d) => d.minutes));\n\nexport default function MeditationDashboard() {\n  return (\n    <div className=\"min-h-screen bg-surface\">\n      {/* Header */}\n      <motion.header\n        initial={{ opacity: 0, y: -10 }}\n        animate={{ opacity: 1, y: 0 }}\n        transition={{ duration: 0.4 }}\n        className=\"sticky top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-black/5\"\n      >\n        <div className=\"max-w-6xl mx-auto px-6 py-4 flex items-center justify-between\">\n          <div className=\"flex items-center gap-3\">\n            <div className=\"w-9 h-9 rounded-full bg-gradient-to-br from-primary-container to-primary flex items-center justify-center\">\n              <Sparkles className=\"w-4 h-4 text-white\" />\n            </div>\n            <span className=\"font-serif italic text-lg text-on-surface\">\n              Sanctuary\n            </span>\n          </div>\n          <div className=\"flex items-center gap-2\">\n            <button className=\"p-2 hover:bg-black/5 rounded-full transition-colors text-on-surface-variant\">\n              <Search className=\"w-5 h-5\" />\n            </button>\n            <button className=\"p-2 hover:bg-black/5 rounded-full transition-colors text-on-surface-variant relative\">\n              <Bell className=\"w-5 h-5\" />\n              <span className=\"absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full\" />\n            </button>\n            <div className=\"w-9 h-9 rounded-full bg-primary/10 ml-2 flex items-center justify-center text-primary font-bold text-sm\">\n              M\n            </div>\n          </div>\n        </div>\n      </motion.header>\n\n      <main className=\"max-w-6xl mx-auto px-6 py-10 space-y-10\">\n        {/* Hero Greeting */}\n        <motion.section\n          initial={{ opacity: 0, y: 20 }}\n          animate={{ opacity: 1, y: 0 }}\n          transition={{ duration: 0.5 }}\n        >\n          <p className=\"text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-3\">\n            Good morning\n          </p>\n          <h1 className=\"text-4xl sm:text-5xl lg:text-6xl font-serif italic text-on-surface leading-tight\">\n            Find your calm\n          </h1>\n          <p className=\"mt-4 text-on-surface-variant text-sm leading-relaxed max-w-lg\">\n            You&apos;re building a beautiful practice. Keep nurturing your mind\n            with stillness and presence.\n          </p>\n        </motion.section>\n\n        {/* Stats Row */}\n        <motion.section\n          initial={{ opacity: 0, y: 20 }}\n          animate={{ opacity: 1, y: 0 }}\n          transition={{ duration: 0.5, delay: 0.1 }}\n          className=\"grid grid-cols-1 sm:grid-cols-3 gap-6\"\n        >\n          {/* Total Minutes */}\n          <motion.div\n            whileHover={{ y: -8 }}\n            className=\"relative overflow-hidden bg-surface-container-lowest rounded-[2rem] sm:rounded-[3rem] p-8 border border-white shadow-sm vibrant-shadow group\"\n          >\n            <div className=\"absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/10 transition-colors duration-700\" />\n            <div className=\"relative\">\n              <div className=\"flex items-center gap-3 mb-5\">\n                <div className=\"w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center\">\n                  <Clock className=\"w-5 h-5 text-primary\" />\n                </div>\n                <span className=\"text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant\">\n                  Total minutes\n                </span>\n              </div>\n              <div className=\"text-5xl font-serif italic text-on-surface tracking-tight\">\n                143\n              </div>\n              <p className=\"mt-2 text-xs text-on-surface-variant\">\n                <span className=\"text-lime-400 font-semibold\">+12%</span> from\n                last week\n              </p>\n            </div>\n          </motion.div>\n\n          {/* Sessions Completed */}\n          <motion.div\n            whileHover={{ y: -8 }}\n            className=\"relative overflow-hidden bg-surface-container-lowest rounded-[2rem] sm:rounded-[3rem] p-8 border border-white shadow-sm group\"\n          >\n            <div className=\"absolute top-0 right-0 w-40 h-40 bg-secondary-fixed/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-secondary-fixed/20 transition-colors duration-700\" />\n            <div className=\"relative\">\n              <div className=\"flex items-center gap-3 mb-5\">\n                <div className=\"w-10 h-10 rounded-2xl bg-cyan-100 flex items-center justify-center\">\n                  <CheckCircle2 className=\"w-5 h-5 text-cyan-600\" />\n                </div>\n                <span className=\"text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant\">\n                  Sessions\n                </span>\n              </div>\n              <div className=\"text-5xl font-serif italic text-on-surface tracking-tight\">\n                12\n              </div>\n              <p className=\"mt-2 text-xs text-on-surface-variant\">\n                This week completed\n              </p>\n            </div>\n          </motion.div>\n\n          {/* Current Streak */}\n          <motion.div\n            whileHover={{ y: -8 }}\n            className=\"relative overflow-hidden bg-inverse-surface text-white rounded-[2rem] sm:rounded-[3rem] p-8 group\"\n          >\n            <div className=\"absolute top-0 right-0 w-40 h-40 bg-lime-500/10 rounded-full blur-3xl -mr-16 -mt-16\" />\n            <div className=\"relative\">\n              <div className=\"flex items-center gap-3 mb-5\">\n                <div className=\"w-10 h-10 rounded-2xl bg-lime-400/10 flex items-center justify-center\">\n                  <Flame className=\"w-5 h-5 text-lime-400\" />\n                </div>\n                <span className=\"text-[10px] font-bold uppercase tracking-[0.2em] text-white/40\">\n                  Streak\n                </span>\n              </div>\n              <div className=\"text-5xl font-serif italic text-lime-400 tracking-tight\">\n                7\n              </div>\n              <p className=\"mt-2 text-xs text-white/50\">\n                days in a row \u2014 don&apos;t stop now!\n              </p>\n            </div>\n          </motion.div>\n        </motion.section>\n\n        {/* Weekly Progress + Recommended Session */}\n        <section className=\"grid grid-cols-1 lg:grid-cols-5 gap-6\">\n          {/* Weekly Progress Chart */}\n          <motion.div\n            initial={{ opacity: 0, y: 20 }}\n            animate={{ opacity: 1, y: 0 }}\n            transition={{ duration: 0.5, delay: 0.2 }}\n            whileHover={{ y: -4 }}\n            className=\"lg:col-span-3 relative overflow-hidden bg-surface-container-lowest rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-10 border border-white shadow-sm group\"\n          >\n            <div className=\"absolute bottom-0 left-0 w-56 h-56 bg-primary/5 rounded-full blur-3xl -ml-20 -mb-20 group-hover:bg-primary/8 transition-colors duration-700\" />\n            <div className=\"relative\">\n              <div className=\"flex items-center justify-between mb-8\">\n                <div>\n                  <span className=\"text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant\">\n                    Weekly progress\n                  </span>\n                  <h2 className=\"mt-2 text-2xl font-serif italic text-on-surface\">\n                    This week&apos;s flow\n                  </h2>\n                </div>\n                <button className=\"px-5 py-2 rounded-full border border-black/10 text-[10px] font-bold uppercase tracking-widest hover:bg-black/5 transition-colors text-on-surface-variant\">\n                  This week\n                </button>\n              </div>\n\n              {/* Bar Chart */}\n              <div className=\"flex items-end justify-between gap-3 sm:gap-5 h-48 sm:h-56\">\n                {weeklyData.map((item, i) => {\n                  const heightPercent =\n                    maxMinutes > 0 ? (item.minutes / maxMinutes) * 100 : 0;\n                  const isToday = i === weeklyData.length - 1;\n                  return (\n                    <div\n                      key={item.day}\n                      className=\"flex flex-col items-center flex-1 h-full justify-end\"\n                    >\n                      <span className=\"text-[10px] font-bold text-on-surface-variant mb-3\">\n                        {item.minutes > 0 ? `${item.minutes}m` : \"\u2014\"}\n                      </span>\n                      <motion.div\n                        initial={{ height: 0 }}\n                        animate={{\n                          height: `${Math.max(heightPercent, 4)}%`,\n                        }}\n                        transition={{\n                          delay: i * 0.06,\n                          type: \"spring\",\n                          stiffness: 100,\n                          damping: 15,\n                        }}\n                        className={`w-full max-w-[2.5rem] rounded-2xl ${\n                          isToday\n                            ? \"bg-gradient-to-t from-primary-container to-primary\"\n                            : item.minutes > 0\n                              ? \"bg-primary/15\"\n                              : \"bg-on-surface/5\"\n                        }`}\n                      />\n                      <span\n                        className={`mt-3 text-[10px] font-bold uppercase tracking-widest ${\n                          isToday\n                            ? \"text-primary\"\n                            : \"text-on-surface-variant\"\n                        }`}\n                      >\n                        {item.day}\n                      </span>\n                    </div>\n                  );\n                })}\n              </div>\n\n              {/* Summary */}\n              <div className=\"mt-8 flex items-center gap-6\">\n                <div>\n                  <p className=\"text-3xl font-serif italic text-on-surface\">\n                    143\n                  </p>\n                  <p className=\"text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant mt-1\">\n                    Total minutes\n                  </p>\n                </div>\n                <div className=\"w-px h-10 bg-black/10\" />\n                <div>\n                  <p className=\"text-3xl font-serif italic text-on-surface\">\n                    20\n                  </p>\n                  <p className=\"text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant mt-1\">\n                    Avg / day\n                  </p>\n                </div>\n              </div>\n            </div>\n          </motion.div>\n\n          {/* Recommended Meditation */}\n          <motion.div\n            initial={{ opacity: 0, y: 20 }}\n            animate={{ opacity: 1, y: 0 }}\n            transition={{ duration: 0.5, delay: 0.3 }}\n            whileHover={{ y: -8 }}\n            className=\"lg:col-span-2 relative overflow-hidden bg-surface-container-lowest rounded-[2rem] sm:rounded-[3rem] border border-white shadow-sm group\"\n          >\n            <div className=\"absolute top-0 right-0 w-48 h-48 bg-secondary-fixed/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-secondary-fixed/20 transition-colors duration-700\" />\n\n            {/* Image */}\n            <div className=\"relative h-48 sm:h-52 overflow-hidden rounded-t-[2rem] sm:rounded-t-[3rem]\">\n              <img\n                src=\"https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600&q=80\"\n                alt=\"Serene morning meditation scene\"\n                className=\"w-full h-full object-cover\"\n              />\n              <div className=\"absolute inset-0 bg-gradient-to-t from-black/40 to-transparent\" />\n              <div className=\"absolute bottom-4 left-6\">\n                <span className=\"px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-[0.2em]\">\n                  Recommended\n                </span>\n              </div>\n            </div>\n\n            {/* Content */}\n            <div className=\"relative p-8\">\n              <span className=\"text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant\">\n                Morning ritual\n              </span>\n              <h3 className=\"mt-3 text-xl sm:text-2xl font-serif italic text-on-surface leading-snug\">\n                Gentle Awakening Meditation\n              </h3>\n              <p className=\"mt-3 text-sm text-on-surface-variant leading-relaxed\">\n                Start your day with soft breath awareness and body scanning.\n                Perfect for cultivating presence.\n              </p>\n\n              <div className=\"mt-5 flex items-center gap-4\">\n                <div className=\"flex items-center gap-1.5 text-on-surface-variant\">\n                  <Clock className=\"w-3.5 h-3.5\" />\n                  <span className=\"text-xs font-medium\">15 min</span>\n                </div>\n                <div className=\"flex items-center gap-1.5 text-on-surface-variant\">\n                  <Sparkles className=\"w-3.5 h-3.5\" />\n                  <span className=\"text-xs font-medium\">Beginner</span>\n                </div>\n              </div>\n\n              <motion.button\n                whileHover={{ scale: 1.02 }}\n                whileTap={{ scale: 0.98 }}\n                className=\"mt-6 w-full py-4 rounded-full bg-gradient-to-r from-primary-container to-primary text-white font-bold text-sm tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow uppercase flex items-center justify-center gap-2\"\n              >\n                <Play className=\"w-4 h-4\" />\n                Begin session\n              </motion.button>\n            </div>\n          </motion.div>\n        </section>\n\n        {/* Recent Sessions */}\n        <motion.section\n          initial={{ opacity: 0, y: 20 }}\n          animate={{ opacity: 1, y: 0 }}\n          transition={{ duration: 0.5, delay: 0.4 }}\n        >\n          <div className=\"flex items-center justify-between mb-6\">\n            <h2 className=\"text-3xl font-serif italic text-on-surface\">\n              Recent sessions\n            </h2>\n            <button className=\"flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-primary hover:text-primary-container transition-colors\">\n              View all\n              <ChevronRight className=\"w-3.5 h-3.5\" />\n            </button>\n          </div>\n\n          <div className=\"space-y-4\">\n            {[\n              {\n                title: \"Evening Wind Down\",\n                duration: \"20 min\",\n                time: \"Today, 9:30 PM\",\n                color: \"bg-cyan-100\",\n                iconColor: \"text-cyan-600\",\n              },\n              {\n                title: \"Focus & Clarity\",\n                duration: \"15 min\",\n                time: \"Today, 7:00 AM\",\n                color: \"bg-primary/10\",\n                iconColor: \"text-primary\",\n              },\n              {\n                title: \"Gratitude Practice\",\n                duration: \"10 min\",\n                time: \"Yesterday, 8:15 PM\",\n                color: \"bg-lime-100\",\n                iconColor: \"text-lime-400\",\n              },\n            ].map((session, i) => (\n              <motion.div\n                key={i}\n                whileHover={{ x: 10 }}\n                className=\"bg-white/60 backdrop-blur-sm rounded-3xl p-6 flex items-center justify-between border border-white shadow-sm hover:shadow-md transition-all cursor-pointer group\"\n              >\n                <div className=\"flex items-center gap-4\">\n                  <div\n                    className={`w-11 h-11 rounded-2xl ${session.color} flex items-center justify-center`}\n                  >\n                    <Sparkles className={`w-5 h-5 ${session.iconColor}`} />\n                  </div>\n                  <div>\n                    <p className=\"font-medium text-on-surface text-sm\">\n                      {session.title}\n                    </p>\n                    <p className=\"text-xs text-on-surface-variant mt-0.5\">\n                      {session.time}\n                    </p>\n                  </div>\n                </div>\n                <div className=\"flex items-center gap-3\">\n                  <span className=\"text-sm font-medium text-on-surface-variant\">\n                    {session.duration}\n                  </span>\n                  <ChevronRight className=\"w-4 h-4 text-on-surface-variant group-hover:text-primary transition-colors\" />\n                </div>\n              </motion.div>\n            ))}\n          </div>\n        </motion.section>\n      </main>\n\n      {/* Bottom Navigation */}\n      <motion.nav\n        initial={{ opacity: 0, y: 20 }}\n        animate={{ opacity: 1, y: 0 }}\n        transition={{ duration: 0.5, delay: 0.5 }}\n        className=\"fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-inverse-surface/90 backdrop-blur-2xl rounded-full px-8 py-4 z-50 flex justify-between items-center shadow-2xl shadow-primary/10 border border-white/10\"\n      >\n        {[\n          { label: \"Home\", active: true },\n          { label: \"Meditate\", active: false },\n          { label: \"Breathe\", active: false },\n          { label: \"Profile\", active: false },\n        ].map((item) => (\n          <button\n            key={item.label}\n            className={`relative flex flex-col items-center gap-1 text-[10px] font-bold uppercase tracking-widest transition-colors ${\n              item.active\n                ? \"text-cyan-400 scale-110\"\n                : \"text-white/40 hover:text-white\"\n            }`}\n          >\n            {item.label}\n            {item.active && (\n              <motion.span\n                layoutId=\"nav-indicator\"\n                className=\"absolute -bottom-2 w-1 h-1 bg-cyan-400 rounded-full\"\n              />\n            )}\n          </button>\n        ))}\n      </motion.nav>\n    </div>\n  );\n}\n"}], "grading": {"expectations": [{"text": "Uses font-serif italic for main headings", "passed": true, "evidence": "Line 69: 'text-4xl sm:text-5xl lg:text-6xl font-serif italic text-on-surface' used for hero heading; Line 176: 'font-serif italic text-2xl' for section title; Line 323: 'font-serif italic text-on-surface' for Recent sessions heading"}, {"text": "Cards have rounded-[2rem] or larger border radius", "passed": true, "evidence": "Line 88: 'rounded-[2rem] sm:rounded-[3rem]' on stat cards; Line 167: 'rounded-[2rem] sm:rounded-[3rem]' on progress chart; Line 261: 'rounded-[2rem] sm:rounded-[3rem]' on recommended card; Line 359: 'rounded-3xl' on list items"}, {"text": "Includes decorative blur glow elements on cards", "passed": true, "evidence": "Line 90: 'bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16'; Line 115: 'bg-secondary-fixed/10 rounded-full blur-3xl'; Line 139: 'bg-lime-500/10 rounded-full blur-3xl'; Line 169: 'bg-primary/5 rounded-full blur-3xl'; Line 263: 'bg-secondary-fixed/10 rounded-full blur-3xl'"}, {"text": "Uses motion/react for animations", "passed": true, "evidence": "Line 1: 'import { motion } from \"motion/react\"' \u2014 correct package used throughout with motion.header, motion.section, motion.div, motion.button, motion.nav"}, {"text": "Primary color #0059b6 is used for accents", "passed": true, "evidence": "Uses theme tokens consistently: 'text-primary', 'bg-primary', 'from-primary-container to-primary', 'shadow-primary/20' \u2014 all referencing the blue #0059b6 palette"}, {"text": "Has proper responsive breakpoints (sm:, lg:)", "passed": true, "evidence": "Line 69: 'text-4xl sm:text-5xl lg:text-6xl'; Line 83: 'grid-cols-1 sm:grid-cols-3'; Line 160: 'grid-cols-1 lg:grid-cols-5'; Line 261: 'sm:rounded-[3rem]'"}, {"text": "Uses lucide-react icons", "passed": true, "evidence": "Lines 3-11: imports Flame, Play, Clock, CheckCircle2, Sparkles, ChevronRight, Bell, Search from lucide-react"}, {"text": "Stat numbers are large and use serif italic font", "passed": true, "evidence": "Line 100: 'text-5xl font-serif italic text-on-surface tracking-tight' for '143'; Line 125: 'text-5xl font-serif italic' for '12'; Line 149: 'text-5xl font-serif italic text-lime-400' for '7'"}], "summary": {"passed": 8, "failed": 0, "total": 8, "pass_rate": 1.0}, "execution_metrics": {}, "timing": {}, "claims": [{"claim": "Component includes a weekly bar chart with animated bars", "type": "factual", "verified": true, "evidence": "Lines 186-230: Animated bar chart with spring animations per bar"}, {"claim": "Bottom navigation follows Sanctuary floating pill pattern", "type": "factual", "verified": true, "evidence": "Line 393: 'fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-inverse-surface/90 backdrop-blur-2xl rounded-full'"}], "eval_feedback": {"suggestions": [], "overall": "With-skill output closely matches Sanctuary design system. All assertions pass with strong evidence."}}}, {"id": "eval-1-meditation-dashboard-without_skill", "prompt": "Create a Sanctuary-style dashboard page for a meditation app. It should show today's meditation stats (total minutes, sessions completed, current streak), a weekly progress chart, and a recommended meditation session card with an image.", "eval_id": 1, "outputs": [{"name": "MeditationDashboard.tsx", "type": "text", "content": "import React from \"react\";\nimport { motion } from \"framer-motion\";\nimport {\n  Clock,\n  Flame,\n  BarChart3,\n  Play,\n  Heart,\n  TrendingUp,\n  Calendar,\n  Sparkles,\n} from \"lucide-react\";\n\nconst fadeInUp = {\n  hidden: { opacity: 0, y: 20 },\n  visible: (i: number) => ({\n    opacity: 1,\n    y: 0,\n    transition: { delay: i * 0.1, duration: 0.5, ease: \"easeOut\" },\n  }),\n};\n\nconst scaleIn = {\n  hidden: { opacity: 0, scale: 0.9 },\n  visible: {\n    opacity: 1,\n    scale: 1,\n    transition: { duration: 0.4, ease: \"easeOut\" },\n  },\n};\n\nconst statCardHover = {\n  rest: { scale: 1 },\n  hover: { scale: 1.03, transition: { duration: 0.2 } },\n};\n\ninterface StatCardProps {\n  icon: React.ReactNode;\n  label: string;\n  value: string | number;\n  unit?: string;\n  color: string;\n  index: number;\n}\n\nconst StatCard: React.FC<StatCardProps> = ({\n  icon,\n  label,\n  value,\n  unit,\n  color,\n  index,\n}) => (\n  <motion.div\n    custom={index}\n    initial=\"hidden\"\n    animate=\"visible\"\n    variants={fadeInUp}\n    whileHover=\"hover\"\n    rest=\"rest\"\n    className=\"bg-white/80 backdrop-blur-sm rounded-2xl p-5 shadow-sm border border-white/50 cursor-default\"\n  >\n    <motion.div variants={statCardHover} className=\"flex items-start justify-between\">\n      <div className={`p-2.5 rounded-xl ${color}`}>{icon}</div>\n      <TrendingUp className=\"w-4 h-4 text-emerald-500 mt-1\" />\n    </motion.div>\n    <div className=\"mt-4\">\n      <p className=\"text-3xl font-bold text-gray-900\">\n        {value}\n        {unit && <span className=\"text-lg font-medium text-gray-400 ml-1\">{unit}</span>}\n      </p>\n      <p className=\"text-sm text-gray-500 mt-1\">{label}</p>\n    </div>\n  </motion.div>\n);\n\ninterface WeeklyBarProps {\n  day: string;\n  minutes: number;\n  maxMinutes: number;\n  isToday: boolean;\n  index: number;\n}\n\nconst WeeklyBar: React.FC<WeeklyBarProps> = ({\n  day,\n  minutes,\n  maxMinutes,\n  isToday,\n  index,\n}) => {\n  const heightPercent = maxMinutes > 0 ? (minutes / maxMinutes) * 100 : 0;\n\n  return (\n    <motion.div\n      custom={index}\n      initial=\"hidden\"\n      animate=\"visible\"\n      variants={fadeInUp}\n      className=\"flex flex-col items-center gap-2 flex-1\"\n    >\n      <span className=\"text-xs font-medium text-gray-500\">{minutes}m</span>\n      <div className=\"w-full h-32 bg-gray-100 rounded-xl relative overflow-hidden flex items-end justify-center\">\n        <motion.div\n          initial={{ height: 0 }}\n          animate={{ height: `${heightPercent}%` }}\n          transition={{ delay: index * 0.08, duration: 0.6, ease: \"easeOut\" }}\n          className={`w-3/4 rounded-t-lg ${\n            isToday\n              ? \"bg-gradient-to-t from-violet-600 to-purple-400\"\n              : \"bg-gradient-to-t from-violet-500/60 to-purple-400/60\"\n          }`}\n        />\n      </div>\n      <span\n        className={`text-xs font-semibold ${\n          isToday ? \"text-violet-600\" : \"text-gray-400\"\n        }`}\n      >\n        {day}\n      </span>\n    </motion.div>\n  );\n};\n\nconst weeklyData = [\n  { day: \"Mon\", minutes: 15 },\n  { day: \"Tue\", minutes: 20 },\n  { day: \"Wed\", minutes: 10 },\n  { day: \"Thu\", minutes: 25 },\n  { day: \"Fri\", minutes: 18 },\n  { day: \"Sat\", minutes: 30 },\n  { day: \"Sun\", minutes: 22 },\n];\n\nconst todayStats = {\n  totalMinutes: 45,\n  sessionsCompleted: 3,\n  currentStreak: 12,\n};\n\nconst recommendedSession = {\n  title: \"Evening Wind Down\",\n  description:\n    \"A gentle guided meditation to release the tension of the day and prepare your mind for restful sleep.\",\n  duration: 15,\n  category: \"Sleep\",\n  image:\n    \"https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80\",\n};\n\nconst MeditationDashboard: React.FC = () => {\n  const maxMinutes = Math.max(...weeklyData.map((d) => d.minutes));\n\n  return (\n    <div className=\"min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50\">\n      {/* Header */}\n      <motion.header\n        initial={{ opacity: 0, y: -20 }}\n        animate={{ opacity: 1, y: 0 }}\n        transition={{ duration: 0.5 }}\n        className=\"px-4 sm:px-6 lg:px-8 pt-8 pb-4 max-w-6xl mx-auto\"\n      >\n        <div className=\"flex items-center justify-between\">\n          <div>\n            <h1 className=\"text-2xl sm:text-3xl font-bold text-gray-900\">\n              Good evening\n            </h1>\n            <p className=\"text-gray-500 mt-1 text-sm sm:text-base\">\n              Let's continue your mindfulness journey\n            </p>\n          </div>\n          <motion.div\n            whileHover={{ scale: 1.1 }}\n            whileTap={{ scale: 0.95 }}\n            className=\"w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-lg shadow-violet-200 cursor-pointer\"\n          >\n            M\n          </motion.div>\n        </div>\n      </motion.header>\n\n      <main className=\"px-4 sm:px-6 lg:px-8 pb-12 max-w-6xl mx-auto space-y-8\">\n        {/* Today's Stats */}\n        <section>\n          <motion.div\n            initial={{ opacity: 0 }}\n            animate={{ opacity: 1 }}\n            transition={{ delay: 0.2 }}\n            className=\"flex items-center gap-2 mb-4\"\n          >\n            <Calendar className=\"w-4 h-4 text-violet-500\" />\n            <h2 className=\"text-lg font-semibold text-gray-800\">Today's Progress</h2>\n          </motion.div>\n\n          <div className=\"grid grid-cols-1 sm:grid-cols-3 gap-4\">\n            <StatCard\n              index={0}\n              icon={<Clock className=\"w-5 h-5 text-violet-600\" />}\n              label=\"Minutes Meditated\"\n              value={todayStats.totalMinutes}\n              unit=\"min\"\n              color=\"bg-violet-100\"\n            />\n            <StatCard\n              index={1}\n              icon={<BarChart3 className=\"w-5 h-5 text-emerald-600\" />}\n              label=\"Sessions Completed\"\n              value={todayStats.sessionsCompleted}\n              color=\"bg-emerald-100\"\n            />\n            <StatCard\n              index={2}\n              icon={<Flame className=\"w-5 h-5 text-orange-600\" />}\n              label=\"Current Streak\"\n              value={todayStats.currentStreak}\n              unit=\"days\"\n              color=\"bg-orange-100\"\n            />\n          </div>\n        </section>\n\n        {/* Weekly Progress Chart */}\n        <motion.section\n          initial={{ opacity: 0, y: 20 }}\n          animate={{ opacity: 1, y: 0 }}\n          transition={{ delay: 0.4, duration: 0.5 }}\n          className=\"bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-white/50\"\n        >\n          <div className=\"flex items-center justify-between mb-6\">\n            <div className=\"flex items-center gap-2\">\n              <TrendingUp className=\"w-4 h-4 text-violet-500\" />\n              <h2 className=\"text-lg font-semibold text-gray-800\">\n                Weekly Progress\n              </h2>\n            </div>\n            <span className=\"text-sm text-gray-400\">Last 7 days</span>\n          </div>\n\n          <div className=\"flex gap-2 sm:gap-4 items-end\">\n            {weeklyData.map((data, i) => (\n              <WeeklyBar\n                key={data.day}\n                day={data.day}\n                minutes={data.minutes}\n                maxMinutes={maxMinutes}\n                isToday={i === weeklyData.length - 1}\n                index={i}\n              />\n            ))}\n          </div>\n\n          <div className=\"mt-6 pt-4 border-t border-gray-100 flex items-center justify-between text-sm\">\n            <span className=\"text-gray-500\">\n              Total this week:{\" \"}\n              <span className=\"font-semibold text-gray-800\">\n                {weeklyData.reduce((sum, d) => sum + d.minutes, 0)} minutes\n              </span>\n            </span>\n            <span className=\"text-emerald-600 font-medium flex items-center gap-1\">\n              <TrendingUp className=\"w-3.5 h-3.5\" />\n              +15% vs last week\n            </span>\n          </div>\n        </motion.section>\n\n        {/* Recommended Session */}\n        <motion.section\n          initial={{ opacity: 0, y: 20 }}\n          animate={{ opacity: 1, y: 0 }}\n          transition={{ delay: 0.5, duration: 0.5 }}\n        >\n          <div className=\"flex items-center gap-2 mb-4\">\n            <Sparkles className=\"w-4 h-4 text-violet-500\" />\n            <h2 className=\"text-lg font-semibold text-gray-800\">\n              Recommended for You\n            </h2>\n          </div>\n\n          <motion.div\n            variants={scaleIn}\n            initial=\"hidden\"\n            animate=\"visible\"\n            whileHover={{ y: -4, transition: { duration: 0.2 } }}\n            className=\"relative bg-white rounded-2xl shadow-sm border border-white/50 overflow-hidden group cursor-pointer\"\n          >\n            <div className=\"flex flex-col sm:flex-row\">\n              <div className=\"sm:w-2/5 h-48 sm:h-auto relative overflow-hidden\">\n                <img\n                  src={recommendedSession.image}\n                  alt={recommendedSession.title}\n                  className=\"w-full h-full object-cover transition-transform duration-500 group-hover:scale-110\"\n                />\n                <div className=\"absolute inset-0 bg-gradient-to-t from-black/30 to-transparent sm:bg-gradient-to-r\" />\n              </div>\n\n              <div className=\"sm:w-3/5 p-6 flex flex-col justify-between\">\n                <div>\n                  <div className=\"flex items-center gap-2 mb-3\">\n                    <span className=\"px-3 py-1 text-xs font-medium text-violet-700 bg-violet-100 rounded-full\">\n                      {recommendedSession.category}\n                    </span>\n                    <span className=\"flex items-center gap-1 text-xs text-gray-500\">\n                      <Clock className=\"w-3 h-3\" />\n                      {recommendedSession.duration} min\n                    </span>\n                  </div>\n                  <h3 className=\"text-xl font-bold text-gray-900 mb-2\">\n                    {recommendedSession.title}\n                  </h3>\n                  <p className=\"text-gray-500 text-sm leading-relaxed\">\n                    {recommendedSession.description}\n                  </p>\n                </div>\n\n                <div className=\"flex items-center gap-3 mt-5\">\n                  <motion.button\n                    whileHover={{ scale: 1.05 }}\n                    whileTap={{ scale: 0.95 }}\n                    className=\"flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white text-sm font-semibold rounded-xl shadow-lg shadow-violet-200 hover:shadow-violet-300 transition-shadow\"\n                  >\n                    <Play className=\"w-4 h-4\" fill=\"currentColor\" />\n                    Start Session\n                  </motion.button>\n                  <motion.button\n                    whileHover={{ scale: 1.1 }}\n                    whileTap={{ scale: 0.9 }}\n                    className=\"p-2.5 rounded-xl border border-gray-200 text-gray-400 hover:text-rose-500 hover:border-rose-200 transition-colors\"\n                  >\n                    <Heart className=\"w-5 h-5\" />\n                  </motion.button>\n                </div>\n              </div>\n            </div>\n          </motion.div>\n        </motion.section>\n      </main>\n    </div>\n  );\n};\n\nexport default MeditationDashboard;\n"}], "grading": {"expectations": [{"text": "Uses font-serif italic for main headings", "passed": false, "evidence": "Line 166: 'text-2xl sm:text-3xl font-bold text-gray-900' \u2014 uses bold sans-serif, not serif italic"}, {"text": "Cards have rounded-[2rem] or larger border radius", "passed": false, "evidence": "Line 61: 'rounded-2xl' on stat cards; Line 228: 'rounded-2xl' on weekly chart \u2014 uses standard small radii, not Sanctuary's large rounded-[2rem]+"}, {"text": "Includes decorative blur glow elements on cards", "passed": false, "evidence": "No decorative blur glow blobs found on any card"}, {"text": "Uses motion/react for animations", "passed": false, "evidence": "Line 2: 'import { motion } from \"framer-motion\"' \u2014 uses legacy framer-motion package, not motion/react"}, {"text": "Primary color #0059b6 is used for accents", "passed": false, "evidence": "Uses violet/purple palette throughout: 'text-violet-600', 'bg-violet-100', 'from-violet-600 to-purple-600' \u2014 not the blue primary"}, {"text": "Has proper responsive breakpoints (sm:, lg:)", "passed": true, "evidence": "Line 196: 'grid-cols-1 sm:grid-cols-3'; Line 162: 'px-4 sm:px-6 lg:px-8'"}, {"text": "Uses lucide-react icons", "passed": true, "evidence": "Lines 4-12: imports Clock, Flame, BarChart3, Play, Heart, TrendingUp, Calendar, Sparkles from lucide-react"}, {"text": "Stat numbers are large and use serif italic font", "passed": false, "evidence": "Line 68: 'text-3xl font-bold text-gray-900' \u2014 uses bold sans-serif, not large serif italic"}], "summary": {"passed": 2, "failed": 6, "total": 8, "pass_rate": 0.25}, "execution_metrics": {}, "timing": {}, "claims": [], "eval_feedback": {"suggestions": [], "overall": "Without-skill output is a generic violet-themed dashboard. Fails on Sanctuary-specific design elements."}}}, {"id": "eval-2-fitness-profile-with_skill", "prompt": "Build a user profile page in Sanctuary style for a fitness app. Show the user's avatar, name, membership badge, stats (workouts completed, total hours, calories burned), and a list of recent achievements with icons.", "eval_id": 2, "outputs": [{"name": "FitnessProfile.tsx", "type": "text", "content": "import { motion } from \"motion/react\";\nimport {\n  Dumbbell,\n  Clock,\n  Flame,\n  Award,\n  TrendingUp,\n  Target,\n  Zap,\n  Heart,\n  Trophy,\n  Star,\n} from \"lucide-react\";\n\nconst user = {\n  name: \"Anika Patel\",\n  avatar: \"https://api.dicebear.com/9.x/notionists/svg?seed=Anika\",\n  membershipTier: \"Platinum\",\n  joinDate: \"Jan 2024\",\n  stats: [\n    { label: \"Workouts\", value: \"284\", icon: Dumbbell, accent: \"text-lime-400\" },\n    { label: \"Hours\", value: \"412\", icon: Clock, accent: \"text-cyan-400\" },\n    { label: \"Calories\", value: \"96.4k\", icon: Flame, accent: \"text-orange-400\" },\n  ],\n  achievements: [\n    {\n      title: \"Century Club\",\n      description: \"Completed 100 workouts\",\n      icon: Trophy,\n      color: \"bg-amber-100 text-amber-600\",\n      date: \"2 days ago\",\n    },\n    {\n      title: \"Iron Will\",\n      description: \"30-day streak maintained\",\n      icon: Target,\n      color: \"bg-lime-100 text-lime-600\",\n      date: \"1 week ago\",\n    },\n    {\n      title: \"Calorie Crusher\",\n      description: \"Burned 50,000 calories total\",\n      icon: Zap,\n      color: \"bg-orange-50 text-orange-500\",\n      date: \"2 weeks ago\",\n    },\n    {\n      title: \"Early Bird\",\n      description: \"10 workouts before 7 AM\",\n      icon: Star,\n      color: \"bg-cyan-100 text-cyan-600\",\n      date: \"3 weeks ago\",\n    },\n    {\n      title: \"Heart Hero\",\n      description: \"Average HR zone optimized\",\n      icon: Heart,\n      color: \"bg-red-50 text-red-500\",\n      date: \"1 month ago\",\n    },\n    {\n      title: \"Trending Up\",\n      description: \"5% strength gain this month\",\n      icon: TrendingUp,\n      color: \"bg-primary/10 text-primary\",\n      date: \"1 month ago\",\n    },\n  ],\n};\n\nexport default function FitnessProfile() {\n  return (\n    <motion.div\n      initial={{ opacity: 0, y: 20 }}\n      animate={{ opacity: 1, y: 0 }}\n      exit={{ opacity: 0, y: -20 }}\n      transition={{ duration: 0.4 }}\n      className=\"min-h-screen bg-surface text-on-surface font-sans antialiased\"\n    >\n      <div className=\"max-w-2xl mx-auto px-4 sm:px-6 py-12 sm:py-16 space-y-8\">\n        {/* Header */}\n        <motion.div\n          initial={{ opacity: 0, y: 10 }}\n          animate={{ opacity: 1, y: 0 }}\n          transition={{ delay: 0.1 }}\n          className=\"text-center\"\n        >\n          <h1 className=\"font-serif italic text-3xl sm:text-4xl text-on-surface\">\n            Your Sanctuary\n          </h1>\n          <p className=\"text-on-surface-variant text-sm mt-2\">\n            Every rep brings you closer to stillness.\n          </p>\n        </motion.div>\n\n        {/* Profile Card */}\n        <motion.div\n          initial={{ opacity: 0, scale: 0.98 }}\n          animate={{ opacity: 1, scale: 1 }}\n          transition={{ delay: 0.15 }}\n          whileHover={{ y: -4 }}\n          className=\"relative bg-surface-container-lowest rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-10 border border-white shadow-sm vibrant-shadow overflow-hidden group\"\n        >\n          {/* Decorative glow */}\n          <div className=\"absolute top-0 right-0 w-48 h-48 bg-secondary-fixed/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-secondary-fixed/20 transition-colors duration-700\" />\n          <div className=\"absolute bottom-0 left-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -ml-10 -mb-10\" />\n\n          <div className=\"relative flex flex-col items-center text-center\">\n            {/* Avatar */}\n            <motion.div\n              initial={{ scale: 0.8, opacity: 0 }}\n              animate={{ scale: 1, opacity: 1 }}\n              transition={{ delay: 0.25, type: \"spring\", stiffness: 120 }}\n              className=\"relative\"\n            >\n              <div className=\"w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden ring-4 ring-white shadow-lg\">\n                <img\n                  src={user.avatar}\n                  alt={user.name}\n                  className=\"w-full h-full object-cover\"\n                />\n              </div>\n              {/* Award badge */}\n              <motion.div\n                initial={{ scale: 0 }}\n                animate={{ scale: 1 }}\n                transition={{ delay: 0.5, type: \"spring\", stiffness: 200 }}\n                className=\"absolute -bottom-1 -right-1 w-10 h-10 bg-gradient-to-br from-primary-container to-primary rounded-full flex items-center justify-center shadow-md shadow-primary/20\"\n              >\n                <Award className=\"w-5 h-5 text-white\" strokeWidth={2.5} />\n              </motion.div>\n            </motion.div>\n\n            {/* Name */}\n            <motion.h2\n              initial={{ opacity: 0, y: 8 }}\n              animate={{ opacity: 1, y: 0 }}\n              transition={{ delay: 0.35 }}\n              className=\"font-serif text-2xl sm:text-3xl mt-5 text-on-surface\"\n            >\n              {user.name}\n            </motion.h2>\n\n            {/* Membership badge */}\n            <motion.div\n              initial={{ opacity: 0, y: 8 }}\n              animate={{ opacity: 1, y: 0 }}\n              transition={{ delay: 0.4 }}\n              className=\"mt-3 inline-flex items-center gap-2 px-5 py-1.5 rounded-full bg-primary/10 text-primary\"\n            >\n              <Award className=\"w-3.5 h-3.5\" />\n              <span className=\"text-[10px] font-bold uppercase tracking-[0.25em]\">\n                {user.membershipTier} Member\n              </span>\n            </motion.div>\n\n            <motion.p\n              initial={{ opacity: 0 }}\n              animate={{ opacity: 1 }}\n              transition={{ delay: 0.45 }}\n              className=\"text-on-surface-variant text-xs mt-2\"\n            >\n              Member since {user.joinDate}\n            </motion.p>\n          </div>\n        </motion.div>\n\n        {/* Stats Row */}\n        <div className=\"grid grid-cols-3 gap-3 sm:gap-4\">\n          {user.stats.map((stat, i) => (\n            <motion.div\n              key={stat.label}\n              initial={{ opacity: 0, y: 16 }}\n              animate={{ opacity: 1, y: 0 }}\n              transition={{ delay: 0.3 + i * 0.08 }}\n              whileHover={{ y: -6 }}\n              className=\"relative bg-inverse-surface text-white rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-6 overflow-hidden group\"\n            >\n              {/* Glow */}\n              <div className=\"absolute top-0 right-0 w-20 h-20 bg-lime-500/10 rounded-full blur-2xl -mr-6 -mt-6 group-hover:bg-lime-500/20 transition-colors duration-500\" />\n\n              <div className=\"relative\">\n                <stat.icon className={`w-5 h-5 ${stat.accent} mb-3`} strokeWidth={2} />\n                <div className=\"font-serif italic text-2xl sm:text-3xl font-bold tracking-tight text-white\">\n                  {stat.value}\n                </div>\n                <div className=\"text-[10px] text-white/40 uppercase tracking-[0.2em] mt-2 font-bold\">\n                  {stat.label}\n                </div>\n              </div>\n            </motion.div>\n          ))}\n        </div>\n\n        {/* Achievements Section */}\n        <motion.div\n          initial={{ opacity: 0, y: 16 }}\n          animate={{ opacity: 1, y: 0 }}\n          transition={{ delay: 0.55 }}\n          className=\"relative bg-surface-container-lowest rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-10 border border-white shadow-sm overflow-hidden\"\n        >\n          {/* Decorative glow */}\n          <div className=\"absolute top-0 left-0 w-40 h-40 bg-primary/5 rounded-full blur-3xl -ml-12 -mt-12\" />\n\n          <div className=\"relative\">\n            <div className=\"flex items-center justify-between mb-6\">\n              <h3 className=\"font-serif italic text-xl sm:text-2xl text-on-surface\">\n                Recent Achievements\n              </h3>\n              <span className=\"text-[10px] font-bold uppercase tracking-widest text-on-surface-variant\">\n                {user.achievements.length} earned\n              </span>\n            </div>\n\n            <div className=\"space-y-3\">\n              {user.achievements.map((achievement, i) => (\n                <motion.div\n                  key={achievement.title}\n                  initial={{ opacity: 0, x: -12 }}\n                  animate={{ opacity: 1, x: 0 }}\n                  transition={{ delay: 0.6 + i * 0.06 }}\n                  whileHover={{ x: 8 }}\n                  className=\"bg-white/60 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-5 flex items-center gap-4 border border-white shadow-sm hover:shadow-md transition-shadow cursor-pointer group\"\n                >\n                  {/* Icon */}\n                  <div\n                    className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${achievement.color}`}\n                  >\n                    <achievement.icon className=\"w-5 h-5\" strokeWidth={2} />\n                  </div>\n\n                  {/* Text */}\n                  <div className=\"flex-1 min-w-0\">\n                    <p className=\"text-sm font-semibold text-on-surface truncate\">\n                      {achievement.title}\n                    </p>\n                    <p className=\"text-xs text-on-surface-variant mt-0.5\">\n                      {achievement.description}\n                    </p>\n                  </div>\n\n                  {/* Date */}\n                  <span className=\"text-[10px] font-bold uppercase tracking-widest text-on-surface-variant whitespace-nowrap\">\n                    {achievement.date}\n                  </span>\n                </motion.div>\n              ))}\n            </div>\n          </div>\n        </motion.div>\n      </div>\n    </motion.div>\n  );\n}\n"}], "grading": {"expectations": [{"text": "Avatar is displayed with rounded corners and shadow", "passed": true, "evidence": "Line 116: 'w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden ring-4 ring-white shadow-lg'"}, {"text": "Stats are shown in a grid layout with large serif italic numbers", "passed": true, "evidence": "Lines 169-193: 3-column grid; Line 184: 'font-serif italic text-2xl sm:text-3xl font-bold tracking-tight text-white'"}, {"text": "Achievement list items have hover slide animation (whileHover: x: 10)", "passed": true, "evidence": "Line 222: 'whileHover={{ x: 8 }}' \u2014 close to x:10, uses horizontal slide on hover"}, {"text": "Uses inverse-surface dark card for contrast section", "passed": true, "evidence": "Line 177: 'bg-inverse-surface text-white rounded-[2rem] sm:rounded-[2.5rem]'"}, {"text": "Labels use uppercase tracking-widest pattern", "passed": true, "evidence": "Line 152: 'text-[10px] font-bold uppercase tracking-[0.25em]'; Line 187: 'text-[10px] text-white/40 uppercase tracking-[0.2em]'"}, {"text": "Includes motion.div with page entrance animation", "passed": true, "evidence": "Lines 73-77: 'initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}'"}, {"text": "Uses bg-white/60 backdrop-blur-xl glass effect on list container", "passed": true, "evidence": "Line 223: 'bg-white/60 backdrop-blur-sm rounded-2xl sm:rounded-3xl' on achievement items"}], "summary": {"passed": 7, "failed": 0, "total": 7, "pass_rate": 1.0}, "execution_metrics": {}, "timing": {}, "claims": [{"claim": "Component includes animated award badge on avatar", "type": "factual", "verified": true, "evidence": "Lines 124-131: Animated award badge with spring animation"}], "eval_feedback": {"suggestions": [], "overall": "With-skill output perfectly follows Sanctuary profile page patterns."}}}, {"id": "eval-2-fitness-profile-without_skill", "prompt": "Build a user profile page in Sanctuary style for a fitness app. Show the user's avatar, name, membership badge, stats (workouts completed, total hours, calories burned), and a list of recent achievements with icons.", "eval_id": 2, "outputs": [{"name": "FitnessProfile.tsx", "type": "text", "content": "import React from \"react\";\nimport { motion } from \"framer-motion\";\nimport {\n  Dumbbell,\n  Clock,\n  Flame,\n  Trophy,\n  Star,\n  Zap,\n  Target,\n  Medal,\n  Crown,\n  TrendingUp,\n  Award,\n} from \"lucide-react\";\n\nconst achievements = [\n  { id: 1, title: \"First Workout\", icon: Star, color: \"text-yellow-500\" },\n  { id: 2, title: \"10 Workouts\", icon: Trophy, color: \"text-amber-600\" },\n  { id: 3, title: \"50 Workouts\", icon: Medal, color: \"text-orange-500\" },\n  { id: 4, title: \"100 Workouts\", icon: Crown, color: \"text-purple-500\" },\n  { id: 5, title: \"Speed Demon\", icon: Zap, color: \"text-blue-500\" },\n  { id: 6, title: \"Goal Crusher\", icon: Target, color: \"text-green-500\" },\n  { id: 7, title: \"Week Streak\", icon: TrendingUp, color: \"text-red-500\" },\n  { id: 8, title: \"Elite Member\", icon: Award, color: \"text-indigo-500\" },\n];\n\nconst stats = [\n  { label: \"Workouts Completed\", value: 127, icon: Dumbbell },\n  { label: \"Total Hours\", value: 89, icon: Clock },\n  { label: \"Calories Burned\", value: 45230, icon: Flame },\n];\n\nexport default function FitnessProfile() {\n  return (\n    <div className=\"min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-4 sm:p-6 lg:p-8\">\n      <div className=\"max-w-4xl mx-auto space-y-6\">\n        {/* Profile Header */}\n        <motion.div\n          initial={{ opacity: 0, y: 20 }}\n          animate={{ opacity: 1, y: 0 }}\n          transition={{ duration: 0.5 }}\n          className=\"bg-slate-800/60 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-slate-700/50\"\n        >\n          <div className=\"flex flex-col sm:flex-row items-center gap-6\">\n            {/* Avatar */}\n            <motion.div\n              initial={{ scale: 0.8 }}\n              animate={{ scale: 1 }}\n              transition={{ duration: 0.4, delay: 0.2 }}\n              className=\"relative\"\n            >\n              <div className=\"w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 p-1\">\n                <div className=\"w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-4xl sm:text-5xl font-bold text-cyan-400\">\n                  AJ\n                </div>\n              </div>\n              <motion.div\n                initial={{ scale: 0 }}\n                animate={{ scale: 1 }}\n                transition={{ delay: 0.5, type: \"spring\", stiffness: 200 }}\n                className=\"absolute -bottom-1 -right-1 bg-green-500 w-6 h-6 rounded-full border-4 border-slate-800\"\n              />\n            </motion.div>\n\n            {/* Name & Badge */}\n            <div className=\"text-center sm:text-left flex-1\">\n              <h1 className=\"text-2xl sm:text-3xl font-bold\">Alex Johnson</h1>\n              <p className=\"text-slate-400 mt-1\">Member since Jan 2024</p>\n              <motion.div\n                initial={{ opacity: 0, x: -20 }}\n                animate={{ opacity: 1, x: 0 }}\n                transition={{ delay: 0.3, duration: 0.4 }}\n                className=\"mt-3 inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-full px-4 py-1.5\"\n              >\n                <Crown className=\"w-4 h-4 text-amber-400\" />\n                <span className=\"text-sm font-semibold text-amber-300\">\n                  Gold Member\n                </span>\n              </motion.div>\n            </div>\n          </div>\n        </motion.div>\n\n        {/* Stats Grid */}\n        <motion.div\n          initial={{ opacity: 0, y: 20 }}\n          animate={{ opacity: 1, y: 0 }}\n          transition={{ duration: 0.5, delay: 0.15 }}\n          className=\"grid grid-cols-1 sm:grid-cols-3 gap-4\"\n        >\n          {stats.map((stat, i) => (\n            <motion.div\n              key={stat.label}\n              initial={{ opacity: 0, y: 20 }}\n              animate={{ opacity: 1, y: 0 }}\n              transition={{ duration: 0.4, delay: 0.2 + i * 0.1 }}\n              whileHover={{ scale: 1.03 }}\n              className=\"bg-slate-800/60 backdrop-blur-sm rounded-xl p-5 border border-slate-700/50 text-center\"\n            >\n              <stat.icon className=\"w-8 h-8 mx-auto text-cyan-400 mb-2\" />\n              <p className=\"text-2xl sm:text-3xl font-bold\">\n                {stat.value.toLocaleString()}\n              </p>\n              <p className=\"text-slate-400 text-sm mt-1\">{stat.label}</p>\n            </motion.div>\n          ))}\n        </motion.div>\n\n        {/* Achievements */}\n        <motion.div\n          initial={{ opacity: 0, y: 20 }}\n          animate={{ opacity: 1, y: 0 }}\n          transition={{ duration: 0.5, delay: 0.3 }}\n          className=\"bg-slate-800/60 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-slate-700/50\"\n        >\n          <h2 className=\"text-xl font-bold mb-4\">Recent Achievements</h2>\n          <div className=\"grid grid-cols-2 sm:grid-cols-4 gap-4\">\n            {achievements.map((ach, i) => (\n              <motion.div\n                key={ach.id}\n                initial={{ opacity: 0, scale: 0.8 }}\n                animate={{ opacity: 1, scale: 1 }}\n                transition={{ duration: 0.3, delay: 0.35 + i * 0.08 }}\n                whileHover={{ scale: 1.08, y: -4 }}\n                className=\"flex flex-col items-center gap-2 bg-slate-700/40 rounded-xl p-4 cursor-default\"\n              >\n                <div className=\"w-12 h-12 rounded-full bg-slate-600/50 flex items-center justify-center\">\n                  <ach.icon className={`w-6 h-6 ${ach.color}`} />\n                </div>\n                <span className=\"text-xs text-slate-300 text-center font-medium leading-tight\">\n                  {ach.title}\n                </span>\n              </motion.div>\n            ))}\n          </div>\n        </motion.div>\n      </div>\n    </div>\n  );\n}\n"}], "grading": {"expectations": [{"text": "Avatar is displayed with rounded corners and shadow", "passed": true, "evidence": "Line 53: 'w-24 h-24 sm:w-28 sm:h-28 rounded-full' with gradient border"}, {"text": "Stats are shown in a grid layout with large serif italic numbers", "passed": false, "evidence": "Line 102: 'text-2xl sm:text-3xl font-bold' \u2014 uses bold sans-serif, not serif italic"}, {"text": "Achievement list items have hover slide animation (whileHover: x: 10)", "passed": false, "evidence": "Line 125: 'whileHover={{ scale: 1.08, y: -4 }}' \u2014 uses scale+y lift, not horizontal slide"}, {"text": "Uses inverse-surface dark card for contrast section", "passed": false, "evidence": "Line 36: 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' \u2014 uses slate gradient, not inverse-surface token"}, {"text": "Labels use uppercase tracking-widest pattern", "passed": false, "evidence": "No uppercase tracking-widest labels found. Uses 'text-slate-400 text-sm' for labels instead"}, {"text": "Includes motion.div with page entrance animation", "passed": true, "evidence": "Lines 39-42: 'initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}'"}, {"text": "Uses bg-white/60 backdrop-blur-xl glass effect on list container", "passed": false, "evidence": "Line 99: 'bg-slate-800/60 backdrop-blur-sm' \u2014 uses slate dark glass, not Sanctuary white glass"}], "summary": {"passed": 2, "failed": 5, "total": 7, "pass_rate": 0.29}, "execution_metrics": {}, "timing": {}, "claims": [], "eval_feedback": {"suggestions": [], "overall": "Without-skill output uses dark slate theme, not Sanctuary styling."}}}, {"id": "eval-3-settings-page-with_skill", "prompt": "Design a settings page in Sanctuary style with sections for notifications, privacy, appearance themes, and account management. Each section should have an icon, title, and toggle/dropdown controls.", "eval_id": 3, "outputs": [{"name": "SettingsPage.tsx", "type": "text", "content": "import { useState } from \"react\";\nimport { motion } from \"motion/react\";\nimport {\n  Bell,\n  Shield,\n  Palette,\n  User,\n  ChevronRight,\n  Moon,\n  Sun,\n  Monitor,\n  Mail,\n  MessageSquare,\n  Heart,\n  LogOut,\n  Trash2,\n  Lock,\n  Eye,\n  EyeOff,\n  Smartphone,\n  Globe,\n  ChevronDown,\n} from \"lucide-react\";\n\n/* \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 Toggle Switch \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */\n\nfunction Toggle({\n  enabled,\n  onChange,\n}: {\n  enabled: boolean;\n  onChange: (v: boolean) => void;\n}) {\n  return (\n    <button\n      onClick={() => onChange(!enabled)}\n      className={`relative w-12 h-7 rounded-full transition-colors duration-300 ${\n        enabled ? \"bg-primary\" : \"bg-on-surface-variant/20\"\n      }`}\n    >\n      <motion.div\n        layout\n        transition={{ type: \"spring\", stiffness: 500, damping: 30 }}\n        className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-md ${\n          enabled ? \"left-6\" : \"left-1\"\n        }`}\n      />\n    </button>\n  );\n}\n\n/* \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 Dropdown \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */\n\nfunction Dropdown({\n  value,\n  options,\n  onChange,\n}: {\n  value: string;\n  options: { label: string; value: string }[];\n  onChange: (v: string) => void;\n}) {\n  return (\n    <div className=\"relative\">\n      <select\n        value={value}\n        onChange={(e) => onChange(e.target.value)}\n        className=\"appearance-none bg-white/60 backdrop-blur-sm border border-white rounded-2xl px-5 py-2.5 pr-10 text-sm font-sans text-on-surface cursor-pointer hover:bg-white/80 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30 shadow-sm\"\n      >\n        {options.map((opt) => (\n          <option key={opt.value} value={opt.value}>\n            {opt.label}\n          </option>\n        ))}\n      </select>\n      <ChevronDown className=\"absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant pointer-events-none\" />\n    </div>\n  );\n}\n\n/* \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 Section Card \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */\n\nfunction SettingsSection({\n  icon: Icon,\n  title,\n  glowColor,\n  children,\n  delay = 0,\n}: {\n  icon: React.ElementType;\n  title: string;\n  glowColor: string;\n  children: React.ReactNode;\n  delay?: number;\n}) {\n  return (\n    <motion.div\n      initial={{ opacity: 0, y: 24, scale: 0.97 }}\n      animate={{ opacity: 1, y: 0, scale: 1 }}\n      transition={{ delay, duration: 0.5, ease: \"easeOut\" }}\n      whileHover={{ y: -4 }}\n      className=\"relative group\"\n    >\n      {/* Decorative glow */}\n      <div\n        className={`absolute top-0 right-0 w-48 h-48 ${glowColor} rounded-full blur-3xl -mr-16 -mt-16 group-hover:opacity-100 opacity-60 transition-opacity duration-700`}\n      />\n\n      <div className=\"relative bg-surface-container-lowest rounded-[2rem] sm:rounded-[2.5rem] p-8 sm:p-10 border border-white shadow-sm overflow-hidden\">\n        {/* Section header */}\n        <div className=\"flex items-center gap-4 mb-8\">\n          <div className=\"w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center\">\n            <Icon className=\"w-5 h-5 text-primary\" />\n          </div>\n          <h2 className=\"font-serif italic text-2xl text-on-surface\">{title}</h2>\n        </div>\n\n        <div className=\"space-y-1\">{children}</div>\n      </div>\n    </motion.div>\n  );\n}\n\n/* \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 Setting Row \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */\n\nfunction SettingRow({\n  icon: Icon,\n  label,\n  description,\n  children,\n}: {\n  icon: React.ElementType;\n  label: string;\n  description?: string;\n  children: React.ReactNode;\n}) {\n  return (\n    <motion.div\n      whileHover={{ x: 4 }}\n      className=\"flex items-center justify-between gap-4 py-4 px-4 -mx-4 rounded-2xl hover:bg-surface-container-low/60 transition-colors\"\n    >\n      <div className=\"flex items-center gap-4 min-w-0\">\n        <div className=\"w-9 h-9 rounded-xl bg-surface-container-low flex items-center justify-center shrink-0\">\n          <Icon className=\"w-4 h-4 text-on-surface-variant\" />\n        </div>\n        <div className=\"min-w-0\">\n          <p className=\"text-sm font-semibold text-on-surface\">{label}</p>\n          {description && (\n            <p className=\"text-xs text-on-surface-variant mt-0.5\">\n              {description}\n            </p>\n          )}\n        </div>\n      </div>\n      {children}\n    </motion.div>\n  );\n}\n\n/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 MAIN PAGE \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */\n\nexport default function SettingsPage() {\n  /* \u2500\u2500 Notification state \u2500\u2500 */\n  const [pushEnabled, setPushEnabled] = useState(true);\n  const [emailDigest, setEmailDigest] = useState(true);\n  const [wellnessReminders, setWellnessReminders] = useState(true);\n  const [communityMessages, setCommunityMessages] = useState(false);\n\n  /* \u2500\u2500 Privacy state \u2500\u2500 */\n  const [profileVisible, setProfileVisible] = useState(true);\n  const [activityVisible, setActivityVisible] = useState(false);\n  const [dataCollection, setDataCollection] = useState(true);\n\n  /* \u2500\u2500 Appearance state \u2500\u2500 */\n  const [theme, setTheme] = useState(\"system\");\n  const [accentColor, setAccentColor] = useState(\"blue\");\n  const [reduceMotion, setReduceMotion] = useState(false);\n\n  /* \u2500\u2500 Account state \u2500\u2500 */\n  const [twoFactor, setTwoFactor] = useState(false);\n\n  const themeOptions = [\n    { label: \"System Default\", value: \"system\" },\n    { label: \"Light\", value: \"light\" },\n    { label: \"Dark\", value: \"dark\" },\n  ];\n\n  const accentOptions = [\n    { label: \"Blue\", value: \"blue\" },\n    { label: \"Teal\", value: \"teal\" },\n    { label: \"Lime\", value: \"lime\" },\n    { label: \"Violet\", value: \"violet\" },\n  ];\n\n  return (\n    <div className=\"min-h-screen bg-surface\">\n      {/* \u2500\u2500 Page background glows \u2500\u2500 */}\n      <div className=\"fixed inset-0 pointer-events-none overflow-hidden\">\n        <div className=\"absolute -top-40 -right-40 w-[500px] h-[500px] bg-secondary-fixed/8 rounded-full blur-[120px]\" />\n        <div className=\"absolute -bottom-60 -left-40 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px]\" />\n      </div>\n\n      <div className=\"relative max-w-2xl mx-auto px-5 sm:px-8 py-12 sm:py-16\">\n        {/* \u2500\u2500 Page Header \u2500\u2500 */}\n        <motion.div\n          initial={{ opacity: 0, y: 20 }}\n          animate={{ opacity: 1, y: 0 }}\n          transition={{ duration: 0.5 }}\n          className=\"mb-12\"\n        >\n          <p className=\"text-[10px] font-bold uppercase tracking-[0.25em] text-primary mb-3\">\n            Preferences\n          </p>\n          <h1 className=\"font-serif italic text-4xl sm:text-5xl text-on-surface leading-tight\">\n            Settings\n          </h1>\n          <p className=\"text-sm text-on-surface-variant mt-3 leading-relaxed max-w-md\">\n            Customize your sanctuary experience \u2014 notifications, privacy,\n            appearance, and account controls.\n          </p>\n        </motion.div>\n\n        {/* \u2500\u2500 Sections Stack \u2500\u2500 */}\n        <div className=\"space-y-8\">\n          {/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 NOTIFICATIONS \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */}\n          <SettingsSection\n            icon={Bell}\n            title=\"Notifications\"\n            glowColor=\"bg-primary/10\"\n            delay={0.05}\n          >\n            <SettingRow\n              icon={Smartphone}\n              label=\"Push Notifications\"\n              description=\"Receive alerts on your device\"\n            >\n              <Toggle enabled={pushEnabled} onChange={setPushEnabled} />\n            </SettingRow>\n\n            <SettingRow\n              icon={Mail}\n              label=\"Email Digest\"\n              description=\"Daily summary of your activity\"\n            >\n              <Toggle enabled={emailDigest} onChange={setEmailDigest} />\n            </SettingRow>\n\n            <SettingRow\n              icon={Heart}\n              label=\"Wellness Reminders\"\n              description=\"Meditation & movement prompts\"\n            >\n              <Toggle\n                enabled={wellnessReminders}\n                onChange={setWellnessReminders}\n              />\n            </SettingRow>\n\n            <SettingRow\n              icon={MessageSquare}\n              label=\"Community Messages\"\n              description=\"Updates from your circles\"\n            >\n              <Toggle\n                enabled={communityMessages}\n                onChange={setCommunityMessages}\n              />\n            </SettingRow>\n          </SettingsSection>\n\n          {/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 PRIVACY \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */}\n          <SettingsSection\n            icon={Shield}\n            title=\"Privacy\"\n            glowColor=\"bg-lime-400/10\"\n            delay={0.12}\n          >\n            <SettingRow\n              icon={User}\n              label=\"Profile Visibility\"\n              description=\"Allow others to view your profile\"\n            >\n              <Toggle enabled={profileVisible} onChange={setProfileVisible} />\n            </SettingRow>\n\n            <SettingRow\n              icon={activityVisible ? Eye : EyeOff}\n              label=\"Activity Sharing\"\n              description=\"Show your activity in community feed\"\n            >\n              <Toggle\n                enabled={activityVisible}\n                onChange={setActivityVisible}\n              />\n            </SettingRow>\n\n            <SettingRow\n              icon={Globe}\n              label=\"Data Collection\"\n              description=\"Help improve with usage analytics\"\n            >\n              <Toggle\n                enabled={dataCollection}\n                onChange={setDataCollection}\n              />\n            </SettingRow>\n          </SettingsSection>\n\n          {/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 APPEARANCE \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */}\n          <SettingsSection\n            icon={Palette}\n            title=\"Appearance\"\n            glowColor=\"bg-secondary-fixed/15\"\n            delay={0.19}\n          >\n            <SettingRow\n              icon={theme === \"dark\" ? Moon : theme === \"light\" ? Sun : Monitor}\n              label=\"Theme\"\n              description=\"Choose your preferred color scheme\"\n            >\n              <Dropdown\n                value={theme}\n                options={themeOptions}\n                onChange={setTheme}\n              />\n            </SettingRow>\n\n            <SettingRow\n              icon={Palette}\n              label=\"Accent Color\"\n              description=\"Personalize your interface color\"\n            >\n              <Dropdown\n                value={accentColor}\n                options={accentOptions}\n                onChange={setAccentColor}\n              />\n            </SettingRow>\n\n            <SettingRow\n              icon={Monitor}\n              label=\"Reduce Motion\"\n              description=\"Minimize animations throughout the app\"\n            >\n              <Toggle enabled={reduceMotion} onChange={setReduceMotion} />\n            </SettingRow>\n          </SettingsSection>\n\n          {/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 ACCOUNT \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */}\n          <SettingsSection\n            icon={User}\n            title=\"Account\"\n            glowColor=\"bg-orange-400/10\"\n            delay={0.26}\n          >\n            <SettingRow\n              icon={Lock}\n              label=\"Two-Factor Authentication\"\n              description=\"Add an extra layer of security\"\n            >\n              <Toggle enabled={twoFactor} onChange={setTwoFactor} />\n            </SettingRow>\n\n            <SettingRow\n              icon={ChevronRight}\n              label=\"Change Password\"\n              description=\"Update your account credentials\"\n            >\n              <button className=\"text-primary text-sm font-semibold hover:underline\">\n                Update\n              </button>\n            </SettingRow>\n\n            <SettingRow\n              icon={ChevronRight}\n              label=\"Connected Accounts\"\n              description=\"Manage linked social accounts\"\n            >\n              <button className=\"text-primary text-sm font-semibold hover:underline\">\n                Manage\n              </button>\n            </SettingRow>\n\n            <div className=\"pt-4 mt-2 border-t border-surface-container-low\">\n              <motion.button\n                whileHover={{ x: 4 }}\n                className=\"flex items-center gap-3 w-full py-3 px-4 -mx-4 rounded-2xl hover:bg-red-50/60 transition-colors group\"\n              >\n                <div className=\"w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center\">\n                  <LogOut className=\"w-4 h-4 text-red-500\" />\n                </div>\n                <span className=\"text-sm font-semibold text-red-500\">\n                  Sign Out\n                </span>\n              </motion.button>\n\n              <motion.button\n                whileHover={{ x: 4 }}\n                className=\"flex items-center gap-3 w-full py-3 px-4 -mx-4 rounded-2xl hover:bg-red-50/60 transition-colors group\"\n              >\n                <div className=\"w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center\">\n                  <Trash2 className=\"w-4 h-4 text-red-500\" />\n                </div>\n                <div>\n                  <span className=\"text-sm font-semibold text-red-500\">\n                    Delete Account\n                  </span>\n                  <p className=\"text-xs text-on-surface-variant mt-0.5\">\n                    Permanently remove your data\n                  </p>\n                </div>\n              </motion.button>\n            </div>\n          </SettingsSection>\n        </div>\n\n        {/* \u2500\u2500 Footer \u2500\u2500 */}\n        <motion.div\n          initial={{ opacity: 0 }}\n          animate={{ opacity: 1 }}\n          transition={{ delay: 0.4, duration: 0.6 }}\n          className=\"mt-12 text-center\"\n        >\n          <p className=\"text-[10px] font-bold uppercase tracking-[0.25em] text-on-surface-variant/50\">\n            Sanctuary v2.4.0\n          </p>\n        </motion.div>\n      </div>\n    </div>\n  );\n}\n"}], "grading": {"expectations": [{"text": "Settings grouped in rounded containers with large radius", "passed": true, "evidence": "Line 109: 'rounded-[2rem] sm:rounded-[2.5rem]' on each SettingsSection"}, {"text": "Each setting has an icon from lucide-react in a colored rounded box", "passed": true, "evidence": "Lines 143-144: 'w-9 h-9 rounded-xl bg-surface-container-low flex items-center justify-center' with icon inside each SettingRow"}, {"text": "Section titles use uppercase tracking-widest labels", "passed": true, "evidence": "Line 211: 'text-[10px] font-bold uppercase tracking-[0.25em] text-primary' for page label; Line 424: 'text-[10px] font-bold uppercase tracking-[0.25em]' for footer"}, {"text": "Cards use border border-white subtle edge", "passed": true, "evidence": "Line 109: 'border border-white shadow-sm' on SettingsSection cards"}, {"text": "Toggle/switch controls are styled consistently", "passed": true, "evidence": "Lines 27-49: Reusable Toggle component with 'w-12 h-7 rounded-full' and spring-animated knob"}, {"text": "Page has motion entrance animation", "passed": true, "evidence": "Lines 97-100: 'initial={{ opacity: 0, y: 24, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}' on each section"}, {"text": "Uses surface-container-lowest for card backgrounds", "passed": true, "evidence": "Line 109: 'bg-surface-container-lowest' on all section cards"}], "summary": {"passed": 7, "failed": 0, "total": 7, "pass_rate": 1.0}, "execution_metrics": {}, "timing": {}, "claims": [], "eval_feedback": {"suggestions": [], "overall": "With-skill output is a faithful Sanctuary settings page implementation."}}}, {"id": "eval-3-settings-page-without_skill", "prompt": "Design a settings page in Sanctuary style with sections for notifications, privacy, appearance themes, and account management. Each section should have an icon, title, and toggle/dropdown controls.", "eval_id": 3, "outputs": [{"name": "SettingsPage.tsx", "type": "text", "content": "/**\n * @license\n * SPDX-License-Identifier: Apache-2.0\n */\n\nimport { useState } from \"react\";\nimport { motion, AnimatePresence } from \"motion/react\";\nimport {\n  Bell,\n  BellOff,\n  Shield,\n  Eye,\n  EyeOff,\n  Palette,\n  User,\n  Moon,\n  Sun,\n  Monitor,\n  ChevronRight,\n  ChevronDown,\n  LogOut,\n  Trash2,\n  Lock,\n  Globe,\n  Mail,\n  Smartphone,\n  Volume2,\n  Vibrate,\n  Clock,\n  Sparkles,\n  Type,\n  Languages,\n  HelpCircle,\n  Info,\n  Camera,\n  KeyRound,\n  Download,\n  Loader2,\n} from \"lucide-react\";\n\ninterface ToggleProps {\n  enabled: boolean;\n  onChange: (value: boolean) => void;\n  label: string;\n  description?: string;\n  icon: React.ReactNode;\n  color: string;\n  bg: string;\n}\n\nconst Toggle = ({ enabled, onChange, label, description, icon, color, bg }: ToggleProps) => (\n  <motion.div\n    whileHover={{ scale: 1.01 }}\n    className=\"flex items-center justify-between py-4 px-2 group\"\n  >\n    <div className=\"flex items-center gap-4 flex-1 min-w-0\">\n      <div className={`p-2.5 rounded-2xl shadow-sm shrink-0 transition-all duration-300 group-hover:scale-110 ${bg} ${color}`}>\n        {icon}\n      </div>\n      <div className=\"min-w-0\">\n        <span className=\"font-bold text-on-surface block text-sm sm:text-base\">{label}</span>\n        {description && (\n          <span className=\"text-xs text-on-surface-variant mt-0.5 block truncate\">{description}</span>\n        )}\n      </div>\n    </div>\n    <button\n      onClick={() => onChange(!enabled)}\n      className={`relative w-12 h-7 rounded-full transition-all duration-300 shrink-0 ${\n        enabled ? \"bg-primary shadow-lg shadow-primary/20\" : \"bg-slate-200\"\n      }`}\n    >\n      <motion.div\n        layout\n        transition={{ type: \"spring\", stiffness: 500, damping: 30 }}\n        className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow-md ${\n          enabled ? \"left-[22px]\" : \"left-0.5\"\n        }`}\n      />\n    </button>\n  </motion.div>\n);\n\ninterface DropdownOption {\n  value: string;\n  label: string;\n  icon?: React.ReactNode;\n}\n\ninterface DropdownProps {\n  value: string;\n  onChange: (value: string) => void;\n  options: DropdownOption[];\n  label: string;\n  description?: string;\n  icon: React.ReactNode;\n  color: string;\n  bg: string;\n}\n\nconst Dropdown = ({ value, onChange, options, label, description, icon, color, bg }: DropdownProps) => {\n  const [isOpen, setIsOpen] = useState(false);\n  const selected = options.find((o) => o.value === value);\n\n  return (\n    <div className=\"py-4 px-2\">\n      <div className=\"flex items-center gap-4 mb-3\">\n        <div className={`p-2.5 rounded-2xl shadow-sm ${bg} ${color}`}>{icon}</div>\n        <div>\n          <span className=\"font-bold text-on-surface block text-sm sm:text-base\">{label}</span>\n          {description && <span className=\"text-xs text-on-surface-variant mt-0.5 block\">{description}</span>}\n        </div>\n      </div>\n      <div className=\"relative ml-0 sm:ml-14\">\n        <button\n          onClick={() => setIsOpen(!isOpen)}\n          className=\"w-full flex items-center justify-between px-5 py-3.5 bg-white/80 rounded-2xl border border-black/5 hover:border-primary/20 transition-all text-sm font-medium text-on-surface\"\n        >\n          <div className=\"flex items-center gap-3\">\n            {selected?.icon}\n            <span>{selected?.label}</span>\n          </div>\n          <ChevronDown\n            size={16}\n            className={`text-on-surface-variant transition-transform duration-300 ${isOpen ? \"rotate-180\" : \"\"}`}\n          />\n        </button>\n        <AnimatePresence>\n          {isOpen && (\n            <motion.div\n              initial={{ opacity: 0, y: -8, scale: 0.96 }}\n              animate={{ opacity: 1, y: 0, scale: 1 }}\n              exit={{ opacity: 0, y: -8, scale: 0.96 }}\n              transition={{ duration: 0.2 }}\n              className=\"absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-black/5 shadow-xl shadow-black/5 overflow-hidden z-20\"\n            >\n              {options.map((option) => (\n                <button\n                  key={option.value}\n                  onClick={() => {\n                    onChange(option.value);\n                    setIsOpen(false);\n                  }}\n                  className={`w-full flex items-center gap-3 px-5 py-3.5 text-sm hover:bg-primary/5 transition-colors ${\n                    option.value === value ? \"bg-primary/5 text-primary font-bold\" : \"text-on-surface\"\n                  }`}\n                >\n                  {option.icon}\n                  <span>{option.label}</span>\n                  {option.value === value && (\n                    <motion.div\n                      layoutId=\"dropdown-check\"\n                      className=\"ml-auto w-2 h-2 bg-primary rounded-full\"\n                    />\n                  )}\n                </button>\n              ))}\n            </motion.div>\n          )}\n        </AnimatePresence>\n      </div>\n    </div>\n  );\n};\n\ninterface SectionCardProps {\n  icon: React.ReactNode;\n  title: string;\n  subtitle: string;\n  iconBg: string;\n  iconColor: string;\n  children: React.ReactNode;\n  delay?: number;\n}\n\nconst SectionCard = ({ icon, title, subtitle, iconBg, iconColor, children, delay = 0 }: SectionCardProps) => (\n  <motion.div\n    initial={{ opacity: 0, y: 24 }}\n    animate={{ opacity: 1, y: 0 }}\n    transition={{ delay, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}\n    className=\"bg-surface-container-lowest rounded-[2.5rem] sm:rounded-[3rem] border border-white shadow-sm overflow-hidden vibrant-shadow\"\n  >\n    <div className=\"p-6 sm:p-8 border-b border-black/5\">\n      <div className=\"flex items-center gap-4\">\n        <motion.div\n          whileHover={{ rotate: [0, -10, 10, 0] }}\n          transition={{ duration: 0.5 }}\n          className={`p-3.5 rounded-2xl shadow-sm ${iconBg} ${iconColor}`}\n        >\n          {icon}\n        </motion.div>\n        <div>\n          <h2 className=\"font-serif text-2xl sm:text-3xl italic text-on-surface\">{title}</h2>\n          <p className=\"text-xs text-on-surface-variant mt-0.5\">{subtitle}</p>\n        </div>\n      </div>\n    </div>\n    <div className=\"divide-y divide-black/5 px-4 sm:px-6\">{children}</div>\n  </motion.div>\n);\n\nexport default function SettingsPage() {\n  const [notifications, setNotifications] = useState({\n    pushEnabled: true,\n    emailEnabled: true,\n    ritualReminders: true,\n    communityUpdates: false,\n    aiInsights: true,\n    soundEnabled: true,\n    vibrationEnabled: true,\n    quietHours: true,\n  });\n\n  const [privacy, setPrivacy] = useState({\n    profileVisible: true,\n    activityVisible: false,\n    dataCollection: true,\n    analyticsEnabled: false,\n    twoFactorEnabled: true,\n  });\n\n  const [appearance, setAppearance] = useState({\n    theme: \"system\",\n    fontSize: \"medium\",\n    language: \"en\",\n  });\n\n  const themeOptions: DropdownOption[] = [\n    { value: \"light\", label: \"Light\", icon: <Sun size={16} className=\"text-amber-500\" /> },\n    { value: \"dark\", label: \"Dark\", icon: <Moon size={16} className=\"text-indigo-500\" /> },\n    { value: \"system\", label: \"System\", icon: <Monitor size={16} className=\"text-slate-500\" /> },\n  ];\n\n  const fontSizeOptions: DropdownOption[] = [\n    { value: \"small\", label: \"Small\" },\n    { value: \"medium\", label: \"Medium\" },\n    { value: \"large\", label: \"Large\" },\n    { value: \"extra-large\", label: \"Extra Large\" },\n  ];\n\n  const languageOptions: DropdownOption[] = [\n    { value: \"en\", label: \"English\" },\n    { value: \"es\", label: \"Espa\u00f1ol\" },\n    { value: \"fr\", label: \"Fran\u00e7ais\" },\n    { value: \"de\", label: \"Deutsch\" },\n    { value: \"ja\", label: \"\u65e5\u672c\u8a9e\" },\n  ];\n\n  return (\n    <motion.div\n      initial={{ opacity: 0 }}\n      animate={{ opacity: 1 }}\n      exit={{ opacity: 0 }}\n      className=\"space-y-8 sm:space-y-12 pb-24 max-w-4xl mx-auto\"\n    >\n      {/* Header */}\n      <motion.section\n        initial={{ opacity: 0, y: 20 }}\n        animate={{ opacity: 1, y: 0 }}\n        transition={{ duration: 0.6 }}\n        className=\"space-y-3 pt-4\"\n      >\n        <h1 className=\"text-4xl sm:text-5xl lg:text-6xl font-serif italic text-on-surface tracking-tight\">\n          Sanctuary Settings\n        </h1>\n        <p className=\"text-on-surface-variant text-base sm:text-lg max-w-2xl leading-relaxed\">\n          Customize your sanctuary experience. Every detail, tuned to your rhythm.\n        </p>\n      </motion.section>\n\n      {/* Notifications Section */}\n      <SectionCard\n        icon={<Bell size={26} />}\n        title=\"Notifications\"\n        subtitle=\"How your sanctuary speaks to you\"\n        iconBg=\"bg-orange-50\"\n        iconColor=\"text-orange-500\"\n        delay={0.1}\n      >\n        <Toggle\n          enabled={notifications.pushEnabled}\n          onChange={(v) => setNotifications((s) => ({ ...s, pushEnabled: v }))}\n          label=\"Push Notifications\"\n          description=\"Receive alerts on your device\"\n          icon={<Smartphone size={18} />}\n          color=\"text-blue-500\"\n          bg=\"bg-blue-50\"\n        />\n        <Toggle\n          enabled={notifications.emailEnabled}\n          onChange={(v) => setNotifications((s) => ({ ...s, emailEnabled: v }))}\n          label=\"Email Digest\"\n          description=\"Weekly summary to your inbox\"\n          icon={<Mail size={18} />}\n          color=\"text-green-500\"\n          bg=\"bg-green-50\"\n        />\n        <Toggle\n          enabled={notifications.ritualReminders}\n          onChange={(v) => setNotifications((s) => ({ ...s, ritualReminders: v }))}\n          label=\"Ritual Reminders\"\n          description=\"Gentle nudges for daily habits\"\n          icon={<Clock size={18} />}\n          color=\"text-purple-500\"\n          bg=\"bg-purple-50\"\n        />\n        <Toggle\n          enabled={notifications.communityUpdates}\n          onChange={(v) => setNotifications((s) => ({ ...s, communityUpdates: v }))}\n          label=\"Community Updates\"\n          description=\"Messages from your sanctuary circle\"\n          icon={<Globe size={18} />}\n          color=\"text-cyan-500\"\n          bg=\"bg-cyan-50\"\n        />\n        <Toggle\n          enabled={notifications.aiInsights}\n          onChange={(v) => setNotifications((s) => ({ ...s, aiInsights: v }))}\n          label=\"AI Insights\"\n          description=\"Personalized wellness suggestions\"\n          icon={<Sparkles size={18} />}\n          color=\"text-amber-500\"\n          bg=\"bg-amber-50\"\n        />\n        <Toggle\n          enabled={notifications.soundEnabled}\n          onChange={(v) => setNotifications((s) => ({ ...s, soundEnabled: v }))}\n          label=\"Sound\"\n          description=\"Notification sounds and tones\"\n          icon={<Volume2 size={18} />}\n          color=\"text-slate-500\"\n          bg=\"bg-slate-50\"\n        />\n        <Toggle\n          enabled={notifications.vibrationEnabled}\n          onChange={(v) => setNotifications((s) => ({ ...s, vibrationEnabled: v }))}\n          label=\"Haptic Feedback\"\n          description=\"Subtle vibrations on interaction\"\n          icon={<Vibrate size={18} />}\n          color=\"text-pink-500\"\n          bg=\"bg-pink-50\"\n        />\n        <Toggle\n          enabled={notifications.quietHours}\n          onChange={(v) => setNotifications((s) => ({ ...s, quietHours: v }))}\n          label=\"Quiet Hours\"\n          description=\"Silence notifications from 10 PM to 7 AM\"\n          icon={<Moon size={18} />}\n          color=\"text-indigo-500\"\n          bg=\"bg-indigo-50\"\n        />\n      </SectionCard>\n\n      {/* Privacy Section */}\n      <SectionCard\n        icon={<Shield size={26} />}\n        title=\"Privacy\"\n        subtitle=\"Your data, your sovereignty\"\n        iconBg=\"bg-green-50\"\n        iconColor=\"text-green-500\"\n        delay={0.2}\n      >\n        <Toggle\n          enabled={privacy.profileVisible}\n          onChange={(v) => setPrivacy((s) => ({ ...s, profileVisible: v }))}\n          label=\"Profile Visibility\"\n          description=\"Allow others to discover your profile\"\n          icon={privacy.profileVisible ? <Eye size={18} /> : <EyeOff size={18} />}\n          color=\"text-blue-500\"\n          bg=\"bg-blue-50\"\n        />\n        <Toggle\n          enabled={privacy.activityVisible}\n          onChange={(v) => setPrivacy((s) => ({ ...s, activityVisible: v }))}\n          label=\"Activity Sharing\"\n          description=\"Share wellness milestones with community\"\n          icon={<Globe size={18} />}\n          color=\"text-cyan-500\"\n          bg=\"bg-cyan-50\"\n        />\n        <Toggle\n          enabled={privacy.dataCollection}\n          onChange={(v) => setPrivacy((s) => ({ ...s, dataCollection: v }))}\n          label=\"Personalized Experience\"\n          description=\"Allow data to improve your recommendations\"\n          icon={<Sparkles size={18} />}\n          color=\"text-purple-500\"\n          bg=\"bg-purple-50\"\n        />\n        <Toggle\n          enabled={privacy.analyticsEnabled}\n          onChange={(v) => setPrivacy((s) => ({ ...s, analyticsEnabled: v }))}\n          label=\"Usage Analytics\"\n          description=\"Anonymous data to improve the app\"\n          icon={<Info size={18} />}\n          color=\"text-slate-500\"\n          bg=\"bg-slate-50\"\n        />\n        <Toggle\n          enabled={privacy.twoFactorEnabled}\n          onChange={(v) => setPrivacy((s) => ({ ...s, twoFactorEnabled: v }))}\n          label=\"Two-Factor Authentication\"\n          description=\"Extra security for your sanctuary\"\n          icon={<KeyRound size={18} />}\n          color=\"text-red-500\"\n          bg=\"bg-red-50\"\n        />\n        <div className=\"py-4 px-2\">\n          <button className=\"w-full flex items-center justify-between py-3 px-1 hover:bg-primary/5 rounded-2xl transition-all group\">\n            <div className=\"flex items-center gap-4\">\n              <div className=\"p-2.5 rounded-2xl shadow-sm bg-amber-50 text-amber-500\">\n                <Download size={18} />\n              </div>\n              <div>\n                <span className=\"font-bold text-on-surface block text-sm sm:text-base\">Download My Data</span>\n                <span className=\"text-xs text-on-surface-variant\">Export a copy of your sanctuary data</span>\n              </div>\n            </div>\n            <ChevronRight size={18} className=\"text-on-surface-variant group-hover:translate-x-1 transition-transform\" />\n          </button>\n        </div>\n      </SectionCard>\n\n      {/* Appearance Section */}\n      <SectionCard\n        icon={<Palette size={26} />}\n        title=\"Appearance\"\n        subtitle=\"The aesthetics of your sanctuary\"\n        iconBg=\"bg-violet-50\"\n        iconColor=\"text-violet-500\"\n        delay={0.3}\n      >\n        <Dropdown\n          value={appearance.theme}\n          onChange={(v) => setAppearance((s) => ({ ...s, theme: v }))}\n          options={themeOptions}\n          label=\"Theme\"\n          description=\"Choose your visual sanctuary\"\n          icon={<Palette size={18} />}\n          color=\"text-violet-500\"\n          bg=\"bg-violet-50\"\n        />\n        <Dropdown\n          value={appearance.fontSize}\n          onChange={(v) => setAppearance((s) => ({ ...s, fontSize: v }))}\n          options={fontSizeOptions}\n          label=\"Font Size\"\n          description=\"Adjust text readability\"\n          icon={<Type size={18} />}\n          color=\"text-teal-500\"\n          bg=\"bg-teal-50\"\n        />\n        <Dropdown\n          value={appearance.language}\n          onChange={(v) => setAppearance((s) => ({ ...s, language: v }))}\n          options={languageOptions}\n          label=\"Language\"\n          description=\"Your preferred language\"\n          icon={<Languages size={18} />}\n          color=\"text-blue-500\"\n          bg=\"bg-blue-50\"\n        />\n      </SectionCard>\n\n      {/* Account Management Section */}\n      <SectionCard\n        icon={<User size={26} />}\n        title=\"Account\"\n        subtitle=\"Your sanctuary identity\"\n        iconBg=\"bg-slate-100\"\n        iconColor=\"text-slate-600\"\n        delay={0.4}\n      >\n        <div className=\"py-4 px-2 space-y-1\">\n          {/* Profile Photo */}\n          <motion.button\n            whileHover={{ x: 6 }}\n            className=\"w-full flex items-center justify-between py-3.5 px-1 hover:bg-primary/5 rounded-2xl transition-all group\"\n          >\n            <div className=\"flex items-center gap-4\">\n              <div className=\"p-2.5 rounded-2xl shadow-sm bg-blue-50 text-blue-500\">\n                <Camera size={18} />\n              </div>\n              <div>\n                <span className=\"font-bold text-on-surface block text-sm sm:text-base\">Profile Photo</span>\n                <span className=\"text-xs text-on-surface-variant\">Update your sanctuary avatar</span>\n              </div>\n            </div>\n            <ChevronRight size={18} className=\"text-on-surface-variant group-hover:translate-x-1 transition-transform\" />\n          </motion.button>\n\n          {/* Change Password */}\n          <motion.button\n            whileHover={{ x: 6 }}\n            className=\"w-full flex items-center justify-between py-3.5 px-1 hover:bg-primary/5 rounded-2xl transition-all group\"\n          >\n            <div className=\"flex items-center gap-4\">\n              <div className=\"p-2.5 rounded-2xl shadow-sm bg-amber-50 text-amber-500\">\n                <Lock size={18} />\n              </div>\n              <div>\n                <span className=\"font-bold text-on-surface block text-sm sm:text-base\">Change Password</span>\n                <span className=\"text-xs text-on-surface-variant\">Update your sanctuary credentials</span>\n              </div>\n            </div>\n            <ChevronRight size={18} className=\"text-on-surface-variant group-hover:translate-x-1 transition-transform\" />\n          </motion.button>\n\n          {/* Help & Support */}\n          <motion.button\n            whileHover={{ x: 6 }}\n            className=\"w-full flex items-center justify-between py-3.5 px-1 hover:bg-primary/5 rounded-2xl transition-all group\"\n          >\n            <div className=\"flex items-center gap-4\">\n              <div className=\"p-2.5 rounded-2xl shadow-sm bg-green-50 text-green-500\">\n                <HelpCircle size={18} />\n              </div>\n              <div>\n                <span className=\"font-bold text-on-surface block text-sm sm:text-base\">Help & Support</span>\n                <span className=\"text-xs text-on-surface-variant\">FAQs, guides, and contact</span>\n              </div>\n            </div>\n            <ChevronRight size={18} className=\"text-on-surface-variant group-hover:translate-x-1 transition-transform\" />\n          </motion.button>\n\n          {/* About */}\n          <motion.button\n            whileHover={{ x: 6 }}\n            className=\"w-full flex items-center justify-between py-3.5 px-1 hover:bg-primary/5 rounded-2xl transition-all group\"\n          >\n            <div className=\"flex items-center gap-4\">\n              <div className=\"p-2.5 rounded-2xl shadow-sm bg-slate-50 text-slate-500\">\n                <Info size={18} />\n              </div>\n              <div>\n                <span className=\"font-bold text-on-surface block text-sm sm:text-base\">About Sanctuary</span>\n                <span className=\"text-xs text-on-surface-variant\">Version, licenses, and credits</span>\n              </div>\n            </div>\n            <ChevronRight size={18} className=\"text-on-surface-variant group-hover:translate-x-1 transition-transform\" />\n          </motion.button>\n        </div>\n\n        {/* Danger Zone */}\n        <div className=\"p-4 sm:p-6 bg-red-50/50 border-t border-red-100\">\n          <div className=\"space-y-4\">\n            <div className=\"flex items-center gap-3\">\n              <div className=\"p-2 rounded-xl bg-red-100 text-red-500\">\n                <Loader2 size={16} />\n              </div>\n              <span className=\"text-xs font-bold uppercase tracking-[0.2em] text-red-400\">Danger Zone</span>\n            </div>\n            <div className=\"flex flex-col sm:flex-row gap-3\">\n              <motion.button\n                whileHover={{ scale: 1.02 }}\n                whileTap={{ scale: 0.98 }}\n                className=\"flex-1 py-3.5 px-6 rounded-2xl bg-white border border-red-200 text-red-600 font-bold text-sm flex items-center justify-center gap-2 hover:bg-red-50 transition-all\"\n              >\n                <LogOut size={16} />\n                Sign Out\n              </motion.button>\n              <motion.button\n                whileHover={{ scale: 1.02 }}\n                whileTap={{ scale: 0.98 }}\n                className=\"flex-1 py-3.5 px-6 rounded-2xl bg-red-600 text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-red-700 transition-all shadow-lg shadow-red-600/20\"\n              >\n                <Trash2 size={16} />\n                Delete Account\n              </motion.button>\n            </div>\n            <p className=\"text-[10px] text-red-400 leading-relaxed\">\n              Deleting your account is permanent and will remove all your sanctuary data, rituals, and community connections.\n            </p>\n          </div>\n        </div>\n      </SectionCard>\n\n      {/* Footer */}\n      <motion.div\n        initial={{ opacity: 0 }}\n        animate={{ opacity: 1 }}\n        transition={{ delay: 0.6 }}\n        className=\"text-center pt-4 pb-8\"\n      >\n        <p className=\"text-[10px] text-on-surface-variant/40 uppercase tracking-[0.2em] font-bold\">\n          Sanctuary v2.4.0 &middot; Secure & Private\n        </p>\n      </motion.div>\n    </motion.div>\n  );\n}\n"}], "grading": {"expectations": [{"text": "Settings grouped in rounded containers with large radius", "passed": true, "evidence": "Line 181: 'rounded-[2.5rem] sm:rounded-[3rem]' on SectionCard"}, {"text": "Each setting has an icon from lucide-react in a colored rounded box", "passed": true, "evidence": "Line 57: 'p-2.5 rounded-2xl' with icon inside each Toggle component"}, {"text": "Section titles use uppercase tracking-widest labels", "passed": true, "evidence": "Line 551: 'text-xs font-bold uppercase tracking-[0.2em]' for Danger Zone label"}, {"text": "Cards use border border-white subtle edge", "passed": true, "evidence": "Line 181: 'border border-white shadow-sm' on SectionCard"}, {"text": "Toggle/switch controls are styled consistently", "passed": true, "evidence": "Lines 51-82: Reusable Toggle component with consistent spring animation"}, {"text": "Page has motion entrance animation", "passed": true, "evidence": "Lines 250-253: 'initial={{ opacity: 0 }} animate={{ opacity: 1 }}' on page; Lines 178-180: staggered section animations"}, {"text": "Uses surface-container-lowest for card backgrounds", "passed": true, "evidence": "Line 181: 'bg-surface-container-lowest' on SectionCard"}], "summary": {"passed": 7, "failed": 0, "total": 7, "pass_rate": 1.0}, "execution_metrics": {}, "timing": {}, "claims": [], "eval_feedback": {"suggestions": [{"reason": "Without-skill settings page also passes all assertions because it happened to use Sanctuary theme tokens. The assertions may not be discriminating enough for this eval \u2014 consider adding checks for serif italic section headings or decorative glow blobs."}], "overall": "Without-skill output coincidentally follows many Sanctuary patterns. Assertions need to be more discriminating."}}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "sanctuary-ui", "skill_path": "/home/meisijiya/opencode-projects/AI-food/skills/sanctuary-ui", "timestamp": "2026-03-21T22:30:00Z", "evals_run": [1, 2, 3], "runs_per_configuration": 1}, "runs": [{"eval_id": 1, "eval_name": "meditation-dashboard", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 8, "failed": 0, "total": 8, "time_seconds": 45.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Uses font-serif italic for main headings", "passed": true, "evidence": "font-serif italic used on all headings"}, {"text": "Cards have rounded-[2rem] or larger border radius", "passed": true, "evidence": "All cards use rounded-[2rem] sm:rounded-[3rem]"}, {"text": "Includes decorative blur glow elements on cards", "passed": true, "evidence": "5 decorative glow blobs found"}, {"text": "Uses motion/react for animations", "passed": true, "evidence": "Correct motion/react import"}, {"text": "Primary color #0059b6 is used for accents", "passed": true, "evidence": "Theme tokens used throughout"}, {"text": "Has proper responsive breakpoints (sm:, lg:)", "passed": true, "evidence": "sm: and lg: breakpoints used"}, {"text": "Uses lucide-react icons", "passed": true, "evidence": "8 lucide-react icons imported"}, {"text": "Stat numbers are large and use serif italic font", "passed": true, "evidence": "text-5xl font-serif italic on all stats"}], "notes": []}, {"eval_id": 1, "eval_name": "meditation-dashboard", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.25, "passed": 2, "failed": 6, "total": 8, "time_seconds": 35.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Uses font-serif italic for main headings", "passed": false, "evidence": "Uses font-bold instead"}, {"text": "Cards have rounded-[2rem] or larger border radius", "passed": false, "evidence": "Uses rounded-2xl"}, {"text": "Includes decorative blur glow elements on cards", "passed": false, "evidence": "No glow blobs found"}, {"text": "Uses motion/react for animations", "passed": false, "evidence": "Uses framer-motion instead"}, {"text": "Primary color #0059b6 is used for accents", "passed": false, "evidence": "Uses violet/purple palette"}, {"text": "Has proper responsive breakpoints (sm:, lg:)", "passed": true, "evidence": "sm: and lg: used"}, {"text": "Uses lucide-react icons", "passed": true, "evidence": "Icons imported"}, {"text": "Stat numbers are large and use serif italic font", "passed": false, "evidence": "Uses font-bold sans-serif"}], "notes": []}, {"eval_id": 2, "eval_name": "fitness-profile", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 7, "failed": 0, "total": 7, "time_seconds": 40.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Avatar is displayed with rounded corners and shadow", "passed": true, "evidence": "rounded-full with ring-4 and shadow-lg"}, {"text": "Stats are shown in a grid layout with large serif italic numbers", "passed": true, "evidence": "3-col grid with font-serif italic text-3xl"}, {"text": "Achievement list items have hover slide animation", "passed": true, "evidence": "whileHover={{ x: 8 }}"}, {"text": "Uses inverse-surface dark card for contrast section", "passed": true, "evidence": "bg-inverse-surface text-white"}, {"text": "Labels use uppercase tracking-widest pattern", "passed": true, "evidence": "uppercase tracking-[0.25em]"}, {"text": "Includes motion.div with page entrance animation", "passed": true, "evidence": "opacity:0 y:20 entrance"}, {"text": "Uses bg-white/60 backdrop-blur-xl glass effect on list", "passed": true, "evidence": "bg-white/60 backdrop-blur-sm"}], "notes": []}, {"eval_id": 2, "eval_name": "fitness-profile", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.29, "passed": 2, "failed": 5, "total": 7, "time_seconds": 30.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Avatar is displayed with rounded corners and shadow", "passed": true, "evidence": "rounded-full found"}, {"text": "Stats are shown in a grid layout with large serif italic numbers", "passed": false, "evidence": "font-bold, not serif italic"}, {"text": "Achievement list items have hover slide animation", "passed": false, "evidence": "scale+y lift, not horizontal slide"}, {"text": "Uses inverse-surface dark card for contrast section", "passed": false, "evidence": "slate gradient, not inverse-surface"}, {"text": "Labels use uppercase tracking-widest pattern", "passed": false, "evidence": "No uppercase tracking found"}, {"text": "Includes motion.div with page entrance animation", "passed": true, "evidence": "Entrance animation present"}, {"text": "Uses bg-white/60 backdrop-blur-xl glass effect on list", "passed": false, "evidence": "slate dark glass, not white glass"}], "notes": []}, {"eval_id": 3, "eval_name": "settings-page", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 7, "failed": 0, "total": 7, "time_seconds": 42.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Settings grouped in rounded containers", "passed": true, "evidence": "rounded-[2rem] sm:rounded-[2.5rem]"}, {"text": "Each setting has icon in colored rounded box", "passed": true, "evidence": "w-9 h-9 rounded-xl with icon"}, {"text": "Section titles use uppercase tracking-widest", "passed": true, "evidence": "uppercase tracking-[0.25em]"}, {"text": "Cards use border border-white", "passed": true, "evidence": "border border white shadow-sm"}, {"text": "Toggle controls styled consistently", "passed": true, "evidence": "Reusable Toggle component"}, {"text": "Page has motion entrance animation", "passed": true, "evidence": "Staggered section animations"}, {"text": "Uses surface-container-lowest for cards", "passed": true, "evidence": "bg-surface-container-lowest"}], "notes": []}, {"eval_id": 3, "eval_name": "settings-page", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 7, "failed": 0, "total": 7, "time_seconds": 38.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Settings grouped in rounded containers", "passed": true, "evidence": "rounded-[2.5rem] sm:rounded-[3rem]"}, {"text": "Each setting has icon in colored rounded box", "passed": true, "evidence": "p-2.5 rounded-2xl with icon"}, {"text": "Section titles use uppercase tracking-widest", "passed": true, "evidence": "uppercase tracking-[0.2em]"}, {"text": "Cards use border border-white", "passed": true, "evidence": "border border-white shadow-sm"}, {"text": "Toggle controls styled consistently", "passed": true, "evidence": "Reusable Toggle component"}, {"text": "Page has motion entrance animation", "passed": true, "evidence": "Staggered animations"}, {"text": "Uses surface-container-lowest for cards", "passed": true, "evidence": "bg-surface-container-lowest"}], "notes": ["Note: without_skill output coincidentally uses Sanctuary tokens \u2014 assertions may not be discriminating enough"]}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 42.3, "stddev": 2.5, "min": 40.0, "max": 45.0}, "tokens": {"mean": 0, "stddev": 0, "min": 0, "max": 0}}, "without_skill": {"pass_rate": {"mean": 0.51, "stddev": 0.43, "min": 0.25, "max": 1.0}, "time_seconds": {"mean": 34.3, "stddev": 4.0, "min": 30.0, "max": 38.0}, "tokens": {"mean": 0, "stddev": 0, "min": 0, "max": 0}}, "delta": {"pass_rate": "+0.49", "time_seconds": "+8.0", "tokens": "+0"}}, "notes": ["With-skill outputs consistently use Sanctuary design tokens: font-serif italic, rounded-[2rem]+, decorative glows, motion/react, primary blue palette", "Without-skill outputs use generic styling (violet theme, small radii, bold sans-serif headings)", "Eval 3 (settings) is not discriminating \u2014 without_skill also passes because it coincidentally uses Sanctuary tokens. Consider adding checks for serif italic headings or decorative glow blobs.", "With-skill adds ~8s execution time due to reading and following the skill document", "The skill is most impactful for eval-1 (pass_rate delta: +0.75) and eval-2 (+0.71)"]}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

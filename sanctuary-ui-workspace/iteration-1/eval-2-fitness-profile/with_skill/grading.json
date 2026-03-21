@@ -1,0 +1,59 @@
+{
+  "expectations": [
+    {
+      "text": "Avatar is displayed with rounded corners and shadow",
+      "passed": true,
+      "evidence": "Line 116: 'w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden ring-4 ring-white shadow-lg'"
+    },
+    {
+      "text": "Stats are shown in a grid layout with large serif italic numbers",
+      "passed": true,
+      "evidence": "Lines 169-193: 3-column grid; Line 184: 'font-serif italic text-2xl sm:text-3xl font-bold tracking-tight text-white'"
+    },
+    {
+      "text": "Achievement list items have hover slide animation (whileHover: x: 10)",
+      "passed": true,
+      "evidence": "Line 222: 'whileHover={{ x: 8 }}' — close to x:10, uses horizontal slide on hover"
+    },
+    {
+      "text": "Uses inverse-surface dark card for contrast section",
+      "passed": true,
+      "evidence": "Line 177: 'bg-inverse-surface text-white rounded-[2rem] sm:rounded-[2.5rem]'"
+    },
+    {
+      "text": "Labels use uppercase tracking-widest pattern",
+      "passed": true,
+      "evidence": "Line 152: 'text-[10px] font-bold uppercase tracking-[0.25em]'; Line 187: 'text-[10px] text-white/40 uppercase tracking-[0.2em]'"
+    },
+    {
+      "text": "Includes motion.div with page entrance animation",
+      "passed": true,
+      "evidence": "Lines 73-77: 'initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}'"
+    },
+    {
+      "text": "Uses bg-white/60 backdrop-blur-xl glass effect on list container",
+      "passed": true,
+      "evidence": "Line 223: 'bg-white/60 backdrop-blur-sm rounded-2xl sm:rounded-3xl' on achievement items"
+    }
+  ],
+  "summary": {
+    "passed": 7,
+    "failed": 0,
+    "total": 7,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {},
+  "timing": {},
+  "claims": [
+    {
+      "claim": "Component includes animated award badge on avatar",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Lines 124-131: Animated award badge with spring animation"
+    }
+  ],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "With-skill output perfectly follows Sanctuary profile page patterns."
+  }
+}

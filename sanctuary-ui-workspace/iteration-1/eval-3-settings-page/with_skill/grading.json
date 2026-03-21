@@ -1,0 +1,52 @@
+{
+  "expectations": [
+    {
+      "text": "Settings grouped in rounded containers with large radius",
+      "passed": true,
+      "evidence": "Line 109: 'rounded-[2rem] sm:rounded-[2.5rem]' on each SettingsSection"
+    },
+    {
+      "text": "Each setting has an icon from lucide-react in a colored rounded box",
+      "passed": true,
+      "evidence": "Lines 143-144: 'w-9 h-9 rounded-xl bg-surface-container-low flex items-center justify-center' with icon inside each SettingRow"
+    },
+    {
+      "text": "Section titles use uppercase tracking-widest labels",
+      "passed": true,
+      "evidence": "Line 211: 'text-[10px] font-bold uppercase tracking-[0.25em] text-primary' for page label; Line 424: 'text-[10px] font-bold uppercase tracking-[0.25em]' for footer"
+    },
+    {
+      "text": "Cards use border border-white subtle edge",
+      "passed": true,
+      "evidence": "Line 109: 'border border-white shadow-sm' on SettingsSection cards"
+    },
+    {
+      "text": "Toggle/switch controls are styled consistently",
+      "passed": true,
+      "evidence": "Lines 27-49: Reusable Toggle component with 'w-12 h-7 rounded-full' and spring-animated knob"
+    },
+    {
+      "text": "Page has motion entrance animation",
+      "passed": true,
+      "evidence": "Lines 97-100: 'initial={{ opacity: 0, y: 24, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}' on each section"
+    },
+    {
+      "text": "Uses surface-container-lowest for card backgrounds",
+      "passed": true,
+      "evidence": "Line 109: 'bg-surface-container-lowest' on all section cards"
+    }
+  ],
+  "summary": {
+    "passed": 7,
+    "failed": 0,
+    "total": 7,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {},
+  "timing": {},
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "With-skill output is a faithful Sanctuary settings page implementation."
+  }
+}

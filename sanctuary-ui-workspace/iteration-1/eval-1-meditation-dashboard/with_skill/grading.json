@@ -1,0 +1,70 @@
+{
+  "expectations": [
+    {
+      "text": "Uses font-serif italic for main headings",
+      "passed": true,
+      "evidence": "Line 69: 'text-4xl sm:text-5xl lg:text-6xl font-serif italic text-on-surface' used for hero heading; Line 176: 'font-serif italic text-2xl' for section title; Line 323: 'font-serif italic text-on-surface' for Recent sessions heading"
+    },
+    {
+      "text": "Cards have rounded-[2rem] or larger border radius",
+      "passed": true,
+      "evidence": "Line 88: 'rounded-[2rem] sm:rounded-[3rem]' on stat cards; Line 167: 'rounded-[2rem] sm:rounded-[3rem]' on progress chart; Line 261: 'rounded-[2rem] sm:rounded-[3rem]' on recommended card; Line 359: 'rounded-3xl' on list items"
+    },
+    {
+      "text": "Includes decorative blur glow elements on cards",
+      "passed": true,
+      "evidence": "Line 90: 'bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16'; Line 115: 'bg-secondary-fixed/10 rounded-full blur-3xl'; Line 139: 'bg-lime-500/10 rounded-full blur-3xl'; Line 169: 'bg-primary/5 rounded-full blur-3xl'; Line 263: 'bg-secondary-fixed/10 rounded-full blur-3xl'"
+    },
+    {
+      "text": "Uses motion/react for animations",
+      "passed": true,
+      "evidence": "Line 1: 'import { motion } from \"motion/react\"' — correct package used throughout with motion.header, motion.section, motion.div, motion.button, motion.nav"
+    },
+    {
+      "text": "Primary color #0059b6 is used for accents",
+      "passed": true,
+      "evidence": "Uses theme tokens consistently: 'text-primary', 'bg-primary', 'from-primary-container to-primary', 'shadow-primary/20' — all referencing the blue #0059b6 palette"
+    },
+    {
+      "text": "Has proper responsive breakpoints (sm:, lg:)",
+      "passed": true,
+      "evidence": "Line 69: 'text-4xl sm:text-5xl lg:text-6xl'; Line 83: 'grid-cols-1 sm:grid-cols-3'; Line 160: 'grid-cols-1 lg:grid-cols-5'; Line 261: 'sm:rounded-[3rem]'"
+    },
+    {
+      "text": "Uses lucide-react icons",
+      "passed": true,
+      "evidence": "Lines 3-11: imports Flame, Play, Clock, CheckCircle2, Sparkles, ChevronRight, Bell, Search from lucide-react"
+    },
+    {
+      "text": "Stat numbers are large and use serif italic font",
+      "passed": true,
+      "evidence": "Line 100: 'text-5xl font-serif italic text-on-surface tracking-tight' for '143'; Line 125: 'text-5xl font-serif italic' for '12'; Line 149: 'text-5xl font-serif italic text-lime-400' for '7'"
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 0,
+    "total": 8,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {},
+  "timing": {},
+  "claims": [
+    {
+      "claim": "Component includes a weekly bar chart with animated bars",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Lines 186-230: Animated bar chart with spring animations per bar"
+    },
+    {
+      "claim": "Bottom navigation follows Sanctuary floating pill pattern",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Line 393: 'fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-inverse-surface/90 backdrop-blur-2xl rounded-full'"
+    }
+  ],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "With-skill output closely matches Sanctuary design system. All assertions pass with strong evidence."
+  }
+}

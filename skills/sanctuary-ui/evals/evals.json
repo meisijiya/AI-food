@@ -1,0 +1,51 @@
+{
+  "skill_name": "sanctuary-ui",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a Sanctuary-style dashboard page for a meditation app. It should show today's meditation stats (total minutes, sessions completed, current streak), a weekly progress chart, and a recommended meditation session card with an image.",
+      "expected_output": "A React component with Sanctuary styling: serif italic headings, large rounded cards (2-3rem), decorative glow blobs, motion animations, glass morphism effects, and the blue primary color palette.",
+      "files": [],
+      "expectations": [
+        "Uses font-serif italic for main headings",
+        "Cards have rounded-[2rem] or larger border radius",
+        "Includes decorative blur glow elements on cards",
+        "Uses motion/react for animations",
+        "Primary color #0059b6 is used for accents",
+        "Has proper responsive breakpoints (sm:, lg:)",
+        "Uses lucide-react icons",
+        "Stat numbers are large and use serif italic font"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Build a user profile page in Sanctuary style for a fitness app. Show the user's avatar, name, membership badge, stats (workouts completed, total hours, calories burned), and a list of recent achievements with icons.",
+      "expected_output": "A profile component with centered avatar, animated stats cards, achievement list with hover effects, all using Sanctuary design tokens.",
+      "files": [],
+      "expectations": [
+        "Avatar is displayed with rounded corners and shadow",
+        "Stats are shown in a grid layout with large serif italic numbers",
+        "Achievement list items have hover slide animation (whileHover: x: 10)",
+        "Uses inverse-surface dark card for contrast section",
+        "Labels use uppercase tracking-widest pattern",
+        "Includes motion.div with page entrance animation",
+        "Uses bg-white/60 backdrop-blur-xl glass effect on list container"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Design a settings page in Sanctuary style with sections for notifications, privacy, appearance themes, and account management. Each section should have an icon, title, and toggle/dropdown controls.",
+      "expected_output": "A settings page with grouped sections, each in a rounded card with icons, using Sanctuary typography and color system.",
+      "files": [],
+      "expectations": [
+        "Settings grouped in rounded containers with large radius",
+        "Each setting has an icon from lucide-react in a colored rounded box",
+        "Section titles use uppercase tracking-widest labels",
+        "Cards use border border-white subtle edge",
+        "Toggle/switch controls are styled consistently",
+        "Page has motion entrance animation",
+        "Uses surface-container-lowest for card backgrounds"
+      ]
+    }
+  ]
+}

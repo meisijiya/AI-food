@@ -1,0 +1,56 @@
+{
+  "expectations": [
+    {
+      "text": "Settings grouped in rounded containers with large radius",
+      "passed": true,
+      "evidence": "Line 181: 'rounded-[2.5rem] sm:rounded-[3rem]' on SectionCard"
+    },
+    {
+      "text": "Each setting has an icon from lucide-react in a colored rounded box",
+      "passed": true,
+      "evidence": "Line 57: 'p-2.5 rounded-2xl' with icon inside each Toggle component"
+    },
+    {
+      "text": "Section titles use uppercase tracking-widest labels",
+      "passed": true,
+      "evidence": "Line 551: 'text-xs font-bold uppercase tracking-[0.2em]' for Danger Zone label"
+    },
+    {
+      "text": "Cards use border border-white subtle edge",
+      "passed": true,
+      "evidence": "Line 181: 'border border-white shadow-sm' on SectionCard"
+    },
+    {
+      "text": "Toggle/switch controls are styled consistently",
+      "passed": true,
+      "evidence": "Lines 51-82: Reusable Toggle component with consistent spring animation"
+    },
+    {
+      "text": "Page has motion entrance animation",
+      "passed": true,
+      "evidence": "Lines 250-253: 'initial={{ opacity: 0 }} animate={{ opacity: 1 }}' on page; Lines 178-180: staggered section animations"
+    },
+    {
+      "text": "Uses surface-container-lowest for card backgrounds",
+      "passed": true,
+      "evidence": "Line 181: 'bg-surface-container-lowest' on SectionCard"
+    }
+  ],
+  "summary": {
+    "passed": 7,
+    "failed": 0,
+    "total": 7,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {},
+  "timing": {},
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "reason": "Without-skill settings page also passes all assertions because it happened to use Sanctuary theme tokens. The assertions may not be discriminating enough for this eval — consider adding checks for serif italic section headings or decorative glow blobs."
+      }
+    ],
+    "overall": "Without-skill output coincidentally follows many Sanctuary patterns. Assertions need to be more discriminating."
+  }
+}
