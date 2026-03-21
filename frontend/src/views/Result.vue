@@ -19,7 +19,7 @@
         <div class="food-reason" v-if="reason">{{ reason }}</div>
       </div>
 
-      <div class="collected-params">
+      <div class="collected-params" v-if="collectedParams.length > 0">
         <h3>根据你的需求</h3>
         <div class="param-list">
           <div
@@ -85,7 +85,20 @@ const reason = computed(() => {
 })
 
 const collectedParams = computed(() => {
-  return chatStore.progress.collected.map(name => ({
+  // 优先使用 store 中记录的实际参数值
+  const paramValues = chatStore.collectedParamValues
+  const collected = chatStore.progress.collected
+
+  if (Object.keys(paramValues).length > 0) {
+    return Object.entries(paramValues).map(([name, value]) => ({
+      name,
+      label: paramLabels[name] || name,
+      value
+    }))
+  }
+
+  // 回退：只展示参数名
+  return collected.map(name => ({
     name,
     label: paramLabels[name] || name,
     value: '已收集'
@@ -110,10 +123,12 @@ const goHome = () => {
 .result-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  overflow-y: auto;
 }
 
 .result-content {
   padding: 20px;
+  padding-bottom: 40px;
 }
 
 .result-header {

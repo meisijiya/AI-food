@@ -51,12 +51,25 @@ const startChat = async () => {
   
   try {
     const response = await conversationApi.start()
-    chatStore.setSessionId(response.sessionId)
+    console.log('[Home] API response:', response)
+    
+    if (!response || !response.sessionId) {
+      console.error('[Home] Invalid response, missing sessionId:', response)
+      showToast('服务器返回数据异常')
+      return
+    }
+    
     chatStore.clearChat()
+    chatStore.setSessionId(response.sessionId)
+    console.log('[Home] Session started, sessionId:', response.sessionId)
     router.push('/chat')
-  } catch (error) {
-    showToast('启动对话失败，请重试')
-    console.error('Failed to start conversation:', error)
+  } catch (error: any) {
+    console.error('[Home] Failed to start conversation:', error?.message || error)
+    if (error?.response) {
+      console.error('[Home] Response status:', error.response.status)
+      console.error('[Home] Response data:', error.response.data)
+    }
+    showToast('启动对话失败，请确认后端服务已启动')
   } finally {
     loading.value = false
   }

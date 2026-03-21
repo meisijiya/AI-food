@@ -41,15 +41,23 @@ public class Knife4jConfig {
     @Bean
     public GroupedOpenApi conversationApi() {
         return GroupedOpenApi.builder()
-                .group("对话管理")
+                .group("1-对话管理")
                 .pathsToMatch("/api/conversation/**")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi aiApi() {
+        return GroupedOpenApi.builder()
+                .group("2-AI服务")
+                .pathsToMatch("/api/ai/**")
                 .build();
     }
 
     @Bean
     public GroupedOpenApi recommendationApi() {
         return GroupedOpenApi.builder()
-                .group("推荐服务")
+                .group("3-推荐服务")
                 .pathsToMatch("/api/recommendation/**")
                 .build();
     }
@@ -57,7 +65,7 @@ public class Knife4jConfig {
     @Bean
     public GroupedOpenApi allApi() {
         return GroupedOpenApi.builder()
-                .group("所有接口")
+                .group("0-所有接口")
                 .pathsToMatch("/api/**")
                 .build();
     }

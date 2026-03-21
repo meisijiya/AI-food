@@ -27,6 +27,8 @@ export const useChatStore = defineStore('chat', () => {
   const isLoading = ref(false)
   const currentPhase = ref<'chat' | 'recommend'>('chat')
   const recommendationResult = ref<any>(null)
+  // 前端自行追踪收集到的参数值（从 WebSocket 消息的 param + content 中提取）
+  const collectedParamValues = ref<Record<string, string>>({})
 
   const messageCount = computed(() => messages.value.length)
 
@@ -40,6 +42,22 @@ export const useChatStore = defineStore('chat', () => {
       id: Date.now().toString(),
       timestamp: Date.now()
     })
+    // 从 chat/confirm 类型消息中提取参数值
+    if ((message.type === 'chat' || message.type === 'question') && message.param) {
+      // 尝试从确认消息中提取值，如 "好的，时间是晚上，我记下了！"
+      const match = message.content.match(/是(.+?)，我记下了/)
+      if (match) {
+        collectedParamValues.value[message.param] = match[1]
+      }
+    }
+    // 用户消息也尝试关联到当前参数
+    if (message.type === 'user' && message.content) {
+      // 这里不做自动关联，由后端决定
+    }
+  }
+
+  function setCollectedParamValue(param: string, value: string) {
+    collectedParamValues.value[param] = value
   }
 
   function updateProgress(newProgress: Progress) {
@@ -63,10 +81,14 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   function clearChat() {
+    sessionId.value = ''
     messages.value = []
     progress.value = { current: 0, total: 7, collected: [] }
     currentPhase.value = 'chat'
     recommendationResult.value = null
+    isConnected.value = false
+    isLoading.value = false
+    collectedParamValues.value = {}
   }
 
   return {
@@ -77,9 +99,11 @@ export const useChatStore = defineStore('chat', () => {
     isLoading,
     currentPhase,
     recommendationResult,
+    collectedParamValues,
     messageCount,
     setSessionId,
     addMessage,
+    setCollectedParamValue,
     updateProgress,
     setConnected,
     setLoading,

@@ -22,8 +22,15 @@
     </div>
 
     <div class="message-list" ref="messageListRef">
-      <div class="welcome-message" v-if="chatStore.messages.length === 0">
-        <p>正在连接AI助手...</p>
+      <div class="welcome-message" v-if="!chatStore.isConnected && !connectionFailed">
+        <van-loading size="24px" vertical>正在连接AI助手...</van-loading>
+      </div>
+
+      <div class="welcome-message" v-if="connectionFailed">
+        <p>连接失败，请检查后端服务是否启动</p>
+        <van-button type="primary" size="small" style="margin-top: 12px" @click="retryConnect">
+          重新连接
+        </van-button>
       </div>
       
       <div
@@ -39,6 +46,12 @@
             color="#fff" 
           />
           <van-icon 
+            v-else-if="message.type === 'interrupt'"
+            name="chat"
+            size="20"
+            color="#fff"
+          />
+          <van-icon 
             v-else 
             name="smile" 
             size="20" 
@@ -46,21 +59,27 @@
           />
         </div>
         <div class="message-content">
-          <div class="message-text">{{ message.content }}</div>
-          <div class="message-time">{{ formatTime(message.timestamp) }}</div>
+          <div
+            :class="['message-text', message.type === 'interrupt' ? 'interrupt' : '']"
+          >{{ message.content }}</div>
+          <div class="message-time">
+            {{ formatTime(message.timestamp) }}
+            <span v-if="message.type === 'interrupt'" class="interrupt-tag">抢话回复</span>
+          </div>
         </div>
       </div>
       
-      <div v-if="chatStore.isLoading" class="loading-indicator">
+      <div v-if="chatStore.isLoading && chatStore.isConnected" class="loading-indicator">
         <van-loading size="20px">AI正在思考...</van-loading>
+        <div class="interrupt-hint">你可以继续说话，AI会一起回复</div>
       </div>
     </div>
 
     <div class="input-area">
       <van-field
         v-model="inputValue"
-        placeholder="请输入你的回答..."
-        :disabled="!chatStore.isConnected || chatStore.isLoading"
+        :placeholder="chatStore.isLoading ? 'AI正在思考，你可以继续说话...' : '请输入你的回答...'"
+        :disabled="!chatStore.isConnected"
         @keyup.enter="sendMessage"
       />
       <van-button
@@ -94,6 +113,8 @@ const chatStore = useChatStore()
 const messageListRef = ref<HTMLElement | null>(null)
 const inputValue = ref('')
 const showActions = ref(false)
+const connectionFailed = ref(false)
+const connectionTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 
 let wsClient: WebSocketClient | null = null
 
@@ -121,48 +142,109 @@ const scrollToBottom = () => {
   })
 }
 
+const clearConnectionTimeout = () => {
+  if (connectionTimeout.value) {
+    clearTimeout(connectionTimeout.value)
+    connectionTimeout.value = null
+  }
+}
+
 const handleWebSocketMessage = (message: WebSocketMessage) => {
+  clearConnectionTimeout()
+  connectionFailed.value = false
+
   chatStore.addMessage({
     type: message.type,
     param: message.param,
     content: message.content
   })
-  
+
   if (message.progress) {
     chatStore.updateProgress(message.progress)
   }
-  
+
   if (message.type === 'recommend') {
     chatStore.setPhase('recommend')
     chatStore.setRecommendationResult(message.content)
     router.push('/result')
+    return
   }
-  
-  chatStore.setLoading(false)
+
+  // interrupt 消息处理完后 isLoading 保持 true（还有后续消息在处理中）
+  // question/chat/2question 说明 AI 回复完了
+  if (message.type !== 'interrupt') {
+    chatStore.setLoading(false)
+  }
+
   scrollToBottom()
 }
 
+const handleWebSocketOpen = () => {
+  console.log('[Chat] WebSocket opened')
+  clearConnectionTimeout()
+  connectionFailed.value = false
+  chatStore.setConnected(true)
+  chatStore.setLoading(true)
+}
+
 const handleWebSocketError = (error: Event) => {
-  showToast('连接出错，请重试')
-  chatStore.setConnected(false)
+  console.error('[Chat] WebSocket error:', error)
+  clearConnectionTimeout()
 }
 
 const handleWebSocketClose = () => {
+  console.log('[Chat] WebSocket closed')
   chatStore.setConnected(false)
+  if (chatStore.messages.length === 0) {
+    connectionFailed.value = true
+  }
 }
 
 const sendMessage = () => {
   if (!inputValue.value.trim() || !chatStore.isConnected) return
-  
+
+  const isInterrupt = chatStore.isLoading
+
   chatStore.addMessage({
     type: 'user',
     content: inputValue.value
   })
-  
+
   wsClient?.answer(inputValue.value)
   inputValue.value = ''
-  chatStore.setLoading(true)
+
+  // 只有非抢话时才设置 loading（抢话时 loading 已经是 true）
+  if (!isInterrupt) {
+    chatStore.setLoading(true)
+  }
+
   scrollToBottom()
+}
+
+const retryConnect = () => {
+  connectionFailed.value = false
+  chatStore.setConnected(false)
+  wsClient?.disconnect()
+  startWebSocket()
+}
+
+const startWebSocket = () => {
+  wsClient = new WebSocketClient({
+    sessionId: chatStore.sessionId,
+    onOpen: handleWebSocketOpen,
+    onMessage: handleWebSocketMessage,
+    onError: handleWebSocketError,
+    onClose: handleWebSocketClose
+  })
+
+  wsClient.connect()
+
+  connectionTimeout.value = setTimeout(() => {
+    if (!chatStore.isConnected) {
+      console.error('[Chat] WebSocket connection timeout')
+      connectionFailed.value = true
+    }
+  }, 8000)
 }
 
 const onClickLeft = () => {
@@ -208,19 +290,12 @@ onMounted(() => {
     router.push('/')
     return
   }
-  
-  wsClient = new WebSocketClient({
-    sessionId: chatStore.sessionId,
-    onMessage: handleWebSocketMessage,
-    onError: handleWebSocketError,
-    onClose: handleWebSocketClose
-  })
-  
-  wsClient.connect()
-  chatStore.setConnected(true)
+
+  startWebSocket()
 })
 
 onUnmounted(() => {
+  clearConnectionTimeout()
   wsClient?.disconnect()
 })
 </script>
@@ -315,6 +390,12 @@ onUnmounted(() => {
   font-size: 14px;
   line-height: 1.5;
   word-break: break-word;
+  
+  &.interrupt {
+    background: #fff7e6;
+    border: 1px solid #ffd591;
+    color: #d46b08;
+  }
 }
 
 .message-time {
@@ -324,10 +405,27 @@ onUnmounted(() => {
   text-align: right;
 }
 
+.interrupt-tag {
+  display: inline-block;
+  background: #fff7e6;
+  color: #d46b08;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+}
+
 .loading-indicator {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   padding: 15px;
+}
+
+.interrupt-hint {
+  font-size: 12px;
+  color: #999;
+  margin-top: 8px;
 }
 
 .input-area {
