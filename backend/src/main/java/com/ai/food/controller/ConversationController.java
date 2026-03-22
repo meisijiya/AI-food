@@ -13,6 +13,8 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -37,13 +39,18 @@ public class ConversationController {
     public ResponseEntity<StartConversationResponse> startConversation() {
         String sessionId = java.util.UUID.randomUUID().toString().replace("-", "");
 
+        // 从 JWT 中获取当前用户 ID
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Long userId = Long.parseLong(auth.getPrincipal().toString());
+
         ConversationSession session = new ConversationSession();
         session.setSessionId(sessionId);
+        session.setUserId(userId);
         session.setStatus("active");
         session.setMode("inertia");
         conversationSessionRepository.save(session);
 
-        log.info("Conversation session created: {}", sessionId);
+        log.info("Conversation session created: {} for user: {}", sessionId, userId);
 
         StartConversationResponse response = new StartConversationResponse();
         response.setSessionId(sessionId);

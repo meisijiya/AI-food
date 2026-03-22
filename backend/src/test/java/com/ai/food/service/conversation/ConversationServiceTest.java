@@ -5,6 +5,7 @@ import com.ai.food.dto.WebSocketMessage;
 import com.ai.food.repository.CollectedParamRepository;
 import com.ai.food.repository.ConversationSessionRepository;
 import com.ai.food.repository.QaRecordRepository;
+import com.ai.food.repository.RecommendationResultRepository;
 import com.ai.food.service.ai.AiService;
 import com.ai.food.validator.MessageValidator;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +42,9 @@ class ConversationServiceTest {
     @Mock
     private CollectedParamRepository collectedParamRepository;
 
+    @Mock
+    private RecommendationResultRepository recommendationResultRepository;
+
     private ConversationService conversationService;
 
     @BeforeEach
@@ -49,7 +53,8 @@ class ConversationServiceTest {
         MessageTagParser messageTagParser = new MessageTagParser(messageValidator, aiService);
         conversationService = new ConversationService(
                 aiService, messageValidator, messageTagParser,
-                conversationSessionRepository, qaRecordRepository, collectedParamRepository
+                conversationSessionRepository, qaRecordRepository, collectedParamRepository,
+                recommendationResultRepository
         );
         ReflectionTestUtils.setField(conversationService, "minQuestions", 7);
         ReflectionTestUtils.setField(conversationService, "maxQuestions", 10);

@@ -57,3 +57,17 @@ CREATE TABLE IF NOT EXISTS recommendation_result (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_session (session_id)
 );
+
+-- 用户表
+CREATE TABLE IF NOT EXISTS sys_user (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    nickname VARCHAR(50),
+    avatar VARCHAR(255),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_username (username),
+    INDEX idx_email (email)
+);

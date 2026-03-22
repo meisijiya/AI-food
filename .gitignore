@@ -29,6 +29,7 @@ backend/mvnw.cmd
 *.tar.gz
 *.rar
 backend/src/main/resources/*.yml
+*.factorypath
 
 # 前端Vue项目相关
 frontend/node_modules/

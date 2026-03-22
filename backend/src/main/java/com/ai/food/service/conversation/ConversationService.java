@@ -4,10 +4,14 @@ import com.ai.food.dto.ConversationState;
 import com.ai.food.dto.WebSocketMessage;
 import com.ai.food.model.CollectedParam;
 import com.ai.food.model.QaRecord;
+import com.ai.food.model.RecommendationResult;
 import com.ai.food.repository.CollectedParamRepository;
 import com.ai.food.repository.ConversationSessionRepository;
 import com.ai.food.repository.QaRecordRepository;
+import com.ai.food.repository.RecommendationResultRepository;
 import com.ai.food.service.ai.AiService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ai.food.validator.MessageValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,12 +26,15 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ConversationService {
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     private final AiService aiService;
     private final MessageValidator messageValidator;
     private final MessageTagParser messageTagParser;
     private final ConversationSessionRepository conversationSessionRepository;
     private final QaRecordRepository qaRecordRepository;
     private final CollectedParamRepository collectedParamRepository;
+    private final RecommendationResultRepository recommendationResultRepository;
 
     @Value("${ai.conversation.min-questions:7}")
     private int minQuestions;
@@ -193,6 +200,9 @@ public class ConversationService {
             aiResponse = null;
         }
 
+        String normalizedJson = extractJsonFromResponse(aiResponse);
+        saveRecommendationResult(sessionId, state, normalizedJson);
+
         conversationSessionRepository.findBySessionId(sessionId).ifPresent(session -> {
             session.setStatus("completed");
             session.setCompletedAt(LocalDateTime.now());
@@ -201,7 +211,7 @@ public class ConversationService {
 
         WebSocketMessage msg = new WebSocketMessage();
         msg.setType("recommend");
-        msg.setContent(extractJsonFromResponse(aiResponse));
+        msg.setContent(normalizedJson);
         msg.setProgress(createProgress(state));
         return msg;
     }
@@ -279,6 +289,34 @@ public class ConversationService {
         }
         if (trimmed.startsWith("{")) return trimmed;
         return "{\"foodName\":\"" + trimmed.replace("\"", "\\\"") + "\",\"reason\":\"根据您的需求为您推荐\"}";
+    }
+
+    private void saveRecommendationResult(String sessionId, ConversationState state, String recommendationJson) {
+        try {
+            RecommendationResult result = recommendationResultRepository.findBySessionId(sessionId)
+                    .orElseGet(RecommendationResult::new);
+            Map<String, String> payload = parseRecommendationPayload(recommendationJson);
+            result.setSessionId(sessionId);
+            result.setMode(state.getMode());
+            result.setFoodName(payload.getOrDefault("foodName", "暂无推荐结果"));
+            result.setReason(payload.getOrDefault("reason", "该会话暂无可展示的推荐说明"));
+            RecommendationResult saved = recommendationResultRepository.saveAndFlush(result);
+            log.info("Saved recommendation result: sessionId={}, foodName={}", sessionId, saved.getFoodName());
+        } catch (Exception e) {
+            log.error("Failed to save recommendation result for session {}", sessionId, e);
+        }
+    }
+
+    private Map<String, String> parseRecommendationPayload(String json) {
+        if (json == null || json.isBlank()) {
+            return Map.of();
+        }
+        try {
+            return OBJECT_MAPPER.readValue(json, new TypeReference<Map<String, String>>() {});
+        } catch (Exception e) {
+            log.warn("Failed to parse recommendation json, using fallback text: {}", json);
+            return Map.of("foodName", json, "reason", "根据您的需求为您推荐");
+        }
     }
 
     private WebSocketMessage createMessage(String type, String param, String content, ConversationState state) {
