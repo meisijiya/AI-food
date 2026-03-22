@@ -138,7 +138,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { authApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
-import { showToast, showSuccess, showError } from '@/utils/toast'
+import { showSuccess, showError } from '@/utils/toast'
 
 const router = useRouter()
 const authStore = useAuthStore()

@@ -46,7 +46,7 @@ function showToast(options: ToastOptions | string) {
         h('div', {
           class: `sanctuary-toast toast-${this.opts.type || 'info'}`,
           innerHTML: `
-            <span class="toast-icon">${icons[this.opts.type || 'info']}</span>
+            <span class="toast-icon">${icons[(this.opts.type || 'info') as ToastType]}</span>
             <span class="toast-msg">${this.opts.message}</span>
           `
         })

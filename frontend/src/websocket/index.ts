@@ -40,7 +40,8 @@ export class WebSocketClient {
 
   connect(): void {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const wsUrl = `${protocol}//${window.location.host}/ws/conversation/${this.sessionId}`
+    const wsHost = import.meta.env.VITE_WS_HOST || window.location.host
+    const wsUrl = `${protocol}//${wsHost}/ws/conversation/${this.sessionId}`
 
     console.log('[WS] Connecting to:', wsUrl)
 

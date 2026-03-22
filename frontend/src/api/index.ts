@@ -4,14 +4,14 @@ import { useAuthStore } from '@/stores/auth'
 import router from '@/router'
 
 const api: AxiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_BASE || '/api',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json'
   }
 })
 
-// 请求拦截器 - 自动添加 Authorization 头
+// 请求拦截器
 api.interceptors.request.use(
   (config) => {
     const authStore = useAuthStore()
@@ -23,10 +23,9 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// 响应拦截器
+// 响应拦截器 - 自动解包 ApiResponse
 api.interceptors.response.use(
   (response: AxiosResponse) => {
-    // 检查 x-new-token 头，自动续期
     const newToken = response.headers['x-new-token']
     if (newToken) {
       const authStore = useAuthStore()
@@ -34,13 +33,9 @@ api.interceptors.response.use(
     }
 
     const body = response.data
+    if (body === undefined || body === null) return body
 
-    // 安全检查：body 可能为空
-    if (body === undefined || body === null) {
-      return body
-    }
-
-    // 自动解包 ApiResponse: { code, message, data } → data
+    // 解包 { code, message, data } → data
     if (typeof body === 'object' && 'code' in body && 'data' in body) {
       if (body.code !== 200) {
         return Promise.reject(new Error(body.message || '请求失败'))
@@ -48,12 +43,10 @@ api.interceptors.response.use(
       return body.data
     }
 
-    // 非 ApiResponse 格式（如 ConversationController 直接返回的对象）
     return body
   },
   (error) => {
     const status = error.response?.status
-    // 401/403 → 清除 token → 跳转登录页
     if (status === 401 || status === 403) {
       const authStore = useAuthStore()
       authStore.logout()
@@ -67,24 +60,35 @@ api.interceptors.response.use(
   }
 )
 
+// 类型安全的请求封装 — 拦截器解包后返回的是 data，不是 AxiosResponse
+function request<T = any>(method: string, url: string, data?: any, config?: any): Promise<T> {
+  switch (method) {
+    case 'get': return api.get(url, config) as any
+    case 'post': return api.post(url, data, config) as any
+    case 'put': return api.put(url, data, config) as any
+    case 'delete': return api.delete(url, config) as any
+    default: throw new Error(`Unknown method: ${method}`)
+  }
+}
+
 // 认证相关接口
 export const authApi = {
-  sendCode: (email: string) => api.post('/auth/send-code', { email }),
+  sendCode: (email: string) => request('post', '/auth/send-code', { email }),
   register: (data: { username: string; password: string; nickname: string; email: string; code: string }) =>
-    api.post('/auth/register', data),
-  login: (data: { username: string; password: string }) => api.post('/auth/login', data)
+    request('post', '/auth/register', data),
+  login: (data: { username: string; password: string }) => request('post', '/auth/login', data)
 }
 
 // 用户相关接口
 export const userApi = {
-  getUserInfo: () => api.get('/user/info'),
-  signIn: () => api.post('/user/sign'),
-  getSignStatus: () => api.get('/user/sign-status'),
-  updateNickname: (nickname: string) => api.put('/user/nickname', { nickname }),
+  getUserInfo: () => request('get', '/user/info'),
+  signIn: () => request('post', '/user/sign'),
+  getSignStatus: () => request('get', '/user/sign-status'),
+  updateNickname: (nickname: string) => request('put', '/user/nickname', { nickname }),
   uploadAvatar: (file: File) => {
     const formData = new FormData()
     formData.append('file', file)
-    return api.post('/user/avatar', formData, {
+    return request('post', '/user/avatar', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   }
@@ -92,17 +96,17 @@ export const userApi = {
 
 // 记录相关接口
 export const recordApi = {
-  getRecordList: (params?: { page?: number; size?: number }) => api.get('/record/list', { params }),
-  getRecordDetail: (sessionId: string) => api.get(`/record/detail/${sessionId}`)
+  getRecordList: (params?: { page?: number; size?: number }) => request('get', '/record/list', undefined, { params }),
+  getRecordDetail: (sessionId: string) => request('get', `/record/detail/${sessionId}`)
 }
 
 // 对话相关接口
 export const conversationApi = {
-  start: () => api.post('/conversation/start'),
-  getStatus: (sessionId: string) => api.get(`/conversation/status/${sessionId}`),
-  complete: (sessionId: string) => api.post(`/conversation/complete/${sessionId}`),
-  cancel: (sessionId: string) => api.delete(`/conversation/cancel/${sessionId}`),
-  getHistory: (sessionId: string) => api.get(`/conversation/history/${sessionId}`)
+  start: () => request('post', '/conversation/start'),
+  getStatus: (sessionId: string) => request('get', `/conversation/status/${sessionId}`),
+  complete: (sessionId: string) => request('post', `/conversation/complete/${sessionId}`),
+  cancel: (sessionId: string) => request('delete', `/conversation/cancel/${sessionId}`),
+  getHistory: (sessionId: string) => request('get', `/conversation/history/${sessionId}`)
 }
 
 export default api

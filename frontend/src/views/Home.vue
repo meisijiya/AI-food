@@ -68,7 +68,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { conversationApi } from '@/api'
 import { useChatStore } from '@/stores/chat'
-import { showToast, showError } from '@/utils/toast'
+import { showError } from '@/utils/toast'
 
 const router = useRouter()
 const chatStore = useChatStore()

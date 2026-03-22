@@ -74,7 +74,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { userApi, recordApi } from '@/api'
-import { showToast, showSuccess, showError } from '@/utils/toast'
+import { showSuccess, showError } from '@/utils/toast'
 
 const router = useRouter()
 const authStore = useAuthStore()

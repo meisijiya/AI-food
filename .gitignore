@@ -42,6 +42,7 @@ frontend/*.local
 .env
 .env.local
 .env.*.local
+.env.production
 
 # 日志文件
 logs/

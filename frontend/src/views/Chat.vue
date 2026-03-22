@@ -126,7 +126,6 @@ import { useRouter } from 'vue-router'
 import { conversationApi } from '@/api'
 import { useChatStore } from '@/stores/chat'
 import { WebSocketClient, type WebSocketMessage } from '@/websocket'
-import { showToast } from '@/utils/toast'
 
 const router = useRouter()
 const chatStore = useChatStore()
