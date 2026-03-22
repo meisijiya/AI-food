@@ -56,6 +56,8 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
                 case "start" -> handleStart(session, sessionId);
                 case "answer" -> handleAnswer(session, sessionId, clientMessage.getContent(), state);
                 case "complete" -> handleComplete(session, sessionId, state);
+                case "cancel" -> handleCancel(session, sessionId, state);
+                case "reset" -> handleReset(session, sessionId, state);
                 default -> sendError(session, "Unknown action");
             }
         } catch (Exception e) {
@@ -98,7 +100,21 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
         // 异步调用 AI
         new Thread(() -> {
             try {
+                // 检查是否已取消
+                if (state.isCancelled()) {
+                    log.info("[{}] session cancelled before processing, skipping", sessionId);
+                    state.setAiProcessing(false);
+                    return;
+                }
+
                 List<WebSocketMessage> messages = conversationService.processAnswer(sessionId, content, state);
+
+                // 处理完成后再检查一次是否已取消
+                if (state.isCancelled()) {
+                    log.info("[{}] session cancelled during processing, discarding results", sessionId);
+                    state.setAiProcessing(false);
+                    return;
+                }
 
                 // 发送第一条消息（AI 确认/闲聊）
                 if (!messages.isEmpty()) {
@@ -151,6 +167,58 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
         WebSocketMessage recommend = conversationService.generateRecommendationMessage(sessionId, state);
         sendMessage(session, recommend);
         conversationStates.remove(sessionId);
+    }
+
+    // ==================== 取消对话（不保存数据） ====================
+
+    private void handleCancel(WebSocketSession session, String sessionId, ConversationState state) {
+        log.info("[{}] canceling conversation - no data will be saved", sessionId);
+
+        // 先标记为已取消，阻止异步线程继续插入数据
+        if (state != null) {
+            state.setCancelled(true);
+            state.setAiProcessing(false);
+            state.clearPendingMessages();
+        }
+
+        conversationStates.remove(sessionId);
+
+        // 删除数据库中的会话数据
+        conversationService.cancelSession(sessionId);
+
+        try {
+            WebSocketMessage msg = new WebSocketMessage();
+            msg.setType("system");
+            msg.setContent("对话已取消");
+            sendMessage(session, msg);
+        } catch (IOException e) {
+            log.error("Failed to send cancel confirmation", e);
+        }
+    }
+
+    // ==================== 重新开始（不断连，删除数据并重置状态） ====================
+
+    private void handleReset(WebSocketSession session, String sessionId, ConversationState oldState) throws IOException {
+        log.info("[{}] resetting conversation", sessionId);
+
+        // 标记旧状态为已取消
+        if (oldState != null) {
+            oldState.setCancelled(true);
+            oldState.setAiProcessing(false);
+        }
+
+        // 删除数据库中的旧数据
+        conversationService.cancelSession(sessionId);
+
+        // 创建新的会话状态（复用同一个 sessionId）
+        ConversationState newState = conversationService.initializeConversation(sessionId);
+        conversationStates.put(sessionId, newState);
+
+        // 发送第一条问题
+        WebSocketMessage firstQuestion = conversationService.getFirstQuestion(newState);
+        sendMessage(session, firstQuestion);
+
+        log.info("[{}] conversation reset, sent first question", sessionId);
     }
 
     // ==================== 连接关闭 ====================

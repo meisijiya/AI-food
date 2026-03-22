@@ -2,7 +2,10 @@ package com.ai.food.repository;
 
 import com.ai.food.model.CollectedParam;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,4 +19,9 @@ public interface CollectedParamRepository extends JpaRepository<CollectedParam, 
     boolean existsBySessionIdAndParamName(String sessionId, String paramName);
     
     long countBySessionId(String sessionId);
+    
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM CollectedParam c WHERE c.sessionId = :sessionId")
+    void deleteBySessionId(String sessionId);
 }

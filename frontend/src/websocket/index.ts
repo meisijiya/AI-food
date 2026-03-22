@@ -118,6 +118,14 @@ export class WebSocketClient {
     this.send({ action: 'complete', sessionId: this.sessionId, content: '' })
   }
 
+  cancel(): void {
+    this.send({ action: 'cancel', sessionId: this.sessionId, content: '' })
+  }
+
+  reset(): void {
+    this.send({ action: 'reset', sessionId: this.sessionId, content: '' })
+  }
+
   disconnect(): void {
     this.manuallyDisconnected = true
     if (this.ws) {

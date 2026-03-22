@@ -23,8 +23,9 @@ public class ConversationState {
     private Map<String, String> paramValues = new HashMap<>();
     private Map<String, Integer> paramRetryCount = new HashMap<>();
     private String currentParam;
-    private boolean freeFormStage = false;
+    private boolean inFreeFormStage = false;
     private List<String> optionalParamsCollected = new ArrayList<>();
+    private boolean cancelled = false;
     
     public ConversationState(String sessionId, Integer totalQuestions, String mode) {
         this.sessionId = sessionId;
@@ -88,11 +89,11 @@ public class ConversationState {
     }
     
     public void enterFreeFormStage() {
-        this.freeFormStage = true;
+        this.inFreeFormStage = true;
     }
     
     public boolean isInFreeFormStage() {
-        return this.freeFormStage;
+        return this.inFreeFormStage;
     }
     
     public void setCurrentParam(String param) {

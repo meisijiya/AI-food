@@ -123,9 +123,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { conversationApi } from '@/api'
 import { useChatStore } from '@/stores/chat'
 import { WebSocketClient, type WebSocketMessage } from '@/websocket'
-import { showToast } from 'vant'
+import { showToast } from '@/utils/toast'
 
 const router = useRouter()
 const chatStore = useChatStore()
@@ -275,9 +276,15 @@ const startWebSocket = () => {
 
 const onClickLeft = async () => {
   showActions.value = false
-  const ok = await showSanctuaryConfirm('离开对话', '确定要离开当前对话吗？')
+  const ok = await showSanctuaryConfirm('离开对话', '确定要离开当前对话吗？当前对话数据将不会保存。')
   if (ok) {
+    const sid = chatStore.sessionId
     wsClient?.disconnect()
+    // 用 HTTP API 确保服务端删除数据
+    if (sid) {
+      try { await conversationApi.cancel(sid) } catch { /* ignore */ }
+    }
+    chatStore.clearChat()
     router.push('/')
   }
 }
@@ -291,11 +298,16 @@ const onActionSelect = async (action: string) => {
       break
     }
     case 'restart': {
-      const ok = await showSanctuaryConfirm('重新开始', '确定要重新开始对话吗？')
+      const ok = await showSanctuaryConfirm('重新开始', '确定要重新开始对话吗？当前对话数据将不会保存。')
       if (ok) {
-        wsClient?.disconnect()
-        chatStore.clearChat()
-        router.push('/')
+        // 不断连，发 reset 让后端删除数据并重置，前端清空消息
+        chatStore.messages = []
+        chatStore.progress = { current: 0, total: 7, collected: [] }
+        chatStore.collectedParamValues = {}
+        chatStore.setLoading(true)
+        chatStore.setPhase('chat')
+        chatStore.setRecommendationResult(null)
+        wsClient?.reset()
       }
       break
     }

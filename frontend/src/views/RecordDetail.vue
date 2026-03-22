@@ -10,51 +10,68 @@
     <template v-if="detail">
       <!-- Header -->
       <h1 class="page-title animate-fade-up">
-        <em>{{ detail.foodName || '推荐详情' }}</em>
+        <em>{{ foodName }}</em>
       </h1>
 
-      <!-- Recommendation card -->
+      <!-- Recommendation card (dark) -->
       <div class="recommend-card animate-fade-up delay-100 animate-start-hidden">
-        <div class="recommend-food">{{ detail.foodName }}</div>
-        <div class="recommend-reason">{{ detail.reason }}</div>
+        <div class="recommend-food">{{ foodName }}</div>
+        <div class="recommend-reason" v-if="reason">{{ reason }}</div>
       </div>
 
       <!-- Collected params -->
-      <div v-if="detail.params && Object.keys(detail.params).length" class="params-section animate-fade-up delay-200 animate-start-hidden">
+      <div v-if="paramsList.length" class="params-section animate-fade-up delay-200 animate-start-hidden">
         <div class="section-label">收集信息</div>
         <div class="params-chips">
           <span
-            v-for="(value, key) in detail.params"
-            :key="key"
+            v-for="p in paramsList"
+            :key="p.paramName"
             class="param-chip"
           >
-            {{ paramLabel(key as string) }}: {{ value }}
+            {{ paramLabel(p.paramName) }}: {{ p.paramValue }}
           </span>
         </div>
       </div>
 
       <!-- Q&A timeline -->
-      <div v-if="detail.history && detail.history.length" class="timeline-section animate-fade-up delay-300 animate-start-hidden">
+      <div v-if="qaList.length" class="timeline-section animate-fade-up delay-300 animate-start-hidden">
         <div class="section-label">对话记录</div>
         <div class="timeline">
-          <div
-            v-for="(item, index) in detail.history"
-            :key="index"
-            class="timeline-item"
-          >
-            <div class="timeline-dot" :class="item.role"></div>
-            <div class="timeline-line" v-if="index < detail.history.length - 1"></div>
-            <div class="timeline-content">
-              <div class="timeline-role">{{ item.role === 'assistant' ? 'AI' : '你' }}</div>
-              <div class="timeline-text">{{ item.content }}</div>
+          <template v-for="(qa, index) in qaList" :key="index">
+            <!-- AI question -->
+            <div class="timeline-item">
+              <div class="timeline-dot assistant"></div>
+              <div class="timeline-line"></div>
+              <div class="timeline-content">
+                <div class="timeline-role">AI</div>
+                <div class="timeline-text">{{ qa.aiQuestion }}</div>
+              </div>
             </div>
-          </div>
+            <!-- User answer -->
+            <div class="timeline-item">
+              <div class="timeline-dot user"></div>
+              <div class="timeline-line" v-if="index < qaList.length - 1"></div>
+              <div class="timeline-content">
+                <div class="timeline-role user-role">你</div>
+                <div class="timeline-text">{{ qa.userAnswer }}</div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Session info -->
+      <div v-if="detail.session" class="session-info animate-fade-up delay-400 animate-start-hidden">
+        <div class="session-meta">
+          <span v-if="detail.session.mode">{{ detail.session.mode === 'inertia' ? '惯性模式' : '随机模式' }}</span>
+          <span v-if="detail.session.totalQuestions">{{ detail.session.currentQuestionCount }}/{{ detail.session.totalQuestions }} 轮</span>
+          <span v-if="detail.session.createdAt">{{ formatDate(detail.session.createdAt) }}</span>
         </div>
       </div>
     </template>
 
     <!-- Back button -->
-    <button class="back-btn animate-fade-up delay-400 animate-start-hidden" @click="router.back()">
+    <button class="back-btn animate-fade-up delay-500 animate-start-hidden" @click="router.back()">
       返回
     </button>
 
@@ -63,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { recordApi } from '@/api'
 
@@ -74,21 +91,44 @@ const loading = ref(true)
 const detail = ref<any>(null)
 
 const paramLabels: Record<string, string> = {
-  mood: '心情',
-  time: '时间',
-  weather: '天气',
-  budget: '预算',
-  cuisine: '菜系',
-  dietary: '饮食偏好',
-  location: '位置',
-  mealType: '餐次',
-  spiceLevel: '辣度',
-  occasion: '场合'
+  time: '用餐时间',
+  location: '用餐地点',
+  weather: '天气情况',
+  mood: '当前心情',
+  companion: '同行人员',
+  budget: '预算范围',
+  taste: '口味偏好',
+  restriction: '饮食禁忌',
+  preference: '特殊偏好',
+  health: '健康需求'
 }
 
 function paramLabel(key: string) {
   return paramLabels[key] || key
 }
+
+function formatDate(dateStr: string) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+// 从后端 RecordDetail 结构中提取各字段
+const foodName = computed(() => {
+  return detail.value?.recommendation?.foodName || '暂无推荐结果'
+})
+
+const reason = computed(() => {
+  return detail.value?.recommendation?.reason || ''
+})
+
+const paramsList = computed(() => {
+  return detail.value?.collectedParams || []
+})
+
+const qaList = computed(() => {
+  return detail.value?.qaRecords || []
+})
 
 async function fetchDetail() {
   const sessionId = route.params.sessionId as string
@@ -98,7 +138,9 @@ async function fetchDetail() {
   }
 
   try {
-    const res = await recordApi.getRecordDetail(sessionId as string)
+    const res = await recordApi.getRecordDetail(sessionId)
+    // api 拦截器已解包 ApiResponse → 返回 RecordDetail 的 data 部分
+    // data 包含: { session, recommendation, collectedParams, qaRecords }
     detail.value = res
   } catch {
     // ignore
@@ -180,6 +222,20 @@ onMounted(fetchDetail)
   padding: 28px 24px;
   margin-bottom: 20px;
   z-index: 1;
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 160px;
+    height: 160px;
+    background: rgba(140, 225, 243, 0.08);
+    border-radius: 50%;
+    filter: blur(40px);
+  }
 }
 
 .recommend-food {
@@ -188,12 +244,16 @@ onMounted(fetchDetail)
   font-size: 24px;
   color: white;
   margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
 }
 
 .recommend-reason {
   font-size: 14px;
   line-height: 1.8;
   color: rgba(255, 255, 255, 0.65);
+  position: relative;
+  z-index: 1;
 }
 
 /* Params */
@@ -239,7 +299,7 @@ onMounted(fetchDetail)
 
 .timeline-item {
   position: relative;
-  padding-bottom: 20px;
+  padding-bottom: 16px;
   padding-left: 20px;
 
   &:last-child {
@@ -259,6 +319,10 @@ onMounted(fetchDetail)
 
   &.assistant {
     border-color: #22d3ee;
+  }
+
+  &.user {
+    border-color: var(--color-primary);
   }
 }
 
@@ -283,14 +347,38 @@ onMounted(fetchDetail)
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--color-primary);
+  color: #22d3ee;
   margin-bottom: 6px;
+
+  &.user-role {
+    color: var(--color-primary);
+  }
 }
 
 .timeline-text {
   font-size: 13px;
   line-height: 1.7;
   color: var(--color-on-surface);
+}
+
+/* Session info */
+.session-info {
+  margin-bottom: 16px;
+  z-index: 1;
+}
+
+.session-meta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  span {
+    font-size: 11px;
+    color: var(--color-on-surface-variant);
+    padding: 4px 12px;
+    background: var(--color-surface-container-low);
+    border-radius: 100px;
+  }
 }
 
 /* Back button */

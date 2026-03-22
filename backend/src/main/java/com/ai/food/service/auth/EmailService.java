@@ -2,24 +2,31 @@ package com.ai.food.service.auth;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class EmailService {
 
     private final JavaMailSender mailSender;
+    private final String fromAddress;
+
+    public EmailService(JavaMailSender mailSender,
+                        @Value("${spring.mail.username}") String fromAddress) {
+        this.mailSender = mailSender;
+        this.fromAddress = fromAddress;
+    }
 
     public void sendVerificationCode(String email, String code) {
         log.info("发送验证码 - email: {}, code: {}", email, code);
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
+            helper.setFrom(fromAddress);    // 必须和 SMTP 认证用户一致
             helper.setTo(email);
             helper.setSubject("AI Food 验证码");
             String html = "<html><body>"

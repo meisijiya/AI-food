@@ -101,6 +101,7 @@ export const conversationApi = {
   start: () => api.post('/conversation/start'),
   getStatus: (sessionId: string) => api.get(`/conversation/status/${sessionId}`),
   complete: (sessionId: string) => api.post(`/conversation/complete/${sessionId}`),
+  cancel: (sessionId: string) => api.delete(`/conversation/cancel/${sessionId}`),
   getHistory: (sessionId: string) => api.get(`/conversation/history/${sessionId}`)
 }
 

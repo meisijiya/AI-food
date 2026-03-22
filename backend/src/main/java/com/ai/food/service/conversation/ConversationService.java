@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -390,5 +391,19 @@ public class ConversationService {
 
     public int getRemainingRequiredParams(ConversationState state) {
         return (int) requiredParams.stream().filter(p -> !state.isParamCollected(p)).count();
+    }
+
+    @Transactional
+    public void cancelSession(String sessionId) {
+        log.info("[{}] canceling session - deleting all related data", sessionId);
+        try {
+            qaRecordRepository.deleteBySessionId(sessionId);
+            collectedParamRepository.deleteBySessionId(sessionId);
+            recommendationResultRepository.deleteBySessionId(sessionId);
+            conversationSessionRepository.deleteBySessionId(sessionId);
+            log.info("[{}] session canceled and data deleted", sessionId);
+        } catch (Exception e) {
+            log.error("[{}] failed to cancel session", sessionId, e);
+        }
     }
 }

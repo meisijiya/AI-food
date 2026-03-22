@@ -6,6 +6,7 @@ import com.ai.food.model.QaRecord;
 import com.ai.food.repository.ConversationSessionRepository;
 import com.ai.food.repository.CollectedParamRepository;
 import com.ai.food.repository.QaRecordRepository;
+import com.ai.food.service.conversation.ConversationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,6 +34,7 @@ public class ConversationController {
     private final ConversationSessionRepository conversationSessionRepository;
     private final CollectedParamRepository collectedParamRepository;
     private final QaRecordRepository qaRecordRepository;
+    private final ConversationService conversationService;
 
     @PostMapping("/start")
     @Operation(summary = "启动新的对话会话", description = "创建一个新的对话会话，返回sessionId和WebSocket连接地址")
@@ -105,6 +107,22 @@ public class ConversationController {
                 "sessionId", sessionId,
                 "status", "completed",
                 "message", "已进入推荐阶段"
+        ));
+    }
+
+    @DeleteMapping("/cancel/{sessionId}")
+    @Operation(summary = "取消对话", description = "取消指定对话并删除所有关联数据")
+    public ResponseEntity<Map<String, Object>> cancelConversation(
+            @Parameter(description = "会话ID", required = true)
+            @PathVariable String sessionId) {
+
+        log.info("Canceling conversation via API: {}", sessionId);
+        conversationService.cancelSession(sessionId);
+
+        return ResponseEntity.ok(Map.of(
+                "sessionId", sessionId,
+                "status", "canceled",
+                "message", "对话已取消"
         ));
     }
 

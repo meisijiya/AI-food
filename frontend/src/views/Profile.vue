@@ -74,7 +74,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { userApi, recordApi } from '@/api'
-import { showToast } from 'vant'
+import { showToast, showSuccess, showError } from '@/utils/toast'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -144,10 +144,10 @@ async function handleSignIn() {
       if (!signStatus.signedDays.includes(today)) {
         signStatus.signedDays.push(today)
       }
-      showToast('签到成功')
+      showSuccess('签到成功')
     }
   } catch (error: any) {
-    showToast(error?.response?.data?.message || '签到失败')
+    showError(error?.response?.data?.message || '签到失败')
   } finally {
     signingIn.value = false
   }

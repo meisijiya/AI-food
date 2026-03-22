@@ -68,7 +68,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { conversationApi } from '@/api'
 import { useChatStore } from '@/stores/chat'
-import { showToast } from 'vant'
+import { showToast, showError } from '@/utils/toast'
 
 const router = useRouter()
 const chatStore = useChatStore()
@@ -79,7 +79,7 @@ const startChat = async () => {
   try {
     const response = await conversationApi.start()
     if (!response || !response.sessionId) {
-      showToast('服务器返回数据异常')
+      showError('服务器返回数据异常')
       return
     }
     chatStore.clearChat()
@@ -87,7 +87,7 @@ const startChat = async () => {
     router.push('/chat')
   } catch (error: any) {
     console.error('[Home] Failed:', error?.message)
-    showToast('启动对话失败，请确认后端服务已启动')
+    showError('启动对话失败，请确认后端服务已启动')
   } finally {
     loading.value = false
   }

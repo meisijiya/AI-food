@@ -138,7 +138,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { authApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
-import { showToast } from 'vant'
+import { showToast, showSuccess, showError } from '@/utils/toast'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -186,10 +186,10 @@ const handleSendCode = async () => {
   codeSending.value = true
   try {
     await authApi.sendCode(registerForm.email)
-    showToast('验证码已发送')
+    showSuccess('验证码已发送')
     startCountdown()
   } catch (error: any) {
-    showToast(error?.response?.data?.message || '发送失败，请重试')
+    showError(error?.response?.data?.message || '发送失败，请重试')
   } finally {
     codeSending.value = false
   }
@@ -212,10 +212,10 @@ const handleLogin = async () => {
       email: res.email,
       avatar: res.avatar
     })
-    showToast('登录成功')
+    showSuccess('登录成功')
     router.push('/')
   } catch (error: any) {
-    showToast(error?.response?.data?.message || '登录失败，请检查用户名和密码')
+    showError(error?.response?.data?.message || '登录失败，请检查用户名和密码')
   } finally {
     loading.value = false
   }
@@ -241,10 +241,10 @@ const handleRegister = async () => {
       email: res.email,
       avatar: res.avatar
     })
-    showToast('注册成功')
+    showSuccess('注册成功')
     router.push('/')
   } catch (error: any) {
-    showToast(error?.response?.data?.message || '注册失败，请重试')
+    showError(error?.response?.data?.message || '注册失败，请重试')
   } finally {
     loading.value = false
   }
