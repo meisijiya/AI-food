@@ -1,8 +1,5 @@
 -- AI美食推荐应用数据库初始化脚本
-
-CREATE DATABASE IF NOT EXISTS ai_food DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-USE ai_food;
+-- Spring Boot 启动时自动执行，CREATE TABLE IF NOT EXISTS 确保幂等
 
 -- 用户会话表
 CREATE TABLE IF NOT EXISTS conversation_session (
