@@ -43,7 +43,7 @@ public class MessageValidator {
         ));
 
         PARAM_KEYWORDS.put("companion", Arrays.asList(
-            "一个人", "独自", "自己", "单人", "单独",
+            "一个人", "独自", "自己", "单人", "单独","狗","蛋","蛋蛋",
             "朋友", "同事", "同学", "伙伴", "兄弟", "姐妹", "闺蜜", "哥们",
             "家人", "父母", "爸", "妈", "爸妈", "老公", "老婆", "老公", "妻子",
             "孩子", "儿子", "女儿", "宝宝", "宝贝",
@@ -202,7 +202,7 @@ public class MessageValidator {
             return true;
         }
 
-        String[] generalWords = {"要", "是", "的", "了", "在", "有", "和", "或", "但", "因为", "所以"};
+        String[] generalWords = {"要", "是", "的", "了", "在", "有", "和", "或", "但", "因为", "所以","虽然","如果","但是","辣","甜","酸","苦","咸","麻","鲜","香","脆","嫩","软"};
         return Arrays.stream(generalWords).anyMatch(text::contains);
     }
 
