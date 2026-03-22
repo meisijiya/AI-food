@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS recommendation_result (
     old_food VARCHAR(100) COMMENT '随机模式的旧值',
     similarity_score DECIMAL(3,2),
     reason TEXT,
+    photo_url VARCHAR(500),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     is_deleted BOOLEAN DEFAULT FALSE,
     INDEX idx_session (session_id),
@@ -76,4 +77,21 @@ CREATE TABLE IF NOT EXISTS sys_user (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_username (username),
     INDEX idx_email (email)
+);
+
+-- 照片表
+CREATE TABLE IF NOT EXISTS photo (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    original_path VARCHAR(500) NOT NULL COMMENT '原图路径',
+    thumbnail_path VARCHAR(500) COMMENT '缩略图路径',
+    related_session_id VARCHAR(64) COMMENT '关联的会话ID',
+    file_name VARCHAR(255),
+    original_size BIGINT COMMENT '原图大小(bytes)',
+    thumbnail_size BIGINT COMMENT '缩略图大小(bytes)',
+    mime_type VARCHAR(50),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    INDEX idx_user_id (user_id),
+    INDEX idx_session (related_session_id)
 );

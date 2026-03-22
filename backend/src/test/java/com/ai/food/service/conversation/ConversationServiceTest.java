@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -45,6 +46,9 @@ class ConversationServiceTest {
     @Mock
     private RecommendationResultRepository recommendationResultRepository;
 
+    @Mock
+    private StringRedisTemplate redisTemplate;
+
     private ConversationService conversationService;
 
     @BeforeEach
@@ -54,7 +58,7 @@ class ConversationServiceTest {
         conversationService = new ConversationService(
                 aiService, messageValidator, messageTagParser,
                 conversationSessionRepository, qaRecordRepository, collectedParamRepository,
-                recommendationResultRepository
+                recommendationResultRepository, redisTemplate
         );
         ReflectionTestUtils.setField(conversationService, "minQuestions", 7);
         ReflectionTestUtils.setField(conversationService, "maxQuestions", 10);

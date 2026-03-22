@@ -5,6 +5,7 @@ import com.ai.food.service.record.RecordService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +21,17 @@ import java.util.Map;
 public class RecordController {
 
     private final RecordService recordService;
+    private final StringRedisTemplate redisTemplate;
+
+    @GetMapping("/pending")
+    public ApiResponse<Map<String, Object>> getPendingRecommendation() {
+        Long userId = getCurrentUserId();
+        Map<String, Object> data = recordService.getPendingRecommendation(userId);
+        if (data == null) {
+            return ApiResponse.success("暂无待处理推荐", new HashMap<>());
+        }
+        return ApiResponse.success(data);
+    }
 
     @GetMapping("/list")
     public ApiResponse<Map<String, Object>> getRecordList(
@@ -59,6 +71,19 @@ public class RecordController {
         log.info("Batch delete {} records", sessionIds.size());
         recordService.batchDeleteRecords(sessionIds);
         return ApiResponse.success("批量删除成功", null);
+    }
+
+    @PutMapping("/photo/{sessionId}")
+    public ApiResponse<Void> updatePhoto(@PathVariable String sessionId,
+                                         @RequestBody Map<String, String> body) {
+        String photoUrl = body.get("photoUrl");
+        if (photoUrl == null || photoUrl.isBlank()) {
+            return ApiResponse.error("请提供图片URL");
+        }
+        Long userId = getCurrentUserId();
+        recordService.updateRecommendationPhoto(sessionId, photoUrl);
+        redisTemplate.delete("pending:recommend:" + userId);
+        return ApiResponse.success("照片已保存", null);
     }
 
     private Long getCurrentUserId() {

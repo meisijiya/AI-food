@@ -1,0 +1,18 @@
+package com.ai.food.repository;
+
+import com.ai.food.model.Photo;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface PhotoRepository extends JpaRepository<Photo, Long> {
+
+    List<Photo> findByUserIdOrderByCreatedAtDesc(Long userId);
+
+    // 取该 session 最新一条照片（一个 session 可能上传多次）
+    Optional<Photo> findFirstByRelatedSessionIdOrderByCreatedAtDesc(String sessionId);
+
+    List<Photo> findByUserIdAndRelatedSessionId(Long userId, String sessionId);
+}

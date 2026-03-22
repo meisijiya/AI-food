@@ -4,7 +4,12 @@
     <div class="result-glow glow-1"></div>
     <div class="result-glow glow-2"></div>
 
-    <div class="result-content">
+    <!-- Loading -->
+    <div v-if="loading" class="loading-state">
+      <div class="loading-spinner"></div>
+    </div>
+
+    <div v-else class="result-content">
       <!-- Header -->
       <div class="result-header animate-fade-up">
         <div class="check-circle animate-scale-in delay-100 animate-start-hidden">
@@ -38,6 +43,25 @@
         </div>
       </div>
 
+      <!-- Photo section -->
+      <template v-if="sessionId">
+        <!-- Already uploaded thumbnail -->
+        <div v-if="uploadedPhoto" class="uploaded-photo-card animate-fade-up delay-450 animate-start-hidden">
+          <div class="upload-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            <span>美食照片</span>
+          </div>
+          <img :src="uploadedPhoto.thumbnailUrl" class="photo-thumbnail" alt="美食照片" @click="openFullPhoto" />
+        </div>
+
+        <!-- Upload component -->
+        <UploadPhoto
+          v-else
+          :session-id="sessionId"
+          @uploaded="onPhotoUploaded"
+        />
+      </template>
+
       <!-- Action Buttons -->
       <div class="actions animate-fade-up delay-500 animate-start-hidden">
         <button class="primary-btn" @click="startNewChat">
@@ -48,16 +72,78 @@
         </button>
       </div>
     </div>
+
+    <!-- Full photo modal -->
+    <Transition name="fade">
+      <div v-if="showFullPhoto && uploadedPhoto" class="photo-modal" @click.self="showFullPhoto = false">
+        <div class="photo-modal-content">
+          <img :src="uploadedPhoto.originalUrl" class="full-photo" alt="原始照片" />
+          <button class="photo-modal-close" @click="showFullPhoto = false">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChatStore } from '@/stores/chat'
+import { recordApi } from '@/api'
+import UploadPhoto from '@/components/UploadPhoto.vue'
 
 const router = useRouter()
 const chatStore = useChatStore()
+const loading = ref(true)
+const pendingData = ref<any>(null)
+const uploadedPhoto = ref<{ thumbnailUrl: string; originalUrl: string } | null>(null)
+const showFullPhoto = ref(false)
+
+onMounted(async () => {
+  try {
+    // Try fetching pending recommendation from backend
+    const res = await recordApi.getPendingRecommendation()
+    if (res) {
+      pendingData.value = res
+      // Populate chat store for rendering
+      if (res.content) {
+        chatStore.recommendationResult = typeof res.content === 'string'
+          ? res.content
+          : JSON.stringify(res.content)
+      }
+      if (res.paramValues) {
+        chatStore.collectedParamValues = res.paramValues
+      }
+      if (res.sessionId) {
+        chatStore.sessionId = res.sessionId
+      }
+      if (res.photoUrl) {
+        uploadedPhoto.value = {
+          thumbnailUrl: res.photoThumbnailUrl || res.photoUrl,
+          originalUrl: res.photoOriginalUrl || res.photoUrl
+        }
+      }
+    } else if (chatStore.recommendationResult) {
+      // Fallback to chat store data
+      pendingData.value = {
+        sessionId: chatStore.sessionId,
+        content: chatStore.recommendationResult
+      }
+    }
+  } catch {
+    // Fallback to chat store
+    if (chatStore.recommendationResult) {
+      pendingData.value = {
+        sessionId: chatStore.sessionId,
+        content: chatStore.recommendationResult
+      }
+    }
+  } finally {
+    loading.value = false
+  }
+})
 
 const paramLabels: Record<string, string> = {
   time: '用餐时间',
@@ -71,6 +157,10 @@ const paramLabels: Record<string, string> = {
   preference: '特殊偏好',
   health: '健康需求'
 }
+
+const sessionId = computed(() => {
+  return pendingData.value?.sessionId || chatStore.sessionId
+})
 
 const foodName = computed(() => {
   try {
@@ -98,6 +188,19 @@ const collectedParams = computed(() => {
   }))
 })
 
+function onPhotoUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
+  uploadedPhoto.value = data
+  // 保存到数据库并清除 Redis 缓存
+  const sid = sessionId.value
+  if (sid) {
+    recordApi.updatePhoto(sid, data.thumbnailUrl).catch(() => {})
+  }
+}
+
+function openFullPhoto() {
+  showFullPhoto.value = true
+}
+
 const startNewChat = () => {
   chatStore.clearChat()
   router.push('/')
@@ -115,6 +218,26 @@ const goHome = () => {
   padding: 40px 20px 60px;
   position: relative;
   overflow: hidden;
+}
+
+.loading-state {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-surface-container-low);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .result-glow {
@@ -286,11 +409,96 @@ const goHome = () => {
   font-weight: 700;
 }
 
+/* Uploaded photo */
+.uploaded-photo-card {
+  margin-bottom: 20px;
+}
+
+.upload-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-on-surface);
+  margin-bottom: 12px;
+
+  svg {
+    color: var(--color-primary);
+  }
+}
+
+.photo-thumbnail {
+  width: 100%;
+  border-radius: 1.5rem;
+  display: block;
+  max-height: 300px;
+  object-fit: cover;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+
+  &:hover {
+    transform: scale(1.01);
+  }
+}
+
+/* Photo modal */
+.photo-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.photo-modal-content {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.full-photo {
+  max-width: 100%;
+  max-height: 85vh;
+  border-radius: 1.5rem;
+  object-fit: contain;
+}
+
+.photo-modal-close {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
 /* Actions */
 .actions {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  margin-top: 20px;
 }
 
 .primary-btn {
@@ -326,6 +534,16 @@ const goHome = () => {
   cursor: pointer;
   transition: all 0.2s;
   &:hover { background: var(--color-surface-container-low); }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 @media (min-width: 640px) {

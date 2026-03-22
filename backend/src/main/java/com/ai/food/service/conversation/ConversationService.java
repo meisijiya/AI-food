@@ -3,6 +3,7 @@ package com.ai.food.service.conversation;
 import com.ai.food.dto.ConversationState;
 import com.ai.food.dto.WebSocketMessage;
 import com.ai.food.model.CollectedParam;
+import com.ai.food.model.ConversationSession;
 import com.ai.food.model.QaRecord;
 import com.ai.food.model.RecommendationResult;
 import com.ai.food.repository.CollectedParamRepository;
@@ -16,11 +17,13 @@ import com.ai.food.validator.MessageValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -36,6 +39,7 @@ public class ConversationService {
     private final QaRecordRepository qaRecordRepository;
     private final CollectedParamRepository collectedParamRepository;
     private final RecommendationResultRepository recommendationResultRepository;
+    private final StringRedisTemplate redisTemplate;
 
     @Value("${ai.conversation.min-questions:7}")
     private int minQuestions;
@@ -203,6 +207,22 @@ public class ConversationService {
 
         String normalizedJson = extractJsonFromResponse(aiResponse);
         saveRecommendationResult(sessionId, state, normalizedJson);
+
+        try {
+            Long userId = getUserIdFromSession(sessionId);
+            String cacheKey = "pending:recommend:" + userId;
+            Map<String, Object> cacheData = new LinkedHashMap<>();
+            cacheData.put("sessionId", sessionId);
+            cacheData.put("foodName", parseFoodName(normalizedJson));
+            cacheData.put("reason", parseReason(normalizedJson));
+            cacheData.put("paramValues", state.getParamValues());
+            cacheData.put("photoUploaded", false);
+            cacheData.put("photoUrl", null);
+            cacheData.put("createdAt", LocalDateTime.now().toString());
+            redisTemplate.opsForValue().set(cacheKey, OBJECT_MAPPER.writeValueAsString(cacheData), 7, TimeUnit.DAYS);
+        } catch (Exception e) {
+            log.warn("Failed to cache pending recommendation to Redis for session {}", sessionId, e);
+        }
 
         conversationSessionRepository.findBySessionId(sessionId).ifPresent(session -> {
             session.setStatus("completed");
@@ -384,6 +404,55 @@ public class ConversationService {
 
     public List<String> getRequiredParams() { return requiredParams; }
     public List<String> getOptionalParams() { return optionalParams; }
+
+    private Long getUserIdFromSession(String sessionId) {
+        return conversationSessionRepository.findBySessionId(sessionId)
+                .map(ConversationSession::getUserId)
+                .orElseThrow(() -> new RuntimeException("Session not found: " + sessionId));
+    }
+
+    private String parseFoodName(String response) {
+        if (response == null) return "未知美食";
+        try {
+            String trimmed = response.trim();
+            if (trimmed.startsWith("```")) {
+                int start = trimmed.indexOf('{');
+                int end = trimmed.lastIndexOf('}');
+                if (start >= 0 && end > start) trimmed = trimmed.substring(start, end + 1);
+            }
+            int start = trimmed.indexOf("\"foodName\"");
+            if (start >= 0) {
+                start = trimmed.indexOf(":", start) + 1;
+                int end = trimmed.indexOf(",", start);
+                if (end < 0) end = trimmed.indexOf("}", start);
+                return trimmed.substring(start, end).trim().replace("\"", "");
+            }
+        } catch (Exception e) {
+            log.warn("Failed to parse foodName", e);
+        }
+        return "未知美食";
+    }
+
+    private String parseReason(String response) {
+        if (response == null) return "根据您的需求为您推荐";
+        try {
+            String trimmed = response.trim();
+            if (trimmed.startsWith("```")) {
+                int start = trimmed.indexOf('{');
+                int end = trimmed.lastIndexOf('}');
+                if (start >= 0 && end > start) trimmed = trimmed.substring(start, end + 1);
+            }
+            int start = trimmed.indexOf("\"reason\"");
+            if (start >= 0) {
+                start = trimmed.indexOf(":", start) + 1;
+                int end = trimmed.lastIndexOf("}");
+                return trimmed.substring(start, end).trim().replace("\"", "");
+            }
+        } catch (Exception e) {
+            log.warn("Failed to parse reason", e);
+        }
+        return "根据您的需求为您推荐";
+    }
 
     public boolean isAllRequiredParamsCollected(ConversationState state) {
         return requiredParams.stream().allMatch(state::isParamCollected);

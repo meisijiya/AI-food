@@ -4,6 +4,17 @@
     <div class="bg-glow bg-glow-1"></div>
     <div class="bg-glow bg-glow-2"></div>
 
+    <!-- Pending photo check-in notification -->
+    <div v-if="pendingRecommendation && pendingRecommendation.sessionId && !pendingRecommendation.photoUploaded" class="pending-notification animate-fade-up animate-start-hidden">
+      <div class="pending-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+      </div>
+      <div class="pending-text">
+        <div class="pending-title">还有未完成的拍照打卡</div>
+      </div>
+      <button class="pending-action" @click="router.push('/result')">查看推荐</button>
+    </div>
+
     <!-- Hero Section -->
     <div class="hero animate-fade-up">
       <div class="hero-badge animate-fade-up delay-100 animate-start-hidden">
@@ -60,21 +71,61 @@
         <span v-else>开始美食之旅</span>
       </button>
     </div>
+
+    <!-- Confirm dialog overlay -->
+    <Transition name="fade">
+      <div v-if="showConfirmDialog" class="dialog-overlay" @click.self="showConfirmDialog = false">
+        <div class="dialog-card">
+          <div class="dialog-title">还有未完成的拍照打卡</div>
+          <div class="dialog-desc">是否继续新的对话？</div>
+          <div class="dialog-actions">
+            <button class="dialog-btn ghost" @click="goToResult">去完成打卡</button>
+            <button class="dialog-btn primary" @click="doStartChat">继续对话</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { conversationApi } from '@/api'
+import { conversationApi, recordApi } from '@/api'
 import { useChatStore } from '@/stores/chat'
 import { showError } from '@/utils/toast'
 
 const router = useRouter()
 const chatStore = useChatStore()
 const loading = ref(false)
+const showConfirmDialog = ref(false)
+const pendingRecommendation = ref<any>(null)
+
+onMounted(async () => {
+  try {
+    const res = await recordApi.getPendingRecommendation()
+    if (res) {
+      pendingRecommendation.value = res
+    }
+  } catch {
+    // no pending recommendation
+  }
+})
+
+const hasPendingPhoto = () => {
+  return pendingRecommendation.value?.sessionId && !pendingRecommendation.value?.photoUploaded
+}
 
 const startChat = async () => {
+  if (hasPendingPhoto()) {
+    showConfirmDialog.value = true
+    return
+  }
+  await doStartChat()
+}
+
+const doStartChat = async () => {
+  showConfirmDialog.value = false
   loading.value = true
   try {
     const response = await conversationApi.start()
@@ -91,6 +142,11 @@ const startChat = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const goToResult = () => {
+  showConfirmDialog.value = false
+  router.push('/result')
 }
 </script>
 
@@ -248,6 +304,141 @@ const startChat = async () => {
 /* CTA */
 .cta-area {
   z-index: 1;
+}
+
+/* Pending photo check-in notification */
+.pending-notification {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--color-surface-container-lowest);
+  border-radius: 1.5rem;
+  border: 1px solid var(--color-surface-container-low);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  margin-bottom: 24px;
+  z-index: 1;
+}
+
+.pending-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.08), rgba(255, 183, 77, 0.12));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f57c00;
+  flex-shrink: 0;
+}
+
+.pending-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.pending-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-on-surface);
+}
+
+.pending-action {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 100px;
+  background: var(--color-primary);
+  color: white;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover { opacity: 0.9; }
+  &:active { transform: scale(0.96); }
+}
+
+/* Confirm dialog */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.dialog-card {
+  width: 100%;
+  max-width: 340px;
+  background: var(--color-surface);
+  border-radius: 2rem;
+  padding: 32px 28px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.15);
+}
+
+.dialog-title {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--color-on-surface);
+  margin-bottom: 8px;
+}
+
+.dialog-desc {
+  font-size: 14px;
+  color: var(--color-on-surface-variant);
+  margin-bottom: 28px;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.dialog-btn {
+  flex: 1;
+  padding: 14px 16px;
+  border: none;
+  border-radius: 1.5rem;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &.primary {
+    background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+    color: white;
+    box-shadow: 0 8px 24px -6px rgba(0, 89, 182, 0.3);
+
+    &:hover { transform: translateY(-1px); }
+  }
+
+  &.ghost {
+    background: transparent;
+    border: 1.5px solid var(--color-surface-container-low);
+    color: var(--color-on-surface-variant);
+
+    &:hover { background: var(--color-surface-container-low); }
+  }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 .cta-button {

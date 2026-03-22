@@ -19,6 +19,30 @@
         <div class="recommend-reason" v-if="reason">{{ reason }}</div>
       </div>
 
+      <!-- Photo section -->
+      <template v-if="detail.recommendation">
+        <!-- Already uploaded photo with thumbnail -->
+        <div v-if="detail.photo" class="photo-card animate-fade-up delay-150 animate-start-hidden">
+          <div class="photo-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            <span>美食照片</span>
+          </div>
+          <img
+            :src="detail.photo.thumbnailPath"
+            class="photo-image"
+            alt="美食照片"
+            @click="openPhotoModal(detail.photo.originalPath)"
+          />
+        </div>
+
+        <!-- Upload prompt if recommendation exists but no photo -->
+        <UploadPhoto
+          v-else-if="sessionId"
+          :session-id="sessionId"
+          @uploaded="onPhotoUploaded"
+        />
+      </template>
+
       <!-- Collected params -->
       <div v-if="paramsList.length" class="params-section animate-fade-up delay-200 animate-start-hidden">
         <div class="section-label">收集信息</div>
@@ -76,6 +100,18 @@
     </button>
 
     <div class="nav-spacer"></div>
+
+    <!-- Photo modal -->
+    <Transition name="fade">
+      <div v-if="photoModalUrl" class="photo-modal" @click.self="photoModalUrl = null">
+        <div class="photo-modal-content">
+          <img :src="photoModalUrl" class="full-photo" alt="原始照片" />
+          <button class="photo-modal-close" @click="photoModalUrl = null">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -83,12 +119,16 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { recordApi } from '@/api'
+import UploadPhoto from '@/components/UploadPhoto.vue'
 
 const route = useRoute()
 const router = useRouter()
 
 const loading = ref(true)
 const detail = ref<any>(null)
+const photoModalUrl = ref<string | null>(null)
+
+const sessionId = computed(() => route.params.sessionId as string)
 
 const paramLabels: Record<string, string> = {
   time: '用餐时间',
@@ -113,7 +153,6 @@ function formatDate(dateStr: string) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-// 从后端 RecordDetail 结构中提取各字段
 const foodName = computed(() => {
   return detail.value?.recommendation?.foodName || '暂无推荐结果'
 })
@@ -131,16 +170,14 @@ const qaList = computed(() => {
 })
 
 async function fetchDetail() {
-  const sessionId = route.params.sessionId as string
-  if (!sessionId) {
+  const sid = route.params.sessionId as string
+  if (!sid) {
     loading.value = false
     return
   }
 
   try {
-    const res = await recordApi.getRecordDetail(sessionId)
-    // api 拦截器已解包 ApiResponse → 返回 RecordDetail 的 data 部分
-    // data 包含: { session, recommendation, collectedParams, qaRecords }
+    const res = await recordApi.getRecordDetail(sid)
     detail.value = res
   } catch {
     // ignore
@@ -150,6 +187,23 @@ async function fetchDetail() {
 }
 
 onMounted(fetchDetail)
+
+function onPhotoUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
+  if (detail.value) {
+    detail.value.photo = {
+      thumbnailPath: data.thumbnailUrl,
+      originalPath: data.originalUrl
+    }
+  }
+  // 保存到数据库并清除 Redis 缓存
+  if (sessionId) {
+    recordApi.updatePhoto(sessionId, data.thumbnailUrl).catch(() => {})
+  }
+}
+
+function openPhotoModal(url: string) {
+  photoModalUrl.value = url
+}
 </script>
 
 <style lang="scss" scoped>
@@ -254,6 +308,91 @@ onMounted(fetchDetail)
   color: rgba(255, 255, 255, 0.65);
   position: relative;
   z-index: 1;
+}
+
+/* Photo card */
+.photo-card {
+  margin-bottom: 20px;
+  z-index: 1;
+}
+
+.photo-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-on-surface);
+  margin-bottom: 12px;
+
+  svg {
+    color: var(--color-primary);
+  }
+}
+
+.photo-image {
+  width: 100%;
+  border-radius: 1.5rem;
+  display: block;
+  max-height: 300px;
+  object-fit: cover;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+
+  &:hover {
+    transform: scale(1.01);
+  }
+}
+
+/* Photo modal */
+.photo-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.photo-modal-content {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.full-photo {
+  max-width: 100%;
+  max-height: 85vh;
+  border-radius: 1.5rem;
+  object-fit: contain;
+}
+
+.photo-modal-close {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
 }
 
 /* Params */
@@ -408,5 +547,15 @@ onMounted(fetchDetail)
 
 .nav-spacer {
   height: 80px;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
