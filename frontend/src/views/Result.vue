@@ -46,17 +46,27 @@
       <!-- Photo section -->
       <template v-if="sessionId">
         <!-- Already uploaded thumbnail -->
-        <div v-if="uploadedPhoto" class="uploaded-photo-card animate-fade-up delay-450 animate-start-hidden">
-          <div class="upload-label">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-            <span>美食照片</span>
+        <div v-if="uploadedPhoto && !showUpload" class="uploaded-photo-card animate-fade-up delay-450 animate-start-hidden">
+          <div class="photo-header">
+            <div class="upload-label">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              <span>美食照片</span>
+            </div>
+            <div class="photo-actions">
+              <button class="photo-action-btn replace" @click="showUpload = true" title="更换照片">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+              </button>
+              <button class="photo-action-btn delete" @click="handleDeletePhoto" title="删除照片">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              </button>
+            </div>
           </div>
           <img :src="uploadedPhoto.thumbnailUrl" class="photo-thumbnail" alt="美食照片" @click="openFullPhoto" />
         </div>
 
-        <!-- Upload component -->
+        <!-- Upload / Re-upload component -->
         <UploadPhoto
-          v-else
+          v-if="!uploadedPhoto || showUpload"
           :session-id="sessionId"
           @uploaded="onPhotoUploaded"
         />
@@ -92,6 +102,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChatStore } from '@/stores/chat'
 import { recordApi } from '@/api'
+import { showSuccess, showError } from '@/utils/toast'
 import UploadPhoto from '@/components/UploadPhoto.vue'
 
 const router = useRouter()
@@ -100,6 +111,7 @@ const loading = ref(true)
 const pendingData = ref<any>(null)
 const uploadedPhoto = ref<{ thumbnailUrl: string; originalUrl: string } | null>(null)
 const showFullPhoto = ref(false)
+const showUpload = ref(false)
 
 onMounted(async () => {
   try {
@@ -190,10 +202,24 @@ const collectedParams = computed(() => {
 
 function onPhotoUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
   uploadedPhoto.value = data
+  showUpload.value = false
   // 保存到数据库并清除 Redis 缓存
   const sid = sessionId.value
   if (sid) {
     recordApi.updatePhoto(sid, data.thumbnailUrl).catch(() => {})
+  }
+}
+
+async function handleDeletePhoto() {
+  const sid = sessionId.value
+  if (!sid) return
+  try {
+    await recordApi.deletePhoto(sid)
+    uploadedPhoto.value = null
+    showUpload.value = false
+    showSuccess('照片已删除')
+  } catch {
+    showError('删除失败')
   }
 }
 
@@ -412,6 +438,42 @@ const goHome = () => {
 /* Uploaded photo */
 .uploaded-photo-card {
   margin-bottom: 20px;
+}
+
+.photo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.photo-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.photo-action-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &.replace {
+    background: rgba(0, 89, 182, 0.08);
+    color: var(--color-primary);
+    &:active { background: rgba(0, 89, 182, 0.15); }
+  }
+
+  &.delete {
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+    &:active { background: rgba(239, 68, 68, 0.15); }
+  }
 }
 
 .upload-label {

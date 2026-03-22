@@ -86,6 +86,13 @@ public class RecordService {
     @Transactional
     public void deleteRecord(String sessionId) {
         log.info("Soft deleting record: {}", sessionId);
+        // 删除硬盘上的照片文件
+        photoRepository.findFirstByRelatedSessionIdOrderByCreatedAtDesc(sessionId).ifPresent(photo -> {
+            deletePhysicalFile(photo.getOriginalPath());
+            deletePhysicalFile(photo.getThumbnailPath());
+            photo.setIsDeleted(true);
+            photoRepository.save(photo);
+        });
         qaRecordRepository.softDeleteBySessionId(sessionId);
         collectedParamRepository.softDeleteBySessionId(sessionId);
         recommendationResultRepository.softDeleteBySessionId(sessionId);
@@ -96,6 +103,12 @@ public class RecordService {
     public void batchDeleteRecords(List<String> sessionIds) {
         log.info("Batch soft deleting {} records", sessionIds.size());
         for (String sessionId : sessionIds) {
+            photoRepository.findFirstByRelatedSessionIdOrderByCreatedAtDesc(sessionId).ifPresent(photo -> {
+                deletePhysicalFile(photo.getOriginalPath());
+                deletePhysicalFile(photo.getThumbnailPath());
+                photo.setIsDeleted(true);
+                photoRepository.save(photo);
+            });
             qaRecordRepository.softDeleteBySessionId(sessionId);
             collectedParamRepository.softDeleteBySessionId(sessionId);
             recommendationResultRepository.softDeleteBySessionId(sessionId);
@@ -116,6 +129,38 @@ public class RecordService {
                 redisTemplate.delete("pending:recommend:" + userId);
             }
         });
+    }
+
+    @Transactional
+    public void deleteRecommendationPhoto(String sessionId) {
+        log.info("Deleting photo for session: {}", sessionId);
+        // 清除 recommendation_result 的 photo_url
+        recommendationResultRepository.findBySessionId(sessionId).ifPresent(r -> {
+            r.setPhotoUrl(null);
+            recommendationResultRepository.save(r);
+        });
+        // 软删除 photo 表记录 + 删除硬盘文件
+        photoRepository.findFirstByRelatedSessionIdOrderByCreatedAtDesc(sessionId).ifPresent(photo -> {
+            deletePhysicalFile(photo.getOriginalPath());
+            deletePhysicalFile(photo.getThumbnailPath());
+            photo.setIsDeleted(true);
+            photoRepository.save(photo);
+        });
+    }
+
+    private void deletePhysicalFile(String relativePath) {
+        if (relativePath == null || relativePath.isBlank()) return;
+        try {
+            java.nio.file.Path root = java.nio.file.Paths.get(System.getProperty("user.dir"), "uploads").toAbsolutePath();
+            // relativePath 如 /uploads/photos/20260322/xxx.jpg，去掉 /uploads 前缀
+            String relative = relativePath.startsWith("/uploads") ? relativePath.substring("/uploads".length()) : relativePath;
+            java.nio.file.Path filePath = root.resolve(relative.startsWith("/") ? relative.substring(1) : relative);
+            if (java.nio.file.Files.deleteIfExists(filePath)) {
+                log.info("Deleted physical file: {}", filePath);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to delete physical file: {}", relativePath, e);
+        }
     }
 
     public RecordDetail getRecordDetail(String sessionId) {

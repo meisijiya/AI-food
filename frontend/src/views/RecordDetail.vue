@@ -22,10 +22,20 @@
       <!-- Photo section -->
       <template v-if="detail.recommendation">
         <!-- Already uploaded photo with thumbnail -->
-        <div v-if="detail.photo" class="photo-card animate-fade-up delay-150 animate-start-hidden">
-          <div class="photo-label">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-            <span>美食照片</span>
+        <div v-if="detail.photo && !showUpload" class="photo-card animate-fade-up delay-150 animate-start-hidden">
+          <div class="photo-header">
+            <div class="photo-label">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              <span>美食照片</span>
+            </div>
+            <div class="photo-actions">
+              <button class="photo-action-btn replace" @click="showUpload = true" title="更换照片">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+              </button>
+              <button class="photo-action-btn delete" @click="handleDeletePhoto" title="删除照片">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              </button>
+            </div>
           </div>
           <img
             :src="detail.photo.thumbnailPath"
@@ -35,9 +45,9 @@
           />
         </div>
 
-        <!-- Upload prompt if recommendation exists but no photo -->
+        <!-- Upload / Re-upload -->
         <UploadPhoto
-          v-else-if="sessionId"
+          v-if="!detail.photo || showUpload"
           :session-id="sessionId"
           @uploaded="onPhotoUploaded"
         />
@@ -119,6 +129,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { recordApi } from '@/api'
+import { showSuccess, showError } from '@/utils/toast'
 import UploadPhoto from '@/components/UploadPhoto.vue'
 
 const route = useRoute()
@@ -127,6 +138,7 @@ const router = useRouter()
 const loading = ref(true)
 const detail = ref<any>(null)
 const photoModalUrl = ref<string | null>(null)
+const showUpload = ref(false)
 
 const sessionId = computed(() => route.params.sessionId as string)
 
@@ -195,9 +207,26 @@ function onPhotoUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
       originalPath: data.originalUrl
     }
   }
+  showUpload.value = false
   // 保存到数据库并清除 Redis 缓存
-  if (sessionId) {
-    recordApi.updatePhoto(sessionId, data.thumbnailUrl).catch(() => {})
+  const sid = sessionId.value
+  if (sid) {
+    recordApi.updatePhoto(sid, data.thumbnailUrl).catch(() => {})
+  }
+}
+
+async function handleDeletePhoto() {
+  const sid = sessionId.value
+  if (!sid) return
+  try {
+    await recordApi.deletePhoto(sid)
+    if (detail.value) {
+      detail.value.photo = null
+    }
+    showUpload.value = false
+    showSuccess('照片已删除')
+  } catch {
+    showError('删除失败')
   }
 }
 
@@ -316,6 +345,42 @@ function openPhotoModal(url: string) {
   z-index: 1;
 }
 
+.photo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.photo-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.photo-action-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &.replace {
+    background: rgba(0, 89, 182, 0.08);
+    color: var(--color-primary);
+    &:active { background: rgba(0, 89, 182, 0.15); }
+  }
+
+  &.delete {
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+    &:active { background: rgba(239, 68, 68, 0.15); }
+  }
+}
+
 .photo-label {
   display: flex;
   align-items: center;
@@ -325,7 +390,6 @@ function openPhotoModal(url: string) {
   font-size: 16px;
   font-weight: 500;
   color: var(--color-on-surface);
-  margin-bottom: 12px;
 
   svg {
     color: var(--color-primary);

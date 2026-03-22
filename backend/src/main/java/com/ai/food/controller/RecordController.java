@@ -86,6 +86,15 @@ public class RecordController {
         return ApiResponse.success("照片已保存", null);
     }
 
+    @DeleteMapping("/photo/{sessionId}")
+    public ApiResponse<Void> deletePhoto(@PathVariable String sessionId) {
+        Long userId = getCurrentUserId();
+        log.info("Delete photo for session: {}", sessionId);
+        recordService.deleteRecommendationPhoto(sessionId);
+        redisTemplate.delete("pending:recommend:" + userId);
+        return ApiResponse.success("照片已删除", null);
+    }
+
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return Long.parseLong(authentication.getPrincipal().toString());

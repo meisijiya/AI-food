@@ -101,6 +101,7 @@ export const recordApi = {
   deleteRecord: (sessionId: string) => request('delete', `/record/delete/${sessionId}`),
   batchDeleteRecords: (sessionIds: string[]) => request('delete', '/record/batch-delete', { sessionIds }),
   updatePhoto: (sessionId: string, photoUrl: string) => request('put', `/record/photo/${sessionId}`, { photoUrl }),
+  deletePhoto: (sessionId: string) => request('delete', `/record/photo/${sessionId}`),
   getPendingRecommendation: () => request('get', '/record/pending')
 }
 
