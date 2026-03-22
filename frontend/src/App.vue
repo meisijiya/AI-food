@@ -5,22 +5,35 @@
     </transition>
   </router-view>
 
-  <!-- Floating pill bottom nav — scroll to hide/show -->
-  <transition name="nav-slide">
-    <nav v-show="showNav && !isNavHidden" class="bottom-nav">
-      <router-link
-        v-for="item in navItems"
-        :key="item.path"
-        :to="item.path"
-        class="nav-item"
-        :class="{ active: isActive(item.path) }"
-      >
-        <div class="nav-icon" v-html="item.icon"></div>
-        <span class="nav-label">{{ item.label }}</span>
-        <div class="nav-dot" v-show="isActive(item.path)"></div>
-      </router-link>
-    </nav>
-  </transition>
+  <!-- Wrapper: controls overall position -->
+  <div v-show="showNav" class="nav-root" :class="{ collapsed: isNavHidden }">
+    <!-- Floating pill nav -->
+    <transition name="nav-pop">
+      <div v-show="!isNavHidden" class="nav-bar">
+        <router-link
+          v-for="item in navItems"
+          :key="item.path"
+          :to="item.path"
+          class="nav-item"
+          :class="{ active: isActive(item.path) }"
+        >
+          <div class="nav-icon" v-html="item.icon"></div>
+          <span class="nav-label">{{ item.label }}</span>
+          <div class="nav-dot" v-show="isActive(item.path)"></div>
+        </router-link>
+
+        <!-- Toggle button inside nav, right edge -->
+        <button class="nav-toggle-inner" @click.stop="isNavHidden = true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </div>
+    </transition>
+
+    <!-- Collapsed toggle tab — peeks from bottom -->
+    <button v-show="isNavHidden" class="nav-toggle-tab" @click="isNavHidden = false">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+    </button>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -55,36 +68,43 @@ function isActive(path: string) {
   return route.path.startsWith(path)
 }
 
-// ========== 收起/展开逻辑 ==========
 const isNavHidden = ref(false)
-let lastScrollY = 0
-let hideTimer: ReturnType<typeof setTimeout> | null = null
 
-function onScroll() {
-  const currentY = window.scrollY
-  const delta = currentY - lastScrollY
+// ========== 滚动到底部自动收起 ==========
+function isAtBottom(el: Element): boolean {
+  const threshold = 40
+  if (el === document.documentElement || el === document.body) {
+    const scrollH = document.documentElement.scrollHeight
+    const scrollT = window.scrollY || document.documentElement.scrollTop
+    const clientH = window.innerHeight
+    return scrollT + clientH >= scrollH - threshold
+  }
+  const scrollH = el.scrollHeight
+  const scrollT = (el as HTMLElement).scrollTop
+  const clientH = el.clientHeight
+  return scrollT + clientH >= scrollH - threshold
+}
 
-  if (delta > 10 && currentY > 80) {
+function onScroll(e: Event) {
+  const target = e.target as HTMLElement
+  if (!target) return
+  if (isAtBottom(target)) {
     isNavHidden.value = true
-  } else if (delta < -5) {
+  } else {
     isNavHidden.value = false
   }
-
-  lastScrollY = currentY
-
-  if (hideTimer) clearTimeout(hideTimer)
-  hideTimer = setTimeout(() => {
-    isNavHidden.value = false
-  }, 3000)
 }
 
 onMounted(() => {
+  // window 级别滚动
   window.addEventListener('scroll', onScroll, { passive: true })
+  // capture 阶段捕获所有子元素的 scroll 事件
+  document.addEventListener('scroll', onScroll, { passive: true, capture: true })
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
-  if (hideTimer) clearTimeout(hideTimer)
+  document.removeEventListener('scroll', onScroll, true)
 })
 </script>
 
@@ -109,44 +129,64 @@ onUnmounted(() => {
   to { opacity: 0; transform: translateY(-10px); }
 }
 
-/* Floating pill bottom nav */
-.bottom-nav {
+/* ============================================
+   Nav root — positions the whole system
+   ============================================ */
+
+.nav-root {
   position: fixed;
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
+  z-index: 100;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+
+  &.collapsed {
+    // Tab peeks just above bottom edge
+    bottom: 0;
+    transform: translateX(-50%);
+  }
+}
+
+/* ============================================
+   Nav bar — the floating pill
+   ============================================ */
+
+.nav-bar {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 8px 16px;
+  padding: 8px 8px 8px 16px;
   background: rgba(11, 15, 16, 0.92);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-radius: 100px;
-  z-index: 100;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Nav slide transition */
-.nav-slide-enter-active {
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+.nav-pop-enter-active {
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.nav-slide-leave-active {
-  transition: transform 0.3s ease-in, opacity 0.2s ease;
+.nav-pop-leave-active {
+  transition: all 0.25s ease-in;
 }
 
-.nav-slide-enter-from {
-  transform: translateX(-50%) translateY(120px);
+.nav-pop-enter-from {
   opacity: 0;
+  transform: translateY(40px) scale(0.95);
 }
 
-.nav-slide-leave-to {
-  transform: translateX(-50%) translateY(120px);
+.nav-pop-leave-to {
   opacity: 0;
+  transform: translateY(40px) scale(0.95);
 }
+
+/* ============================================
+   Nav items
+   ============================================ */
 
 .nav-item {
   position: relative;
@@ -195,5 +235,66 @@ onUnmounted(() => {
   height: 4px;
   border-radius: 50%;
   background: #22d3ee;
+}
+
+/* ============================================
+   Toggle button — inside nav right edge
+   ============================================ */
+
+.nav-toggle-inner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  margin-left: 6px;
+  margin-right: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  &:active {
+    transform: scale(0.88);
+  }
+}
+
+/* ============================================
+   Collapsed toggle tab — peeks from bottom
+   ============================================ */
+
+.nav-toggle-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 28px;
+  margin: 0 auto;
+  border: none;
+  border-radius: 12px 12px 0 0;
+  background: rgba(11, 15, 16, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s;
+
+  &:hover {
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(11, 15, 16, 0.95);
+  }
+
+  &:active {
+    transform: scale(0.92);
+  }
 }
 </style>
