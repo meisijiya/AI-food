@@ -395,13 +395,13 @@ public class ConversationService {
 
     @Transactional
     public void cancelSession(String sessionId) {
-        log.info("[{}] canceling session - deleting all related data", sessionId);
+        log.info("[{}] canceling session - soft deleting all related data", sessionId);
         try {
-            qaRecordRepository.deleteBySessionId(sessionId);
-            collectedParamRepository.deleteBySessionId(sessionId);
-            recommendationResultRepository.deleteBySessionId(sessionId);
-            conversationSessionRepository.deleteBySessionId(sessionId);
-            log.info("[{}] session canceled and data deleted", sessionId);
+            qaRecordRepository.softDeleteBySessionId(sessionId);
+            collectedParamRepository.softDeleteBySessionId(sessionId);
+            recommendationResultRepository.softDeleteBySessionId(sessionId);
+            conversationSessionRepository.softDeleteBySessionId(sessionId);
+            log.info("[{}] session soft deleted", sessionId);
         } catch (Exception e) {
             log.error("[{}] failed to cancel session", sessionId, e);
         }

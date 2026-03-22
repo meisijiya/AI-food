@@ -13,8 +13,11 @@ CREATE TABLE IF NOT EXISTS conversation_session (
     status VARCHAR(20) DEFAULT 'active',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     completed_at DATETIME,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    deleted_at DATETIME,
     INDEX idx_session_id (session_id),
-    INDEX idx_user_id (user_id)
+    INDEX idx_user_id (user_id),
+    INDEX idx_is_deleted (is_deleted)
 );
 
 -- 问答记录表
@@ -28,7 +31,9 @@ CREATE TABLE IF NOT EXISTS qa_record (
     is_valid BOOLEAN DEFAULT TRUE,
     question_order INT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_session (session_id)
+    is_deleted BOOLEAN DEFAULT FALSE,
+    INDEX idx_session (session_id),
+    INDEX idx_is_deleted (is_deleted)
 );
 
 -- 参数收集结果表
@@ -39,7 +44,9 @@ CREATE TABLE IF NOT EXISTS collected_params (
     param_value TEXT,
     param_type VARCHAR(20) COMMENT 'required/optional',
     collected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_session_param (session_id, param_name)
+    is_deleted BOOLEAN DEFAULT FALSE,
+    UNIQUE KEY uk_session_param (session_id, param_name),
+    INDEX idx_is_deleted (is_deleted)
 );
 
 -- 推荐结果表
@@ -52,7 +59,9 @@ CREATE TABLE IF NOT EXISTS recommendation_result (
     similarity_score DECIMAL(3,2),
     reason TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_session (session_id)
+    is_deleted BOOLEAN DEFAULT FALSE,
+    INDEX idx_session (session_id),
+    INDEX idx_is_deleted (is_deleted)
 );
 
 -- 用户表

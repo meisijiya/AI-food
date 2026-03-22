@@ -19,8 +19,15 @@ public interface ConversationSessionRepository extends JpaRepository<Conversatio
 
     Page<ConversationSession> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
+    Page<ConversationSession> findByUserIdOrderByCreatedAtAsc(Long userId, Pageable pageable);
+
     @Modifying
     @Transactional
-    @Query("DELETE FROM ConversationSession c WHERE c.sessionId = :sessionId")
-    void deleteBySessionId(String sessionId);
+    @Query("UPDATE ConversationSession c SET c.isDeleted = true, c.deletedAt = CURRENT_TIMESTAMP WHERE c.sessionId = :sessionId")
+    void softDeleteBySessionId(String sessionId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM ConversationSession c WHERE c.isDeleted = true")
+    int hardDeleteAllSoftDeleted();
 }

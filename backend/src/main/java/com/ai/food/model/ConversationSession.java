@@ -2,10 +2,12 @@ package com.ai.food.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 
 @Data
 @Entity
+@Where(clause = "is_deleted = false")
 @Table(name = "conversation_session")
 public class ConversationSession {
     
@@ -39,6 +41,12 @@ public class ConversationSession {
     
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
+
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
     
     @PrePersist
     protected void onCreate() {

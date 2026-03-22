@@ -2,10 +2,12 @@ package com.ai.food.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 
 @Data
 @Entity
+@Where(clause = "is_deleted = false")
 @Table(name = "collected_params", uniqueConstraints = {
     @UniqueConstraint(name = "uk_session_param", columnNames = {"session_id", "param_name"})
 })
@@ -29,6 +31,9 @@ public class CollectedParam {
     
     @Column(name = "collected_at")
     private LocalDateTime collectedAt;
+
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
     
     @PrePersist
     protected void onCreate() {

@@ -15,6 +15,11 @@ public interface RecommendationResultRepository extends JpaRepository<Recommenda
     
     @Modifying
     @Transactional
-    @Query("DELETE FROM RecommendationResult r WHERE r.sessionId = :sessionId")
-    void deleteBySessionId(String sessionId);
+    @Query("UPDATE RecommendationResult r SET r.isDeleted = true WHERE r.sessionId = :sessionId")
+    void softDeleteBySessionId(String sessionId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM RecommendationResult r WHERE r.isDeleted = true")
+    int hardDeleteAllSoftDeleted();
 }

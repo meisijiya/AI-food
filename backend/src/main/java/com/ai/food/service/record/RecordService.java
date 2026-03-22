@@ -15,10 +15,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -31,36 +31,62 @@ public class RecordService {
     private final CollectedParamRepository collectedParamRepository;
     private final QaRecordRepository qaRecordRepository;
 
-    public Page<RecordListItem> getRecordList(Long userId, int page, int size) {
+    public Page<RecordListItem> getRecordList(Long userId, int page, int size, String sort) {
         Pageable pageable = PageRequest.of(page, size);
-        return conversationSessionRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
-                .map(session -> {
-                    RecordListItem item = new RecordListItem();
-                    item.setSessionId(session.getSessionId());
-                    item.setMode(session.getMode());
-                    item.setStatus(session.getStatus());
-                    item.setTotalQuestions(session.getTotalQuestions());
-                    item.setCurrentQuestionCount(session.getCurrentQuestionCount());
-                    item.setCreatedAt(session.getCreatedAt());
-                    item.setCompletedAt(session.getCompletedAt());
+        Page<ConversationSession> sessions;
+        if ("asc".equalsIgnoreCase(sort)) {
+            sessions = conversationSessionRepository.findByUserIdOrderByCreatedAtAsc(userId, pageable);
+        } else {
+            sessions = conversationSessionRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+        }
 
-                    Optional<RecommendationResult> optResult =
-                            recommendationResultRepository.findBySessionId(session.getSessionId());
-                    optResult.ifPresent(r -> {
-                        item.setFoodName(r.getFoodName());
-                        item.setReason(r.getReason());
-                        item.setSimilarityScore(r.getSimilarityScore());
-                    });
+        return sessions.map(session -> {
+            RecordListItem item = new RecordListItem();
+            item.setSessionId(session.getSessionId());
+            item.setMode(session.getMode());
+            item.setStatus(session.getStatus());
+            item.setTotalQuestions(session.getTotalQuestions());
+            item.setCurrentQuestionCount(session.getCurrentQuestionCount());
+            item.setCreatedAt(session.getCreatedAt());
+            item.setCompletedAt(session.getCompletedAt());
 
-                    if (item.getFoodName() == null || item.getFoodName().isBlank()) {
-                        item.setFoodName("暂无推荐结果");
-                    }
-                    if (item.getReason() == null || item.getReason().isBlank()) {
-                        item.setReason("该会话暂无可展示的推荐说明");
-                    }
+            Optional<RecommendationResult> optResult =
+                    recommendationResultRepository.findBySessionId(session.getSessionId());
+            optResult.ifPresent(r -> {
+                item.setFoodName(r.getFoodName());
+                item.setReason(r.getReason());
+                item.setSimilarityScore(r.getSimilarityScore());
+            });
 
-                    return item;
-                });
+            if (item.getFoodName() == null || item.getFoodName().isBlank()) {
+                item.setFoodName("暂无推荐结果");
+            }
+            if (item.getReason() == null || item.getReason().isBlank()) {
+                item.setReason("该会话暂无可展示的推荐说明");
+            }
+
+            return item;
+        });
+    }
+
+    @Transactional
+    public void deleteRecord(String sessionId) {
+        log.info("Soft deleting record: {}", sessionId);
+        qaRecordRepository.softDeleteBySessionId(sessionId);
+        collectedParamRepository.softDeleteBySessionId(sessionId);
+        recommendationResultRepository.softDeleteBySessionId(sessionId);
+        conversationSessionRepository.softDeleteBySessionId(sessionId);
+    }
+
+    @Transactional
+    public void batchDeleteRecords(List<String> sessionIds) {
+        log.info("Batch soft deleting {} records", sessionIds.size());
+        for (String sessionId : sessionIds) {
+            qaRecordRepository.softDeleteBySessionId(sessionId);
+            collectedParamRepository.softDeleteBySessionId(sessionId);
+            recommendationResultRepository.softDeleteBySessionId(sessionId);
+            conversationSessionRepository.softDeleteBySessionId(sessionId);
+        }
     }
 
     public RecordDetail getRecordDetail(String sessionId) {

@@ -9,7 +9,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -58,10 +61,21 @@ public class UserService {
         Boolean todaySigned = redisTemplate.opsForValue().getBit(redisKey, dayOffset);
         int continuousDays = calculateContinuousDays(userId, today);
 
+        // 查询本月已签到的天数列表
+        int daysInMonth = YearMonth.from(today).lengthOfMonth();
+        List<Integer> signedDays = new ArrayList<>();
+        for (int day = 1; day <= daysInMonth; day++) {
+            Boolean signed = redisTemplate.opsForValue().getBit(redisKey, day - 1);
+            if (Boolean.TRUE.equals(signed)) {
+                signedDays.add(day);
+            }
+        }
+
         Map<String, Object> result = new HashMap<>();
         result.put("monthTotal", monthTotal != null ? monthTotal : 0);
         result.put("todaySigned", Boolean.TRUE.equals(todaySigned));
         result.put("continuousDays", continuousDays);
+        result.put("signedDays", signedDays);
         return result;
     }
 

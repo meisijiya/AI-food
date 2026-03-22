@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -23,9 +24,10 @@ public class RecordController {
     @GetMapping("/list")
     public ApiResponse<Map<String, Object>> getRecordList(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "desc") String sort) {
         Long userId = getCurrentUserId();
-        Page<RecordService.RecordListItem> result = recordService.getRecordList(userId, page, size);
+        Page<RecordService.RecordListItem> result = recordService.getRecordList(userId, page, size, sort);
 
         Map<String, Object> data = new HashMap<>();
         data.put("list", result.getContent());
@@ -39,6 +41,24 @@ public class RecordController {
     public ApiResponse<RecordService.RecordDetail> getRecordDetail(@PathVariable String sessionId) {
         RecordService.RecordDetail detail = recordService.getRecordDetail(sessionId);
         return ApiResponse.success(detail);
+    }
+
+    @DeleteMapping("/delete/{sessionId}")
+    public ApiResponse<Void> deleteRecord(@PathVariable String sessionId) {
+        log.info("Delete record: {}", sessionId);
+        recordService.deleteRecord(sessionId);
+        return ApiResponse.success("删除成功", null);
+    }
+
+    @DeleteMapping("/batch-delete")
+    public ApiResponse<Void> batchDeleteRecords(@RequestBody Map<String, List<String>> body) {
+        List<String> sessionIds = body.get("sessionIds");
+        if (sessionIds == null || sessionIds.isEmpty()) {
+            return ApiResponse.error("请选择要删除的记录");
+        }
+        log.info("Batch delete {} records", sessionIds.size());
+        recordService.batchDeleteRecords(sessionIds);
+        return ApiResponse.success("批量删除成功", null);
     }
 
     private Long getCurrentUserId() {

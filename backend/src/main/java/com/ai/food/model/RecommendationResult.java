@@ -2,11 +2,13 @@ package com.ai.food.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.Where;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
 @Entity
+@Where(clause = "is_deleted = false")
 @Table(name = "recommendation_result", indexes = {
     @Index(name = "idx_session", columnList = "session_id")
 })
@@ -36,6 +38,9 @@ public class RecommendationResult {
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
     
     @PrePersist
     protected void onCreate() {

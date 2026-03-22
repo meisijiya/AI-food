@@ -35,7 +35,7 @@
           class="calendar-day"
           :class="{ signed: signedDaysSet.has(day), today: day === today }"
         >
-          <span v-if="signedDaysSet.has(day)" class="day-dot"></span>
+          <div v-if="signedDaysSet.has(day)" class="signed-circle"></div>
           <span v-else class="day-num">{{ day }}</span>
         </div>
       </div>
@@ -115,11 +115,12 @@ async function fetchData() {
         avatar: userRes.avatar
       })
     }
-    // signRes 已被解包为 { monthTotal, todaySigned, continuousDays }
+    // signRes 已被解包为 { monthTotal, todaySigned, continuousDays, signedDays }
     if (signRes) {
       signStatus.totalDays = signRes.monthTotal || 0
       signStatus.continuousDays = signRes.continuousDays || 0
       signStatus.todaySigned = signRes.todaySigned || false
+      signStatus.signedDays = signRes.signedDays || []
     }
   } catch {
     // ignore
@@ -303,7 +304,7 @@ onMounted(fetchData)
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
+  gap: 8px;
   margin-bottom: 16px;
 }
 
@@ -315,20 +316,27 @@ onMounted(fetchData)
   border-radius: 50%;
   position: relative;
 
-  &.signed .day-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #22d3ee;
+  .day-num {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.2);
+    font-weight: 500;
   }
 
-  &:not(.signed) .day-num {
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.25);
+  &.signed {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 50%;
+
+    .signed-circle {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      box-shadow: 0 2px 8px rgba(0, 89, 182, 0.4);
+    }
   }
 
   &.today {
-    outline: 1px solid rgba(255, 255, 255, 0.2);
+    outline: 1.5px solid rgba(34, 211, 238, 0.5);
   }
 }
 

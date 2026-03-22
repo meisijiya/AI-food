@@ -2,10 +2,12 @@ package com.ai.food.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 
 @Data
 @Entity
+@Where(clause = "is_deleted = false")
 @Table(name = "qa_record", indexes = {
     @Index(name = "idx_session", columnList = "session_id")
 })
@@ -38,6 +40,9 @@ public class QaRecord {
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
     
     @PrePersist
     protected void onCreate() {
