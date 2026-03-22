@@ -41,7 +41,15 @@ export class WebSocketClient {
   connect(): void {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const wsHost = import.meta.env.VITE_WS_HOST || window.location.host
-    const wsUrl = `${protocol}//${wsHost}/ws/conversation/${this.sessionId}`
+    
+    let wsUrl: string
+    if (wsHost.startsWith('/')) {
+      // 相对路径配置，直接拼接
+      wsUrl = `${protocol}//${window.location.host}${wsHost}/conversation/${this.sessionId}`
+    } else {
+      // 完整主机名配置
+      wsUrl = `${protocol}//${wsHost}/ws/conversation/${this.sessionId}`
+    }
 
     console.log('[WS] Connecting to:', wsUrl)
 
