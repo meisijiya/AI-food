@@ -109,3 +109,36 @@ CREATE TABLE IF NOT EXISTS share_record (
     INDEX idx_share_token (share_token),
     INDEX idx_user_id (user_id)
 );
+
+-- 大厅发布帖子表
+CREATE TABLE IF NOT EXISTS feed_post (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    session_id VARCHAR(64) NOT NULL,
+    food_name VARCHAR(100),
+    comment_preview VARCHAR(100) COMMENT '评论前30字预览',
+    thumbnail_url VARCHAR(500),
+    original_photo_url VARCHAR(500),
+    reason TEXT,
+    collected_params JSON COMMENT '收集参数快照',
+    like_count INT DEFAULT 0,
+    comment_count INT DEFAULT 0,
+    published_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    INDEX idx_user_id (user_id),
+    INDEX idx_session_id (session_id),
+    INDEX idx_published_at (published_at DESC),
+    INDEX idx_food_name (food_name)
+);
+
+-- 大厅评论表
+CREATE TABLE IF NOT EXISTS feed_comment (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    post_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    INDEX idx_post_id (post_id, created_at DESC),
+    INDEX idx_user_id (user_id)
+);

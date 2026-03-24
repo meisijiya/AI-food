@@ -127,6 +127,21 @@ export const conversationApi = {
   getHistory: (sessionId: string) => request('get', `/conversation/history/${sessionId}`)
 }
 
+// 大厅相关接口
+export const feedApi = {
+  publish: (data: { sessionId: string; commentPreview?: string }) => request('post', '/feed/publish', data),
+  getList: (params?: { page?: number; size?: number; foodName?: string; paramName?: string; paramValue?: string }) =>
+    request('get', '/feed/list', undefined, { params }),
+  getDetail: (postId: number) => request('get', `/feed/detail/${postId}`),
+  toggleLike: (postId: number) => request('post', `/feed/like/${postId}`),
+  addComment: (postId: number, content: string) => request('post', `/feed/comment/${postId}`, { content }),
+  getComments: (postId: number, params?: { page?: number; size?: number }) =>
+    request('get', `/feed/comments/${postId}`, undefined, { params }),
+  getNotifications: () => request('get', '/feed/notifications'),
+  markRead: () => request('post', '/feed/notifications/read'),
+  checkPublished: (sessionId: string) => request('get', `/feed/check/${sessionId}`)
+}
+
 // 分享相关接口
 export const shareApi = {
   createShare: (sessionId: string) => request('post', '/share/create', { sessionId }),

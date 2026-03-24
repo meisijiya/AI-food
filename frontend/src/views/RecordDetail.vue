@@ -102,6 +102,20 @@
         </div>
       </div>
 
+      <!-- Publish to feed section -->
+      <div v-if="sessionId && detail.recommendation" class="publish-section animate-fade-up delay-195 animate-start-hidden">
+        <div v-if="!isPublished" class="publish-card">
+          <button class="publish-btn" @click="openPublishDialog">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+            发布到大厅
+          </button>
+        </div>
+        <div v-else class="published-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          已发布到大厅
+        </div>
+      </div>
+
       <!-- Collected params -->
       <div v-if="paramsList.length" class="params-section animate-fade-up delay-200 animate-start-hidden">
         <div class="section-label">收集信息</div>
@@ -171,13 +185,37 @@
         </div>
       </div>
     </Transition>
+
+    <!-- Publish dialog -->
+    <Transition name="fade">
+      <div v-if="publishDialog" class="photo-modal" @click.self="publishDialog = false">
+        <div class="publish-dialog">
+          <div class="publish-dialog-title">发布到大厅</div>
+          <p class="publish-dialog-hint">编辑评论预览（展示在大厅卡片上，最多30字）</p>
+          <textarea
+            v-model="publishPreview"
+            class="publish-textarea"
+            placeholder="写下你的推荐感言..."
+            rows="3"
+            maxlength="30"
+          ></textarea>
+          <div class="publish-dialog-count">{{ (publishPreview || '').length }}/30</div>
+          <div class="publish-dialog-actions">
+            <button class="publish-cancel-btn" @click="publishDialog = false">取消</button>
+            <button class="publish-confirm-btn" @click="handlePublish" :disabled="publishing">
+              {{ publishing ? '发布中...' : '确认发布' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { recordApi, shareApi } from '@/api'
+import { recordApi, shareApi, feedApi } from '@/api'
 import { showSuccess, showError } from '@/utils/toast'
 import UploadPhoto from '@/components/UploadPhoto.vue'
 
@@ -193,6 +231,10 @@ const commentInput = ref('')
 const savingComment = ref(false)
 const shareUrl = ref('')
 const sharing = ref(false)
+const isPublished = ref(false)
+const publishDialog = ref(false)
+const publishPreview = ref('')
+const publishing = ref(false)
 
 const sessionId = computed(() => route.params.sessionId as string)
 
@@ -260,7 +302,39 @@ async function fetchDetail() {
   }
 }
 
-onMounted(fetchDetail)
+onMounted(async () => {
+  await fetchDetail()
+  const sid = sessionId.value
+  if (sid) {
+    try {
+      const res = await feedApi.checkPublished(sid)
+      isPublished.value = res?.published || false
+    } catch { /* ignore */ }
+  }
+})
+
+async function openPublishDialog() {
+  const sid = sessionId.value
+  if (!sid) return
+  publishPreview.value = commentText.value || ''
+  publishDialog.value = true
+}
+
+async function handlePublish() {
+  const sid = sessionId.value
+  if (!sid) return
+  publishing.value = true
+  try {
+    await feedApi.publish({ sessionId: sid, commentPreview: publishPreview.value || undefined })
+    isPublished.value = true
+    publishDialog.value = false
+    showSuccess('发布成功')
+  } catch (e: any) {
+    showError(e?.message || '发布失败')
+  } finally {
+    publishing.value = false
+  }
+}
 
 function startEditComment() {
   commentInput.value = commentText.value
@@ -788,6 +862,144 @@ function openPhotoModal(url: string) {
 
   &:active {
     transform: scale(0.97);
+  }
+}
+
+/* Publish section */
+.publish-section {
+  margin-bottom: 20px;
+  z-index: 1;
+}
+
+.publish-card {
+  display: flex;
+}
+
+.publish-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: 1.5px solid #22d3ee;
+  border-radius: 2rem;
+  background: none;
+  color: #22d3ee;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(34, 211, 238, 0.06);
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+.published-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1.5px solid rgba(34, 197, 94, 0.3);
+  border-radius: 100px;
+  color: #22c55e;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.publish-dialog {
+  width: calc(100% - 48px);
+  max-width: 400px;
+  background: var(--color-surface-container-lowest);
+  border-radius: 2rem;
+  padding: 28px 24px;
+}
+
+.publish-dialog-title {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--color-on-surface);
+  margin-bottom: 8px;
+}
+
+.publish-dialog-hint {
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+  margin-bottom: 16px;
+  opacity: 0.7;
+}
+
+.publish-textarea {
+  width: 100%;
+  padding: 14px 18px;
+  border: 1.5px solid var(--color-surface-container-low);
+  border-radius: 1.25rem;
+  background: var(--color-surface);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-on-surface);
+  resize: none;
+  outline: none;
+
+  &:focus {
+    border-color: var(--color-primary);
+  }
+
+  &::placeholder {
+    color: var(--color-on-surface-variant);
+    opacity: 0.5;
+  }
+}
+
+.publish-dialog-count {
+  text-align: right;
+  font-size: 11px;
+  color: var(--color-on-surface-variant);
+  opacity: 0.5;
+  margin-top: 6px;
+  margin-bottom: 16px;
+}
+
+.publish-dialog-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.publish-cancel-btn {
+  flex: 1;
+  padding: 12px;
+  border: 1.5px solid var(--color-surface-container-low);
+  border-radius: 1rem;
+  background: none;
+  color: var(--color-on-surface-variant);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.publish-confirm-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #22d3ee, #0891b2);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 }
 

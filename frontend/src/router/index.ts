@@ -45,6 +45,18 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/feed',
+    name: 'Feed',
+    component: () => import('@/views/Feed.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/feed/:postId',
+    name: 'FeedDetail',
+    component: () => import('@/views/FeedDetail.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/share/:token',
     name: 'share',
     component: () => import('@/views/Share.vue'),
