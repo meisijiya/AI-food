@@ -128,7 +128,11 @@
         <span v-else>开始美食之旅</span>
       </button>
     </div>
-
+    <!-- Version Info -->
+    <div class="version-info animate-fade-up">
+      <span class="version-badge">v{{ version }}</span>
+      <span class="version-date">{{ releaseDate }}</span>
+    </div>
     <!-- Confirm dialog overlay -->
     <Transition name="fade">
       <div
@@ -164,6 +168,8 @@ const chatStore = useChatStore();
 const loading = ref(false);
 const showConfirmDialog = ref(false);
 const pendingRecommendation = ref<any>(null);
+const version = import.meta.env.VITE_VERSION || "1.0.0";
+const releaseDate = import.meta.env.VITE_TIME || "未知日期";
 
 onMounted(async () => {
   try {
@@ -617,5 +623,31 @@ const goToResult = () => {
     margin: 0 auto;
     display: block;
   }
+}
+
+/* Version Info */
+.version-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 16px;
+  margin-bottom: 16px;
+  z-index: 1;
+}
+
+.version-badge {
+  padding: 4px 10px;
+  background: var(--color-surface-container-low);
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-primary);
+  border: 1px solid var(--color-surface-container-lowest);
+}
+
+.version-date {
+  font-size: 11px;
+  color: var(--color-on-surface-variant);
 }
 </style>
