@@ -96,6 +96,13 @@ public class FeedController {
         return ApiResponse.success(Map.of("published", published));
     }
 
+    @DeleteMapping("/unpublish/{sessionId}")
+    public ApiResponse<Void> unpublish(@PathVariable String sessionId) {
+        Long userId = getCurrentUserId();
+        feedService.unpublish(userId, sessionId);
+        return ApiResponse.success("已取消发布", null);
+    }
+
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return Long.parseLong(auth.getPrincipal().toString());

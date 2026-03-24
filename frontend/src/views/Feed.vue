@@ -28,7 +28,7 @@
       >
         <!-- Photo -->
         <div v-if="post.thumbnailUrl" class="card-photo">
-          <img :src="post.thumbnailUrl" :alt="post.foodName" loading="lazy" />
+          <CachedImage :src="post.thumbnailUrl" :alt="post.foodName" :lazy="true" />
         </div>
 
         <!-- Content -->
@@ -105,6 +105,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { feedApi } from '@/api'
+import CachedImage from '@/components/CachedImage.vue'
 
 const router = useRouter()
 const scrollContainer = ref<HTMLElement>()

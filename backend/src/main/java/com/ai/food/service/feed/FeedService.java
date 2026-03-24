@@ -269,6 +269,23 @@ public class FeedService {
         return feedPostRepository.findBySessionIdAndUserId(sessionId, userId).isPresent();
     }
 
+    @Transactional
+    public void unpublish(Long userId, String sessionId) {
+        FeedPost post = feedPostRepository.findBySessionIdAndUserId(sessionId, userId)
+                .orElseThrow(() -> new RuntimeException("该动态不存在或已被取消"));
+
+        post.setIsDeleted(true);
+        feedPostRepository.save(post);
+
+        // Clean up Redis like data
+        String likeKey = LIKE_SET_KEY + post.getId();
+        String countKey = LIKE_COUNT_KEY + post.getId();
+        stringRedisTemplate.delete(likeKey);
+        stringRedisTemplate.delete(countKey);
+
+        log.info("Feed post unpublished: postId={}, user={}, session={}", post.getId(), userId, sessionId);
+    }
+
     private void updateDbLikeCount(Long postId, int count) {
         feedPostRepository.findById(postId).ifPresent(post -> {
             post.setLikeCount(count);

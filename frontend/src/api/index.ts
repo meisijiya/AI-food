@@ -139,7 +139,8 @@ export const feedApi = {
     request('get', `/feed/comments/${postId}`, undefined, { params }),
   getNotifications: () => request('get', '/feed/notifications'),
   markRead: () => request('post', '/feed/notifications/read'),
-  checkPublished: (sessionId: string) => request('get', `/feed/check/${sessionId}`)
+  checkPublished: (sessionId: string) => request('get', `/feed/check/${sessionId}`),
+  unpublish: (sessionId: string) => request('delete', `/feed/unpublish/${sessionId}`)
 }
 
 // 分享相关接口

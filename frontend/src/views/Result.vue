@@ -123,9 +123,11 @@
             发布到大厅
           </button>
         </div>
-        <div v-else class="published-badge">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-          已发布到大厅
+        <div v-else class="publish-card">
+          <button class="unpublish-btn" @click="handleUnpublish" :disabled="unpublishing">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+            {{ unpublishing ? '取消中...' : '取消发布' }}
+          </button>
         </div>
       </div>
 
@@ -201,6 +203,7 @@ const isPublished = ref(false)
 const publishDialog = ref(false)
 const publishPreview = ref('')
 const publishing = ref(false)
+const unpublishing = ref(false)
 
 onMounted(async () => {
   try {
@@ -387,6 +390,21 @@ async function handlePublish() {
     showError(e?.message || '发布失败')
   } finally {
     publishing.value = false
+  }
+}
+
+async function handleUnpublish() {
+  const sid = sessionId.value
+  if (!sid) return
+  unpublishing.value = true
+  try {
+    await feedApi.unpublish(sid)
+    isPublished.value = false
+    showSuccess('已取消发布')
+  } catch (e: any) {
+    showError(e?.message || '取消失败')
+  } finally {
+    unpublishing.value = false
   }
 }
 
@@ -934,17 +952,33 @@ const goHome = () => {
   }
 }
 
-.published-badge {
+.unpublish-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background: rgba(34, 197, 94, 0.08);
-  border: 1.5px solid rgba(34, 197, 94, 0.3);
-  border-radius: 100px;
-  color: #22c55e;
-  font-size: 12px;
+  gap: 8px;
+  padding: 12px 24px;
+  border: 1.5px solid rgba(239, 68, 68, 0.4);
+  border-radius: 2rem;
+  background: rgba(239, 68, 68, 0.06);
+  color: #ef4444;
+  font-family: var(--font-sans);
+  font-size: 13px;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.12);
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
 .publish-dialog {

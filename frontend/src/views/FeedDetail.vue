@@ -12,7 +12,7 @@
 
       <!-- Photo -->
       <div v-if="post.thumbnailUrl || post.originalPhotoUrl" class="photo-section animate-fade-up delay-100 animate-start-hidden">
-        <img :src="post.thumbnailUrl || post.originalPhotoUrl" class="detail-photo" :alt="post.foodName" />
+        <CachedImage :src="post.thumbnailUrl || post.originalPhotoUrl" :alt="post.foodName" class="detail-photo" />
       </div>
 
       <!-- Reason (dark card) -->
@@ -105,6 +105,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { feedApi } from '@/api'
 import { showSuccess, showError } from '@/utils/toast'
+import CachedImage from '@/components/CachedImage.vue'
 
 const route = useRoute()
 const router = useRouter()

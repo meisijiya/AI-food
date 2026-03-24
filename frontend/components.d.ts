@@ -7,6 +7,7 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    CachedImage: typeof import('./src/components/CachedImage.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     UploadPhoto: typeof import('./src/components/UploadPhoto.vue')['default']

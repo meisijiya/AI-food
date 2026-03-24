@@ -5,14 +5,37 @@
     <div class="bg-glow bg-glow-2"></div>
 
     <!-- Pending photo check-in notification -->
-    <div v-if="pendingRecommendation && pendingRecommendation.sessionId && !pendingRecommendation.photoUploaded" class="pending-notification animate-fade-up animate-start-hidden">
+    <div
+      v-if="
+        pendingRecommendation &&
+        pendingRecommendation.sessionId &&
+        !pendingRecommendation.photoUploaded
+      "
+      class="pending-notification animate-fade-up animate-start-hidden"
+    >
       <div class="pending-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"
+          />
+          <circle cx="12" cy="13" r="3" />
+        </svg>
       </div>
       <div class="pending-text">
         <div class="pending-title">还有未完成的拍照打卡</div>
       </div>
-      <button class="pending-action" @click="router.push('/result')">查看推荐</button>
+      <button class="pending-action" @click="router.push('/result')">
+        查看推荐
+      </button>
     </div>
 
     <!-- Hero Section -->
@@ -33,7 +56,20 @@
     <div class="features animate-fade-up delay-400 animate-start-hidden">
       <div class="feature-card">
         <div class="feature-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+            ></path>
+          </svg>
         </div>
         <div>
           <div class="feature-title">智能对话</div>
@@ -42,7 +78,19 @@
       </div>
       <div class="feature-card">
         <div class="feature-icon icon-orange">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
         </div>
         <div>
           <div class="feature-title">场景感知</div>
@@ -51,7 +99,20 @@
       </div>
       <div class="feature-card">
         <div class="feature-icon icon-green">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
+            ></path>
+          </svg>
         </div>
         <div>
           <div class="feature-title">个性匹配</div>
@@ -62,11 +123,7 @@
 
     <!-- CTA Button -->
     <div class="cta-area animate-fade-up delay-500 animate-start-hidden">
-      <button
-        class="cta-button"
-        @click="startChat"
-        :disabled="loading"
-      >
+      <button class="cta-button" @click="startChat" :disabled="loading">
         <span v-if="loading" class="cta-loading"></span>
         <span v-else>开始美食之旅</span>
       </button>
@@ -74,13 +131,21 @@
 
     <!-- Confirm dialog overlay -->
     <Transition name="fade">
-      <div v-if="showConfirmDialog" class="dialog-overlay" @click.self="showConfirmDialog = false">
+      <div
+        v-if="showConfirmDialog"
+        class="dialog-overlay"
+        @click.self="showConfirmDialog = false"
+      >
         <div class="dialog-card">
           <div class="dialog-title">还有未完成的拍照打卡</div>
           <div class="dialog-desc">是否继续新的对话？</div>
           <div class="dialog-actions">
-            <button class="dialog-btn ghost" @click="goToResult">去完成打卡</button>
-            <button class="dialog-btn primary" @click="doStartChat">继续对话</button>
+            <button class="dialog-btn ghost" @click="goToResult">
+              去完成打卡
+            </button>
+            <button class="dialog-btn primary" @click="doStartChat">
+              继续对话
+            </button>
           </div>
         </div>
       </div>
@@ -89,65 +154,67 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { conversationApi, recordApi } from '@/api'
-import { useChatStore } from '@/stores/chat'
-import { showError } from '@/utils/toast'
-
-const router = useRouter()
-const chatStore = useChatStore()
-const loading = ref(false)
-const showConfirmDialog = ref(false)
-const pendingRecommendation = ref<any>(null)
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { conversationApi, recordApi } from "@/api";
+import { useChatStore } from "@/stores/chat";
+import { showError } from "@/utils/toast";
+const router = useRouter();
+const chatStore = useChatStore();
+const loading = ref(false);
+const showConfirmDialog = ref(false);
+const pendingRecommendation = ref<any>(null);
 
 onMounted(async () => {
   try {
-    const res = await recordApi.getPendingRecommendation()
+    const res = await recordApi.getPendingRecommendation();
     if (res) {
-      pendingRecommendation.value = res
+      pendingRecommendation.value = res;
     }
   } catch {
     // no pending recommendation
   }
-})
+});
 
 const hasPendingPhoto = () => {
-  return pendingRecommendation.value?.sessionId && !pendingRecommendation.value?.photoUploaded
-}
+  return (
+    pendingRecommendation.value?.sessionId &&
+    !pendingRecommendation.value?.photoUploaded
+  );
+};
 
 const startChat = async () => {
   if (hasPendingPhoto()) {
-    showConfirmDialog.value = true
-    return
+    showConfirmDialog.value = true;
+    return;
   }
-  await doStartChat()
-}
+  await doStartChat();
+};
 
 const doStartChat = async () => {
-  showConfirmDialog.value = false
-  loading.value = true
+  showConfirmDialog.value = false;
+  loading.value = true;
   try {
-    const response = await conversationApi.start()
+    const response = await conversationApi.start();
     if (!response || !response.sessionId) {
-      showError('服务器返回数据异常')
-      return
+      showError("服务器返回数据异常");
+      return;
     }
-    chatStore.clearChat()
-    chatStore.setSessionId(response.sessionId)
-    router.push('/chat')
+    chatStore.clearChat();
+    chatStore.setSessionId(response.sessionId);
+    router.push("/chat");
   } catch (error: any) {
-    console.error('[Home] Failed:', error?.message)
-    showError('启动对话失败，请确认后端服务已启动')
+    console.error("[Home] Failed:", error?.message);
+    showError("启动对话失败，请确认后端服务已启动");
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const goToResult = () => {
-  showConfirmDialog.value = false
-  router.push('/result')
-}
+  showConfirmDialog.value = false;
+  router.push("/result");
+};
 </script>
 
 <style lang="scss" scoped>
@@ -260,7 +327,9 @@ const goToResult = () => {
   border-radius: 1.5rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.3s ease;
 
   &:active {
     transform: scale(0.98);
@@ -271,7 +340,11 @@ const goToResult = () => {
   width: 44px;
   height: 44px;
   border-radius: 1rem;
-  background: linear-gradient(135deg, rgba(0, 89, 182, 0.08), rgba(104, 160, 255, 0.12));
+  background: linear-gradient(
+    135deg,
+    rgba(0, 89, 182, 0.08),
+    rgba(104, 160, 255, 0.12)
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -279,12 +352,20 @@ const goToResult = () => {
   flex-shrink: 0;
 
   &.icon-orange {
-    background: linear-gradient(135deg, rgba(255, 152, 0, 0.08), rgba(255, 183, 77, 0.12));
+    background: linear-gradient(
+      135deg,
+      rgba(255, 152, 0, 0.08),
+      rgba(255, 183, 77, 0.12)
+    );
     color: #f57c00;
   }
 
   &.icon-green {
-    background: linear-gradient(135deg, rgba(76, 175, 80, 0.08), rgba(129, 199, 132, 0.12));
+    background: linear-gradient(
+      135deg,
+      rgba(76, 175, 80, 0.08),
+      rgba(129, 199, 132, 0.12)
+    );
     color: #388e3c;
   }
 }
@@ -324,7 +405,11 @@ const goToResult = () => {
   width: 40px;
   height: 40px;
   border-radius: 1rem;
-  background: linear-gradient(135deg, rgba(255, 152, 0, 0.08), rgba(255, 183, 77, 0.12));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 152, 0, 0.08),
+    rgba(255, 183, 77, 0.12)
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -356,8 +441,12 @@ const goToResult = () => {
   cursor: pointer;
   transition: all 0.2s;
 
-  &:hover { opacity: 0.9; }
-  &:active { transform: scale(0.96); }
+  &:hover {
+    opacity: 0.9;
+  }
+  &:active {
+    transform: scale(0.96);
+  }
 }
 
 /* Confirm dialog */
@@ -415,11 +504,17 @@ const goToResult = () => {
   transition: all 0.2s;
 
   &.primary {
-    background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+    background: linear-gradient(
+      135deg,
+      var(--color-primary-container),
+      var(--color-primary)
+    );
     color: white;
     box-shadow: 0 8px 24px -6px rgba(0, 89, 182, 0.3);
 
-    &:hover { transform: translateY(-1px); }
+    &:hover {
+      transform: translateY(-1px);
+    }
   }
 
   &.ghost {
@@ -427,7 +522,9 @@ const goToResult = () => {
     border: 1.5px solid var(--color-surface-container-low);
     color: var(--color-on-surface-variant);
 
-    &:hover { background: var(--color-surface-container-low); }
+    &:hover {
+      background: var(--color-surface-container-low);
+    }
   }
 }
 
@@ -446,7 +543,11 @@ const goToResult = () => {
   padding: 18px;
   border: none;
   border-radius: 2rem;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-container),
+    var(--color-primary)
+  );
   color: white;
   font-family: var(--font-sans);
   font-size: 15px;
@@ -485,7 +586,9 @@ const goToResult = () => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (min-width: 640px) {
