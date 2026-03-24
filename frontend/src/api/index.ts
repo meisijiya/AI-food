@@ -102,6 +102,7 @@ export const recordApi = {
   batchDeleteRecords: (sessionIds: string[]) => request('delete', '/record/batch-delete', { sessionIds }),
   updatePhoto: (sessionId: string, photoUrl: string) => request('put', `/record/photo/${sessionId}`, { photoUrl }),
   deletePhoto: (sessionId: string) => request('delete', `/record/photo/${sessionId}`),
+  updateComment: (sessionId: string, comment: string) => request('put', `/record/comment/${sessionId}`, { comment }),
   getPendingRecommendation: () => request('get', '/record/pending')
 }
 
@@ -124,6 +125,13 @@ export const conversationApi = {
   complete: (sessionId: string) => request('post', `/conversation/complete/${sessionId}`),
   cancel: (sessionId: string) => request('delete', `/conversation/cancel/${sessionId}`),
   getHistory: (sessionId: string) => request('get', `/conversation/history/${sessionId}`)
+}
+
+// 分享相关接口
+export const shareApi = {
+  createShare: (sessionId: string) => request('post', '/share/create', { sessionId }),
+  getShareDetail: (shareToken: string) => request('get', `/share/detail/${shareToken}`),
+  checkShare: (sessionId: string) => request('get', `/share/check/${sessionId}`)
 }
 
 export default api

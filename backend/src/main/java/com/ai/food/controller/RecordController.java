@@ -95,6 +95,14 @@ public class RecordController {
         return ApiResponse.success("照片已删除", null);
     }
 
+    @PutMapping("/comment/{sessionId}")
+    public ApiResponse<Void> updateComment(@PathVariable String sessionId,
+                                           @RequestBody Map<String, String> body) {
+        String comment = body.get("comment");
+        recordService.updateComment(sessionId, comment != null ? comment : "");
+        return ApiResponse.success("评价已保存", null);
+    }
+
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return Long.parseLong(authentication.getPrincipal().toString());

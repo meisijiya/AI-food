@@ -66,6 +66,7 @@ public class RecordService {
                 item.setFoodName(r.getFoodName());
                 item.setReason(r.getReason());
                 item.setPhotoUrl(r.getPhotoUrl());
+                item.setComment(r.getComment());
                 item.setSimilarityScore(r.getSimilarityScore());
             });
 
@@ -148,6 +149,15 @@ public class RecordService {
         });
     }
 
+    @Transactional
+    public void updateComment(String sessionId, String comment) {
+        log.info("Updating comment for session: {}", sessionId);
+        recommendationResultRepository.findBySessionId(sessionId).ifPresent(r -> {
+            r.setComment(comment);
+            recommendationResultRepository.save(r);
+        });
+    }
+
     private void deletePhysicalFile(String relativePath) {
         if (relativePath == null || relativePath.isBlank()) return;
         try {
@@ -208,6 +218,7 @@ public class RecordService {
         private String foodName;
         private String reason;
         private String photoUrl;
+        private String comment;
         private Number similarityScore;
         private String thumbnailUrl;
     }

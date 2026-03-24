@@ -43,6 +43,12 @@ const routes: RouteRecordRaw[] = [
     name: 'Profile',
     component: () => import('@/views/Profile.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/share/:token',
+    name: 'share',
+    component: () => import('@/views/Share.vue'),
+    meta: { requiresAuth: false }
   }
 ]
 

@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS recommendation_result (
     similarity_score DECIMAL(3,2),
     reason TEXT,
     photo_url VARCHAR(500),
+    comment TEXT COMMENT '用户对打卡美食的评价',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     is_deleted BOOLEAN DEFAULT FALSE,
     INDEX idx_session (session_id),
@@ -94,4 +95,17 @@ CREATE TABLE IF NOT EXISTS photo (
     is_deleted BOOLEAN DEFAULT FALSE,
     INDEX idx_user_id (user_id),
     INDEX idx_session (related_session_id)
+);
+
+-- 分享记录表
+CREATE TABLE IF NOT EXISTS share_record (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    share_token VARCHAR(64) UNIQUE NOT NULL COMMENT '分享链接token',
+    user_id BIGINT NOT NULL COMMENT '分享者用户ID',
+    session_id VARCHAR(64) NOT NULL COMMENT '关联的会话ID',
+    view_count INT DEFAULT 0 COMMENT '浏览次数',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    INDEX idx_share_token (share_token),
+    INDEX idx_user_id (user_id)
 );

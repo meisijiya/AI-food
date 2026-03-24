@@ -38,7 +38,10 @@ public class RecommendationResult {
     
     @Column(name = "photo_url", length = 500)
     private String photoUrl;
-    
+
+    @Column(columnDefinition = "TEXT")
+    private String comment;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

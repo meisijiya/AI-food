@@ -42,8 +42,8 @@ import { useRoute } from 'vue-router'
 
 const route = useRoute()
 
-const hiddenPaths = ['/login', '/chat', '/result']
-const showNav = computed(() => !hiddenPaths.includes(route.path))
+const hiddenPaths = ['/login', '/chat', '/result', '/share']
+const showNav = computed(() => !hiddenPaths.some(p => route.path.startsWith(p)))
 
 const navItems = [
   {

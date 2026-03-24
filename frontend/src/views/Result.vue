@@ -72,6 +72,49 @@
         />
       </template>
 
+      <!-- Comment section -->
+      <div v-if="sessionId" class="comment-section animate-fade-up delay-480 animate-start-hidden">
+        <div class="comment-label">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>美食评价</span>
+        </div>
+        <div class="comment-edit">
+          <textarea
+            v-model="commentInput"
+            class="comment-textarea"
+            placeholder="写下你对这道美食的评价..."
+            rows="3"
+            maxlength="500"
+          ></textarea>
+          <div class="comment-actions">
+            <span class="comment-count">{{ (commentInput || '').length }}/500</span>
+            <button class="comment-save-btn" @click="saveComment" :disabled="savingComment">
+              {{ savingComment ? '保存中...' : '保存评价' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Share section -->
+      <div v-if="sessionId" class="share-section animate-fade-up delay-490 animate-start-hidden">
+        <div class="share-card" v-if="!shareUrl">
+          <button class="share-btn" @click="handleShare" :disabled="sharing">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+            {{ sharing ? '创建中...' : '分享此美食' }}
+          </button>
+        </div>
+        <div class="share-link-card" v-else>
+          <div class="share-link-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+            <span>分享链接</span>
+          </div>
+          <div class="share-link-row">
+            <input class="share-link-input" :value="shareUrl" readonly />
+            <button class="share-copy-btn" @click="copyShareUrl">复制链接</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Action Buttons -->
       <div class="actions animate-fade-up delay-500 animate-start-hidden">
         <button class="primary-btn" @click="startNewChat">
@@ -101,7 +144,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChatStore } from '@/stores/chat'
-import { recordApi } from '@/api'
+import { recordApi, shareApi } from '@/api'
 import { showSuccess, showError } from '@/utils/toast'
 import UploadPhoto from '@/components/UploadPhoto.vue'
 
@@ -112,6 +155,10 @@ const pendingData = ref<any>(null)
 const uploadedPhoto = ref<{ thumbnailUrl: string; originalUrl: string } | null>(null)
 const showFullPhoto = ref(false)
 const showUpload = ref(false)
+const commentInput = ref('')
+const savingComment = ref(false)
+const shareUrl = ref('')
+const sharing = ref(false)
 
 onMounted(async () => {
   try {
@@ -223,8 +270,47 @@ async function handleDeletePhoto() {
   }
 }
 
+async function saveComment() {
+  const sid = sessionId.value
+  if (!sid) return
+  savingComment.value = true
+  try {
+    await recordApi.updateComment(sid, commentInput.value || '')
+    showSuccess('评价已保存')
+  } catch {
+    showError('保存失败')
+  } finally {
+    savingComment.value = false
+  }
+}
+
 function openFullPhoto() {
   showFullPhoto.value = true
+}
+
+async function handleShare() {
+  const sid = sessionId.value
+  if (!sid) return
+  sharing.value = true
+  try {
+    const res = await shareApi.createShare(sid)
+    const appUrl = import.meta.env.VITE_APP_URL || window.location.origin
+    shareUrl.value = `${appUrl}/share/${res.shareToken}`
+  } catch {
+    showError('创建分享链接失败')
+  } finally {
+    sharing.value = false
+  }
+}
+
+async function copyShareUrl() {
+  if (!shareUrl.value) return
+  try {
+    await navigator.clipboard.writeText(shareUrl.value)
+    showSuccess('链接已复制')
+  } catch {
+    showError('复制失败，请手动复制')
+  }
 }
 
 const startNewChat = () => {
@@ -555,12 +641,186 @@ const goHome = () => {
   }
 }
 
+/* Comment section */
+.comment-section {
+  margin-bottom: 20px;
+  z-index: 1;
+}
+
+.comment-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-on-surface);
+  margin-bottom: 12px;
+
+  svg { color: var(--color-primary); }
+}
+
+.comment-edit {
+  padding: 4px;
+  background: var(--color-surface-container-lowest);
+  border-radius: 1.25rem;
+  border: 1px solid var(--color-surface-container-low);
+}
+
+.comment-textarea {
+  width: 100%;
+  padding: 14px 18px;
+  border: none;
+  background: none;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-on-surface);
+  resize: none;
+  outline: none;
+  &::placeholder { color: var(--color-on-surface-variant); opacity: 0.5; }
+}
+
+.comment-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 18px 12px;
+}
+
+.comment-count {
+  font-size: 11px;
+  color: var(--color-on-surface-variant);
+  opacity: 0.5;
+}
+
+.comment-save-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 100px;
+  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  color: white;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 89, 182, 0.2);
+  transition: all 0.2s;
+  &:hover { transform: translateY(-1px); }
+  &:active { transform: scale(0.97); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+}
+
 /* Actions */
 .actions {
   display: flex;
   flex-direction: column;
   gap: 12px;
   margin-top: 20px;
+}
+
+/* Share section */
+.share-section {
+  margin-bottom: 4px;
+  z-index: 1;
+}
+
+.share-card {
+  display: flex;
+}
+
+.share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: 1.5px solid var(--color-primary);
+  border-radius: 2rem;
+  background: none;
+  color: var(--color-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(0, 89, 182, 0.06);
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.share-link-card {
+  background: var(--color-surface-container-lowest);
+  border-radius: 1.25rem;
+  padding: 16px 20px;
+  border: 1px solid var(--color-surface-container-low);
+  width: 100%;
+}
+
+.share-link-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-on-surface-variant);
+  margin-bottom: 12px;
+
+  svg {
+    color: var(--color-primary);
+  }
+}
+
+.share-link-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.share-link-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--color-surface-container-low);
+  border-radius: 1rem;
+  background: var(--color-surface);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--color-on-surface);
+  outline: none;
+  min-width: 0;
+}
+
+.share-copy-btn {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  color: white;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
 }
 
 .primary-btn {
