@@ -40,6 +40,16 @@ public class UserController {
         return ApiResponse.success(result);
     }
 
+    @GetMapping("/search")
+    public ApiResponse<Map<String, Object>> searchUsers(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Long userId = getCurrentUserId();
+        Map<String, Object> result = userService.searchUsers(userId, keyword, page, size);
+        return ApiResponse.success(result);
+    }
+
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return Long.parseLong(authentication.getPrincipal().toString());

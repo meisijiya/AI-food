@@ -156,3 +156,32 @@ CREATE TABLE IF NOT EXISTS user_follow (
     INDEX idx_follower (follower_id),
     INDEX idx_following (following_id)
 );
+
+-- 聊天对话表
+CREATE TABLE IF NOT EXISTS chat_conversation (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    conversation_key VARCHAR(128) NOT NULL COMMENT '对话唯一键: userId1_userId2排序拼接',
+    user1_id BIGINT NOT NULL COMMENT '用户1 ID（较小的ID）',
+    user2_id BIGINT NOT NULL COMMENT '用户2 ID（较大的ID）',
+    last_message TEXT COMMENT '最后一条消息预览',
+    last_message_at DATETIME COMMENT '最后消息时间',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_conversation_key (conversation_key),
+    INDEX idx_user1 (user1_id, last_message_at DESC),
+    INDEX idx_user2 (user2_id, last_message_at DESC)
+);
+
+-- 聊天消息表
+CREATE TABLE IF NOT EXISTS chat_message (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    conversation_id BIGINT NOT NULL COMMENT '对话ID',
+    sender_id BIGINT NOT NULL COMMENT '发送者ID',
+    receiver_id BIGINT NOT NULL COMMENT '接收者ID',
+    content TEXT NOT NULL COMMENT '消息内容',
+    message_type VARCHAR(20) DEFAULT 'text' COMMENT '消息类型: text/image',
+    is_read BOOLEAN DEFAULT FALSE COMMENT '是否已读',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_conversation (conversation_id, created_at DESC),
+    INDEX idx_receiver_read (receiver_id, is_read),
+    INDEX idx_sender (sender_id)
+);

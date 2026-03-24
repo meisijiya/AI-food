@@ -66,6 +66,22 @@ public class FollowController {
         return ApiResponse.success(result);
     }
 
+    @GetMapping("/mutual")
+    public ApiResponse<Map<String, Object>> getMutualFriends(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Long userId = getCurrentUserId();
+        Map<String, Object> result = followService.getMutualFriendsList(userId, page, size);
+        return ApiResponse.success(result);
+    }
+
+    @GetMapping("/mutual/check/{userId}")
+    public ApiResponse<Map<String, Object>> checkMutualFollow(@PathVariable Long userId) {
+        Long currentUserId = getCurrentUserId();
+        boolean isMutual = followService.isMutualFollow(currentUserId, userId);
+        return ApiResponse.success(Map.of("isMutual", isMutual));
+    }
+
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return Long.parseLong(auth.getPrincipal().toString());

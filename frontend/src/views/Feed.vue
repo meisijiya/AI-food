@@ -4,7 +4,13 @@
 
     <!-- Header -->
     <div class="feed-header animate-fade-up">
-      <h1 class="page-title"><em>大厅</em></h1>
+      <div class="header-left">
+        <h1 class="page-title" @click="resetToHall"><em>大厅</em></h1>
+        <button class="friends-entry" @click="router.push('/friends')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          好友
+        </button>
+      </div>
       <div class="header-actions">
         <button v-if="activeTab === 'feed'" class="filter-btn" @click="showFilter = true">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
@@ -19,14 +25,6 @@
 
     <!-- Sub Navigation -->
     <div class="sub-nav animate-fade-up delay-100">
-      <button 
-        class="sub-nav-item" 
-        :class="{ active: activeTab === 'feed' }"
-        @click="switchTab('feed')"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
-        大厅
-      </button>
       <button 
         class="sub-nav-item" 
         :class="{ active: activeTab === 'hot' }"
@@ -218,6 +216,14 @@ function switchTab(tab: string) {
   }
 }
 
+function resetToHall() {
+  activeTab.value = 'feed'
+  if (scrollContainer.value) {
+    scrollContainer.value.scrollTop = 0
+  }
+  fetchPosts(true)
+}
+
 function onScroll() {
   const el = scrollContainer.value
   if (!el || loading.value || finished.value || activeTab.value !== 'feed') return
@@ -349,13 +355,40 @@ onMounted(() => {
   position: relative;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .page-title {
   font-family: var(--font-serif);
   font-style: italic;
   font-size: 32px;
   font-weight: 400;
   color: var(--color-on-surface);
+  cursor: pointer;
+  transition: opacity 0.2s;
+  &:active { opacity: 0.7; }
   em { font-style: italic; color: var(--color-primary); }
+}
+
+.friends-entry {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border: 1.5px solid var(--color-surface-container-low);
+  border-radius: 100px;
+  background: var(--color-surface-container-lowest);
+  color: var(--color-on-surface-variant);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s;
+  &:active { background: var(--color-surface-container-low); transform: scale(0.95); }
 }
 
 .header-actions {

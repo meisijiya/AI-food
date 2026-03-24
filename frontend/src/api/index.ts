@@ -91,7 +91,9 @@ export const userApi = {
     return request('post', '/user/avatar', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
-  }
+  },
+  searchUsers: (params: { keyword: string; page?: number; size?: number }) =>
+    request('get', '/user/search', undefined, { params })
 }
 
 // 记录相关接口
@@ -156,7 +158,22 @@ export const followApi = {
     request('get', '/follow/followers', undefined, { params }),
   checkFollow: (userId: number) => request('get', `/follow/check/${userId}`),
   getFollowStats: (userId: number) => request('get', `/follow/stats/${userId}`),
-  getMyFollowStats: () => request('get', '/follow/stats')
+  getMyFollowStats: () => request('get', '/follow/stats'),
+  getMutualFriends: (params?: { page?: number; size?: number }) =>
+    request('get', '/follow/mutual', undefined, { params }),
+  checkMutualFollow: (userId: number) => request('get', `/follow/mutual/check/${userId}`)
+}
+
+// 聊天相关接口
+export const chatApi = {
+  getConversations: () => request('get', '/chat/conversations'),
+  getMessages: (conversationId: number, params?: { page?: number; size?: number }) =>
+    request('get', `/chat/messages/${conversationId}`, undefined, { params }),
+  markRead: (conversationId: number) => request('post', `/chat/read/${conversationId}`),
+  getUnread: () => request('get', '/chat/unread'),
+  getContacts: () => request('get', '/chat/contacts'),
+  sendMessage: (data: { receiverId: number; content: string; messageType?: string }) =>
+    request('post', '/chat/send', data)
 }
 
 // 分享相关接口

@@ -63,6 +63,36 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/chat-list',
+    name: 'ChatList',
+    component: () => import('@/views/ChatList.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/chat-room',
+    name: 'ChatRoom',
+    component: () => import('@/views/ChatRoom.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/contacts',
+    name: 'Contacts',
+    component: () => import('@/views/Contacts.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/user-search',
+    name: 'UserSearch',
+    component: () => import('@/views/UserSearch.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/friends',
+    name: 'Friends',
+    component: () => import('@/views/Friends.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/share/:token',
     name: 'share',
     component: () => import('@/views/Share.vue'),

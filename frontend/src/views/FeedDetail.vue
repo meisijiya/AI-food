@@ -32,7 +32,7 @@
         </div>
       </div>
 
-      <!-- User info + Like -->
+      <!-- User info + Follow + Like -->
       <div class="user-like-row animate-fade-up delay-300 animate-start-hidden">
         <div class="user-info">
             <img v-if="post.avatar" :src="post.avatar" class="user-avatar" alt="" />
@@ -44,10 +44,21 @@
             <div class="post-time">{{ formatDate(post.publishedAt) }}</div>
           </div>
         </div>
-        <button class="like-btn" :class="{ liked: isLiked }" @click="toggleLike">
-          <svg width="20" height="20" viewBox="0 0 24 24" :fill="isLiked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
-          <span>{{ likeCount }}</span>
-        </button>
+        <div class="user-actions">
+          <button
+            v-if="!isOwnPost"
+            class="follow-btn"
+            :class="{ following: isFollowing }"
+            :disabled="checkingFollow"
+            @click="toggleFollow"
+          >
+            {{ isFollowing ? '已关注' : '关注' }}
+          </button>
+          <button class="like-btn" :class="{ liked: isLiked }" @click="toggleLike">
+            <svg width="20" height="20" viewBox="0 0 24 24" :fill="isLiked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            <span>{{ likeCount }}</span>
+          </button>
+        </div>
       </div>
 
       <!-- Divider -->
@@ -103,12 +114,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { feedApi } from '@/api'
+import { feedApi, followApi } from '@/api'
+import { useAuthStore } from '@/stores/auth'
 import { showSuccess, showError } from '@/utils/toast'
 import CachedImage from '@/components/CachedImage.vue'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 
 const post = ref<any>(null)
 const loading = ref(true)
@@ -121,8 +134,15 @@ const loadingComments = ref(false)
 const hasMoreComments = ref(false)
 const newComment = ref('')
 const sending = ref(false)
+const isFollowing = ref(false)
+const checkingFollow = ref(false)
 
 const postId = computed(() => Number(route.params.postId))
+const isOwnPost = computed(() => {
+  const postUserId = post.value?.userId
+  if (!postUserId || !authStore.userInfo?.userId) return false
+  return String(postUserId) === String(authStore.userInfo.userId)
+})
 
 const paramLabels: Record<string, string> = {
   time: '用餐时间', location: '用餐地点', weather: '天气情况',
@@ -206,6 +226,21 @@ async function toggleLike() {
   }
 }
 
+async function toggleFollow() {
+  if (!post.value?.userId || isOwnPost.value) return
+  checkingFollow.value = true
+  try {
+    const res = await followApi.toggleFollow(post.value.userId)
+    if (res) {
+      isFollowing.value = res.isFollowing
+    }
+  } catch {
+    showError('操作失败')
+  } finally {
+    checkingFollow.value = false
+  }
+}
+
 async function submitComment() {
   if (!newComment.value.trim()) return
   sending.value = true
@@ -227,9 +262,16 @@ async function submitComment() {
   }
 }
 
-onMounted(() => {
-  fetchDetail()
+onMounted(async () => {
+  await fetchDetail()
   fetchComments(true)
+  // Check follow status for post author
+  if (post.value?.userId && !isOwnPost.value) {
+    try {
+      const res = await followApi.checkFollow(post.value.userId)
+      isFollowing.value = res?.isFollowing || false
+    } catch { /* ignore */ }
+  }
 })
 </script>
 
@@ -362,6 +404,32 @@ onMounted(() => {
 
 .user-name { font-size: 14px; font-weight: 600; color: var(--color-on-surface); }
 .post-time { font-size: 11px; color: var(--color-on-surface-variant); margin-top: 2px; }
+
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.follow-btn {
+  padding: 6px 16px;
+  border: 1.5px solid var(--color-primary);
+  border-radius: 100px;
+  background: none;
+  color: var(--color-primary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  &:active { transform: scale(0.95); }
+  &.following {
+    background: var(--color-surface-container-low);
+    border-color: var(--color-surface-container-low);
+    color: var(--color-on-surface-variant);
+  }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
 
 .like-btn {
   display: flex; align-items: center; gap: 4px;

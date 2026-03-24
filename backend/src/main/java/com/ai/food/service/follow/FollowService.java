@@ -118,6 +118,44 @@ public class FollowService {
         return userFollowRepository.findFollowingIdsByUserId(userId);
     }
 
+    public List<Long> getMutualFriendIds(Long userId) {
+        Set<Long> followingIds = new HashSet<>(userFollowRepository.findFollowingIdsByUserId(userId));
+        List<Long> followerIds = userFollowRepository.findFollowerIdsByUserId(userId);
+        
+        // 互关 = 我关注的人 ∩ 关注我的人
+        followingIds.retainAll(followerIds);
+        return new ArrayList<>(followingIds);
+    }
+
+    public boolean isMutualFollow(Long userId1, Long userId2) {
+        return userFollowRepository.existsByFollowerIdAndFollowingId(userId1, userId2)
+                && userFollowRepository.existsByFollowerIdAndFollowingId(userId2, userId1);
+    }
+
+    public Map<String, Object> getMutualFriendsList(Long userId, int page, int size) {
+        List<Long> mutualIds = getMutualFriendIds(userId);
+        
+        int start = page * size;
+        int end = Math.min(start + size, mutualIds.size());
+        
+        List<Map<String, Object>> items = new ArrayList<>();
+        if (start < mutualIds.size()) {
+            List<Long> pageIds = mutualIds.subList(start, end);
+            for (Long friendId : pageIds) {
+                userRepository.findById(friendId).ifPresent(user -> {
+                    items.add(buildUserMap(user, true));
+                });
+            }
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("items", items);
+        result.put("page", page);
+        result.put("size", size);
+        result.put("total", mutualIds.size());
+        return result;
+    }
+
     private Map<String, Object> buildUserMap(SysUser user, boolean isFollowing) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("userId", user.getId());

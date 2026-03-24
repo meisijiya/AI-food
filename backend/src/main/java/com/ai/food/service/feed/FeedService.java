@@ -4,6 +4,7 @@ import com.ai.food.model.*;
 import com.ai.food.repository.*;
 import com.ai.food.service.follow.FollowService;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +44,7 @@ public class FeedService {
     private static final String UNREAD_LIKES_KEY = "feed:notification:likes:";
     private static final String UNREAD_COMMENTS_KEY = "feed:notification:comments:";
     private static final String HOT_RANK_KEY = "feed:hot:rank";
+    private static final String HOT_DETAILS_KEY = "feed:hot:details";
     private static final String FRIEND_FEED_KEY = "feed:friend:";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -124,11 +127,33 @@ public class FeedService {
     }
 
     public Map<String, Object> getHotRank() {
+        // 优先从缓存获取
+        String cached = stringRedisTemplate.opsForValue().get(HOT_DETAILS_KEY);
+        if (cached != null && !cached.isEmpty()) {
+            try {
+                return objectMapper.readValue(cached, new TypeReference<Map<String, Object>>() {});
+            } catch (JsonProcessingException e) {
+                log.error("Failed to parse hot rank cache", e);
+            }
+        }
+
+        // 缓存不存在，从数据库加载并缓存
+        return loadAndCacheHotRank();
+    }
+
+    private Map<String, Object> loadAndCacheHotRank() {
         Set<ZSetOperations.TypedTuple<String>> hotPosts = stringRedisTemplate.opsForZSet()
                 .reverseRangeWithScores(HOT_RANK_KEY, 0, 19);
 
         if (hotPosts == null || hotPosts.isEmpty()) {
-            return Map.of("items", new ArrayList<>());
+            Map<String, Object> emptyResult = Map.of("items", new ArrayList<>());
+            // 缓存空结果，避免频繁查询
+            try {
+                stringRedisTemplate.opsForValue().set(HOT_DETAILS_KEY, objectMapper.writeValueAsString(emptyResult));
+            } catch (JsonProcessingException e) {
+                log.error("Failed to cache empty hot rank", e);
+            }
+            return emptyResult;
         }
 
         List<Long> postIds = new ArrayList<>();
@@ -142,7 +167,13 @@ public class FeedService {
         }
 
         if (postIds.isEmpty()) {
-            return Map.of("items", new ArrayList<>());
+            Map<String, Object> emptyResult = Map.of("items", new ArrayList<>());
+            try {
+                stringRedisTemplate.opsForValue().set(HOT_DETAILS_KEY, objectMapper.writeValueAsString(emptyResult));
+            } catch (JsonProcessingException e) {
+                log.error("Failed to cache empty hot rank", e);
+            }
+            return emptyResult;
         }
 
         List<FeedPost> posts = feedPostRepository.findByIdIn(postIds);
@@ -155,14 +186,67 @@ public class FeedService {
         for (Long postId : postIds) {
             FeedPost post = postMap.get(postId);
             if (post != null && !post.getIsDeleted()) {
-                Map<String, Object> item = buildPostMap(post);
+                Map<String, Object> item = buildSimplifiedPostMap(post);
                 item.put("hotScore", scoreMap.getOrDefault(postId, 0.0).intValue());
                 enrichUserInfo(item, post.getUserId());
                 items.add(item);
             }
         }
 
-        return Map.of("items", items);
+        Map<String, Object> result = Map.of("items", items);
+
+        // 缓存结果
+        try {
+            stringRedisTemplate.opsForValue().set(HOT_DETAILS_KEY, objectMapper.writeValueAsString(result));
+            log.info("Hot rank cache refreshed, {} items", items.size());
+        } catch (JsonProcessingException e) {
+            log.error("Failed to cache hot rank", e);
+        }
+
+        return result;
+    }
+
+    private Map<String, Object> buildSimplifiedPostMap(FeedPost post) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", post.getId());
+        map.put("userId", post.getUserId());
+        map.put("foodName", post.getFoodName());
+        map.put("thumbnailUrl", post.getThumbnailUrl());
+        map.put("likeCount", post.getLikeCount());
+        map.put("commentCount", post.getCommentCount());
+        return map;
+    }
+
+    private void checkAndRefreshHotRank(Long postId) {
+        // 获取当前 Top 20 的 postId 列表
+        Set<ZSetOperations.TypedTuple<String>> currentTop = stringRedisTemplate.opsForZSet()
+                .reverseRangeWithScores(HOT_RANK_KEY, 0, 19);
+
+        if (currentTop == null || currentTop.isEmpty()) {
+            return;
+        }
+
+        // 检查 postId 是否在 Top 20 中
+        boolean isInTop20 = false;
+        for (ZSetOperations.TypedTuple<String> tuple : currentTop) {
+            if (tuple.getValue() != null && tuple.getValue().equals(postId.toString())) {
+                isInTop20 = true;
+                break;
+            }
+        }
+
+        // 如果在 Top 20 中，刷新缓存
+        if (isInTop20) {
+            log.info("Post {} is in Top 20, refreshing hot rank cache", postId);
+            loadAndCacheHotRank();
+        }
+    }
+
+    @Scheduled(cron = "0 */10 * * * ?")  // 每10分钟执行
+    public void refreshHotRankCacheScheduled() {
+        log.info("Scheduled hot rank cache refresh started");
+        loadAndCacheHotRank();
+        log.info("Scheduled hot rank cache refresh completed");
     }
 
     public Map<String, Object> getFriendFeedList(Long userId, int page, int size) {
@@ -268,6 +352,8 @@ public class FeedService {
 
         // Increment hot score for view
         stringRedisTemplate.opsForZSet().incrementScore(HOT_RANK_KEY, postId.toString(), 1);
+        // 检查是否需要刷新热榜缓存
+        checkAndRefreshHotRank(postId);
 
         // Update view count in DB
         post.setViewCount(post.getViewCount() + 1);
@@ -314,6 +400,8 @@ public class FeedService {
 
                 // Increment hot score for like (+3)
                 stringRedisTemplate.opsForZSet().incrementScore(HOT_RANK_KEY, postId.toString(), 3);
+                // 检查是否需要刷新热榜缓存
+                checkAndRefreshHotRank(postId);
             }
 
             FeedPost post = feedPostRepository.findById(postId)
@@ -350,6 +438,8 @@ public class FeedService {
 
         // Increment hot score for comment (+5)
         stringRedisTemplate.opsForZSet().incrementScore(HOT_RANK_KEY, postId.toString(), 5);
+        // 检查是否需要刷新热榜缓存
+        checkAndRefreshHotRank(postId);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("id", saved.getId());
