@@ -26,7 +26,11 @@ public class FeedController {
         }
         Long userId = getCurrentUserId();
         String commentPreview = body.get("commentPreview");
-        Map<String, Object> result = feedService.publishPost(userId, sessionId, commentPreview);
+        String visibility = body.get("visibility");
+        if (visibility == null || (!visibility.equals("public") && !visibility.equals("friends"))) {
+            visibility = "public";
+        }
+        Map<String, Object> result = feedService.publishPost(userId, sessionId, commentPreview, visibility);
         return ApiResponse.success("发布成功", result);
     }
 
@@ -37,7 +41,22 @@ public class FeedController {
             @RequestParam(required = false) String foodName,
             @RequestParam(required = false) String paramName,
             @RequestParam(required = false) String paramValue) {
-        Map<String, Object> result = feedService.getFeedList(page, size, foodName, paramName, paramValue);
+        Map<String, Object> result = feedService.getPublicFeedList(page, size, foodName, paramName, paramValue);
+        return ApiResponse.success(result);
+    }
+
+    @GetMapping("/hot-rank")
+    public ApiResponse<Map<String, Object>> getHotRank() {
+        Map<String, Object> result = feedService.getHotRank();
+        return ApiResponse.success(result);
+    }
+
+    @GetMapping("/friend-feed")
+    public ApiResponse<Map<String, Object>> getFriendFeedList(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Long userId = getCurrentUserId();
+        Map<String, Object> result = feedService.getFriendFeedList(userId, page, size);
         return ApiResponse.success(result);
     }
 

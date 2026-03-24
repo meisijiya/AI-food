@@ -6,7 +6,7 @@
     <div class="feed-header animate-fade-up">
       <h1 class="page-title"><em>大厅</em></h1>
       <div class="header-actions">
-        <button class="filter-btn" @click="showFilter = true">
+        <button v-if="activeTab === 'feed'" class="filter-btn" @click="showFilter = true">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
           筛选
         </button>
@@ -17,8 +17,36 @@
       </div>
     </div>
 
-    <!-- Waterfall grid -->
-    <div class="waterfall">
+    <!-- Sub Navigation -->
+    <div class="sub-nav animate-fade-up delay-100">
+      <button 
+        class="sub-nav-item" 
+        :class="{ active: activeTab === 'feed' }"
+        @click="switchTab('feed')"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+        大厅
+      </button>
+      <button 
+        class="sub-nav-item" 
+        :class="{ active: activeTab === 'hot' }"
+        @click="switchTab('hot')"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+        热榜
+      </button>
+      <button 
+        class="sub-nav-item" 
+        :class="{ active: activeTab === 'friend' }"
+        @click="switchTab('friend')"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        友榜
+      </button>
+    </div>
+
+    <!-- Feed Tab Content -->
+    <div v-if="activeTab === 'feed'" class="waterfall">
       <div
         v-for="(post, index) in posts"
         :key="post.id"
@@ -26,18 +54,13 @@
         :style="{ animationDelay: (index % 6) * 0.05 + 's' }"
         @click="router.push('/feed/' + post.id)"
       >
-        <!-- Photo -->
         <div v-if="post.thumbnailUrl" class="card-photo">
           <CachedImage :src="post.thumbnailUrl" :alt="post.foodName" :lazy="true" />
         </div>
-
-        <!-- Content -->
         <div class="card-body">
           <div class="card-food">{{ post.foodName }}</div>
           <div v-if="post.commentPreview" class="card-preview">{{ post.commentPreview }}</div>
         </div>
-
-        <!-- Footer -->
         <div class="card-footer">
           <div class="card-user">
             <img v-if="post.avatar" :src="post.avatar" class="card-avatar" alt="" />
@@ -54,13 +77,72 @@
       </div>
     </div>
 
+    <!-- Hot Rank Tab Content -->
+    <div v-else-if="activeTab === 'hot'" class="hot-rank-list">
+      <div 
+        v-for="(item, index) in hotRankList" 
+        :key="item.id" 
+        class="hot-rank-item animate-fade-up"
+        :style="{ animationDelay: (index % 10) * 0.05 + 's' }"
+        @click="router.push('/feed/' + item.id)"
+      >
+        <span class="rank-num" :class="{ 'top-3': index < 3 }">{{ index + 1 }}</span>
+        <div v-if="item.thumbnailUrl" class="rank-photo">
+          <CachedImage :src="item.thumbnailUrl" :alt="item.foodName" :lazy="true" />
+        </div>
+        <div class="rank-content">
+          <div class="rank-food">{{ item.foodName }}</div>
+          <div class="rank-meta">
+            <span class="rank-user">{{ item.nickname || '匿名' }}</span>
+            <span class="rank-score">热度 {{ item.hotScore }}</span>
+          </div>
+        </div>
+      </div>
+      <div v-if="hotRankList.length === 0" class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="empty-icon"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+        <div class="empty-text">暂无热榜数据</div>
+        <div class="empty-hint">浏览、点赞、评论可增加热度</div>
+      </div>
+    </div>
+
+    <!-- Friend Feed Tab Content -->
+    <div v-else-if="activeTab === 'friend'" class="friend-feed-list">
+      <div 
+        v-for="(item, index) in friendFeedList" 
+        :key="item.postId" 
+        class="friend-feed-item animate-fade-up"
+        :style="{ animationDelay: (index % 10) * 0.05 + 's' }"
+        @click="router.push('/feed/' + item.postId)"
+      >
+        <div class="friend-avatar">
+          <img v-if="item.avatar" :src="item.avatar" alt="" />
+          <span v-else>{{ item.nickname?.charAt(0) || '?' }}</span>
+        </div>
+        <div class="friend-content">
+          <div class="friend-header">
+            <span class="friend-name">{{ item.nickname || '匿名' }}</span>
+            <span class="friend-time">{{ formatTime(item.publishedAt) }}</span>
+          </div>
+          <div class="friend-food">{{ item.foodName }}</div>
+        </div>
+        <div v-if="item.thumbnailUrl" class="friend-photo">
+          <CachedImage :src="item.thumbnailUrl" :alt="item.foodName" :lazy="true" />
+        </div>
+      </div>
+      <div v-if="friendFeedList.length === 0" class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="empty-icon"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <div class="empty-text">暂无好友动态</div>
+        <div class="empty-hint">关注更多人，看看他们在吃什么</div>
+      </div>
+    </div>
+
     <!-- Loading -->
     <div v-if="loading && posts.length > 0" class="loading-more">
       <div class="spinner"></div>
     </div>
 
-    <!-- Empty -->
-    <div v-if="!loading && posts.length === 0" class="empty-state">
+    <!-- Empty for feed -->
+    <div v-if="activeTab === 'feed' && !loading && posts.length === 0" class="empty-state">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="empty-icon"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
       <div class="empty-text">暂无发布内容</div>
       <div class="empty-hint">去推荐记录发布你的美食吧</div>
@@ -110,7 +192,10 @@ import CachedImage from '@/components/CachedImage.vue'
 const router = useRouter()
 const scrollContainer = ref<HTMLElement>()
 
+const activeTab = ref('feed')
 const posts = ref<any[]>([])
+const hotRankList = ref<any[]>([])
+const friendFeedList = ref<any[]>([])
 const page = ref(0)
 const pageSize = 10
 const loading = ref(false)
@@ -122,9 +207,20 @@ const filterFoodName = ref('')
 const filterParamName = ref('')
 const filterParamValue = ref('')
 
+function switchTab(tab: string) {
+  activeTab.value = tab
+  if (tab === 'feed') {
+    fetchPosts(true)
+  } else if (tab === 'hot') {
+    fetchHotRank()
+  } else if (tab === 'friend') {
+    fetchFriendFeed()
+  }
+}
+
 function onScroll() {
   const el = scrollContainer.value
-  if (!el || loading.value || finished.value) return
+  if (!el || loading.value || finished.value || activeTab.value !== 'feed') return
   if (el.scrollTop + el.clientHeight >= el.scrollHeight - 100) {
     fetchPosts()
   }
@@ -163,6 +259,20 @@ async function fetchPosts(reset = false) {
   }
 }
 
+async function fetchHotRank() {
+  try {
+    const res = await feedApi.getHotRank()
+    hotRankList.value = res?.items || []
+  } catch { /* ignore */ }
+}
+
+async function fetchFriendFeed() {
+  try {
+    const res = await feedApi.getFriendFeed({ page: 0, size: 20 })
+    friendFeedList.value = res?.items || []
+  } catch { /* ignore */ }
+}
+
 async function fetchNotifications() {
   try {
     const res = await feedApi.getNotifications()
@@ -179,6 +289,22 @@ function resetFilter() {
 function applyFilter() {
   showFilter.value = false
   fetchPosts(true)
+}
+
+function formatTime(dateStr: string): string {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+  
+  if (minutes < 1) return '刚刚'
+  if (minutes < 60) return `${minutes}分钟前`
+  if (hours < 24) return `${hours}小时前`
+  if (days < 7) return `${days}天前`
+  return date.toLocaleDateString()
 }
 
 onMounted(() => {
@@ -218,7 +344,7 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   z-index: 1;
   position: relative;
 }
@@ -283,6 +409,46 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   line-height: 1;
+}
+
+/* Sub Navigation */
+.sub-nav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  z-index: 1;
+  position: relative;
+}
+
+.sub-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border: 1.5px solid var(--color-surface-container-low);
+  border-radius: 100px;
+  background: none;
+  color: var(--color-on-surface-variant);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  svg {
+    opacity: 0.7;
+  }
+  
+  &.active {
+    background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+    border-color: transparent;
+    color: white;
+    svg { opacity: 1; stroke: white; }
+  }
+  
+  &:not(.active):active {
+    background: var(--color-surface-container-low);
+  }
 }
 
 /* Waterfall */
@@ -391,6 +557,172 @@ onMounted(() => {
   color: var(--color-on-surface-variant);
   flex-shrink: 0;
   svg { color: #ef4444; }
+}
+
+/* Hot Rank */
+.hot-rank-list {
+  z-index: 1;
+  position: relative;
+}
+
+.hot-rank-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--color-surface-container-lowest);
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  &:active { transform: scale(0.98); }
+}
+
+.rank-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--color-surface-container-low);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-on-surface-variant);
+  flex-shrink: 0;
+  
+  &.top-3 {
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    color: white;
+  }
+}
+
+.rank-photo {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  img { width: 100%; height: 100%; object-fit: cover; }
+}
+
+.rank-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.rank-food {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-on-surface);
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+}
+
+.rank-user {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank-score {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* Friend Feed */
+.friend-feed-list {
+  z-index: 1;
+  position: relative;
+}
+
+.friend-feed-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--color-surface-container-lowest);
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  &:active { transform: scale(0.98); }
+}
+
+.friend-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 16px;
+  font-weight: 400;
+  flex-shrink: 0;
+  overflow: hidden;
+  img { width: 100%; height: 100%; object-fit: cover; }
+}
+
+.friend-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.friend-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.friend-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-on-surface);
+}
+
+.friend-time {
+  font-size: 11px;
+  color: var(--color-on-surface-variant);
+}
+
+.friend-food {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--color-on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friend-photo {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  img { width: 100%; height: 100%; object-fit: cover; }
 }
 
 /* Loading / Empty */

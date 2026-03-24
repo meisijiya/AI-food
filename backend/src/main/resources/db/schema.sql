@@ -123,12 +123,15 @@ CREATE TABLE IF NOT EXISTS feed_post (
     collected_params JSON COMMENT '收集参数快照',
     like_count INT DEFAULT 0,
     comment_count INT DEFAULT 0,
+    view_count INT DEFAULT 0 COMMENT '浏览次数',
+    visibility VARCHAR(20) DEFAULT 'public' COMMENT 'public/friends',
     published_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     is_deleted BOOLEAN DEFAULT FALSE,
     INDEX idx_user_id (user_id),
     INDEX idx_session_id (session_id),
     INDEX idx_published_at (published_at DESC),
-    INDEX idx_food_name (food_name)
+    INDEX idx_food_name (food_name),
+    INDEX idx_visibility (visibility)
 );
 
 -- 大厅评论表
@@ -141,4 +144,15 @@ CREATE TABLE IF NOT EXISTS feed_comment (
     is_deleted BOOLEAN DEFAULT FALSE,
     INDEX idx_post_id (post_id, created_at DESC),
     INDEX idx_user_id (user_id)
+);
+
+-- 用户关注表
+CREATE TABLE IF NOT EXISTS user_follow (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    follower_id BIGINT NOT NULL COMMENT '关注者ID',
+    following_id BIGINT NOT NULL COMMENT '被关注者ID',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_follow (follower_id, following_id),
+    INDEX idx_follower (follower_id),
+    INDEX idx_following (following_id)
 );

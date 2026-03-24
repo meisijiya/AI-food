@@ -2,6 +2,7 @@ package com.ai.food.service.feed;
 
 import com.ai.food.model.*;
 import com.ai.food.repository.*;
+import com.ai.food.service.follow.FollowService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +32,7 @@ public class FeedService {
     private final CollectedParamRepository collectedParamRepository;
     private final ConversationSessionRepository conversationSessionRepository;
     private final UserRepository userRepository;
+    private final FollowService followService;
     private final StringRedisTemplate stringRedisTemplate;
     private final RedissonClient redissonClient;
 
@@ -38,11 +41,13 @@ public class FeedService {
     private static final String LIKE_LOCK_KEY = "feed:like:lock:";
     private static final String UNREAD_LIKES_KEY = "feed:notification:likes:";
     private static final String UNREAD_COMMENTS_KEY = "feed:notification:comments:";
+    private static final String HOT_RANK_KEY = "feed:hot:rank";
+    private static final String FRIEND_FEED_KEY = "feed:friend:";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional
-    public Map<String, Object> publishPost(Long userId, String sessionId, String commentPreview) {
+    public Map<String, Object> publishPost(Long userId, String sessionId, String commentPreview, String visibility) {
         // Check if already published
         Optional<FeedPost> existing = feedPostRepository.findBySessionIdAndUserId(sessionId, userId);
         if (existing.isPresent()) {
@@ -77,15 +82,19 @@ public class FeedService {
         post.setCommentPreview(commentPreview != null && commentPreview.length() > 30
                 ? commentPreview.substring(0, 30) : commentPreview);
         post.setCollectedParams(buildCollectedParamsJson(params));
+        post.setVisibility(visibility);
         post.setPublishedAt(LocalDateTime.now());
 
         FeedPost saved = feedPostRepository.save(post);
-        log.info("Feed post published: postId={}, user={}, session={}", saved.getId(), userId, sessionId);
+        log.info("Feed post published: postId={}, user={}, session={}, visibility={}", saved.getId(), userId, sessionId, visibility);
+
+        // Push to followers' friend feed
+        pushToFollowersFeeds(saved, userId);
 
         return buildPostMap(saved);
     }
 
-    public Map<String, Object> getFeedList(int page, int size, String foodName, String paramName, String paramValue) {
+    public Map<String, Object> getPublicFeedList(int page, int size, String foodName, String paramName, String paramValue) {
         Pageable pageable = PageRequest.of(page, size);
 
         String searchParamValue = null;
@@ -93,7 +102,7 @@ public class FeedService {
             searchParamValue = "\"" + paramName + "\":\"" + paramValue + "\"";
         }
 
-        Page<FeedPost> postPage = feedPostRepository.findByFilters(
+        Page<FeedPost> postPage = feedPostRepository.findPublicByFilters(
                 foodName != null && !foodName.isBlank() ? foodName : null,
                 searchParamValue,
                 pageable);
@@ -112,6 +121,120 @@ public class FeedService {
         result.put("totalElements", postPage.getTotalElements());
         result.put("totalPages", postPage.getTotalPages());
         return result;
+    }
+
+    public Map<String, Object> getHotRank() {
+        Set<ZSetOperations.TypedTuple<String>> hotPosts = stringRedisTemplate.opsForZSet()
+                .reverseRangeWithScores(HOT_RANK_KEY, 0, 19);
+
+        if (hotPosts == null || hotPosts.isEmpty()) {
+            return Map.of("items", new ArrayList<>());
+        }
+
+        List<Long> postIds = new ArrayList<>();
+        Map<Long, Double> scoreMap = new LinkedHashMap<>();
+        for (ZSetOperations.TypedTuple<String> tuple : hotPosts) {
+            if (tuple.getValue() != null) {
+                Long postId = Long.parseLong(tuple.getValue());
+                postIds.add(postId);
+                scoreMap.put(postId, tuple.getScore() != null ? tuple.getScore() : 0.0);
+            }
+        }
+
+        if (postIds.isEmpty()) {
+            return Map.of("items", new ArrayList<>());
+        }
+
+        List<FeedPost> posts = feedPostRepository.findByIdIn(postIds);
+        Map<Long, FeedPost> postMap = new LinkedHashMap<>();
+        for (FeedPost post : posts) {
+            postMap.put(post.getId(), post);
+        }
+
+        List<Map<String, Object>> items = new ArrayList<>();
+        for (Long postId : postIds) {
+            FeedPost post = postMap.get(postId);
+            if (post != null && !post.getIsDeleted()) {
+                Map<String, Object> item = buildPostMap(post);
+                item.put("hotScore", scoreMap.getOrDefault(postId, 0.0).intValue());
+                enrichUserInfo(item, post.getUserId());
+                items.add(item);
+            }
+        }
+
+        return Map.of("items", items);
+    }
+
+    public Map<String, Object> getFriendFeedList(Long userId, int page, int size) {
+        String key = FRIEND_FEED_KEY + userId;
+        long start = page * size;
+        long end = start + size - 1;
+
+        List<String> feedJsons = stringRedisTemplate.opsForList().range(key, start, end);
+        if (feedJsons == null || feedJsons.isEmpty()) {
+            return Map.of("items", new ArrayList<>(), "total", 0);
+        }
+
+        List<Map<String, Object>> items = new ArrayList<>();
+        for (String json : feedJsons) {
+            try {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> item = objectMapper.readValue(json, Map.class);
+                items.add(item);
+            } catch (JsonProcessingException e) {
+                log.error("Failed to parse friend feed item", e);
+            }
+        }
+
+        Long total = stringRedisTemplate.opsForList().size(key);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("items", items);
+        result.put("page", page);
+        result.put("size", size);
+        result.put("total", total != null ? total : 0);
+        return result;
+    }
+
+    private void pushToFollowersFeeds(FeedPost post, Long userId) {
+        List<Long> followerIds = followService.getFollowerIds(userId);
+        if (followerIds.isEmpty()) {
+            return;
+        }
+
+        // Get user info for summary
+        String nickname = "匿名用户";
+        String avatar = null;
+        Optional<SysUser> userOpt = userRepository.findById(userId);
+        if (userOpt.isPresent()) {
+            SysUser user = userOpt.get();
+            nickname = user.getNickname() != null ? user.getNickname() : user.getUsername();
+            avatar = user.getAvatar();
+        }
+
+        // Build minimal summary
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("postId", post.getId());
+        summary.put("userId", post.getUserId());
+        summary.put("foodName", post.getFoodName());
+        summary.put("thumbnailUrl", post.getThumbnailUrl());
+        summary.put("nickname", nickname);
+        summary.put("avatar", avatar);
+        summary.put("publishedAt", post.getPublishedAt().toString());
+
+        try {
+            String summaryJson = objectMapper.writeValueAsString(summary);
+
+            for (Long followerId : followerIds) {
+                String key = FRIEND_FEED_KEY + followerId;
+                // Push from left (newest first)
+                stringRedisTemplate.opsForList().leftPush(key, summaryJson);
+                // Keep max 100 items
+                stringRedisTemplate.opsForList().trim(key, 0, 99);
+            }
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize feed summary", e);
+        }
     }
 
     public Map<String, Object> getFeedDetail(Long postId, Long currentUserId) {
@@ -142,6 +265,13 @@ public class FeedService {
             paramList.add(pm);
         }
         result.put("collectedParams", paramList);
+
+        // Increment hot score for view
+        stringRedisTemplate.opsForZSet().incrementScore(HOT_RANK_KEY, postId.toString(), 1);
+
+        // Update view count in DB
+        post.setViewCount(post.getViewCount() + 1);
+        feedPostRepository.save(post);
 
         return result;
     }
@@ -181,6 +311,9 @@ public class FeedService {
                 if (post != null && !post.getUserId().equals(userId)) {
                     stringRedisTemplate.opsForValue().increment(UNREAD_LIKES_KEY + post.getUserId());
                 }
+
+                // Increment hot score for like (+3)
+                stringRedisTemplate.opsForZSet().incrementScore(HOT_RANK_KEY, postId.toString(), 3);
             }
 
             FeedPost post = feedPostRepository.findById(postId)
@@ -214,6 +347,9 @@ public class FeedService {
         if (!post.getUserId().equals(userId)) {
             stringRedisTemplate.opsForValue().increment(UNREAD_COMMENTS_KEY + post.getUserId());
         }
+
+        // Increment hot score for comment (+5)
+        stringRedisTemplate.opsForZSet().incrementScore(HOT_RANK_KEY, postId.toString(), 5);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("id", saved.getId());

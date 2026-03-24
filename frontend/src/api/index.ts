@@ -129,7 +129,8 @@ export const conversationApi = {
 
 // 大厅相关接口
 export const feedApi = {
-  publish: (data: { sessionId: string; commentPreview?: string }) => request('post', '/feed/publish', data),
+  publish: (data: { sessionId: string; commentPreview?: string; visibility?: string }) => 
+    request('post', '/feed/publish', data),
   getList: (params?: { page?: number; size?: number; foodName?: string; paramName?: string; paramValue?: string }) =>
     request('get', '/feed/list', undefined, { params }),
   getDetail: (postId: number) => request('get', `/feed/detail/${postId}`),
@@ -140,7 +141,22 @@ export const feedApi = {
   getNotifications: () => request('get', '/feed/notifications'),
   markRead: () => request('post', '/feed/notifications/read'),
   checkPublished: (sessionId: string) => request('get', `/feed/check/${sessionId}`),
-  unpublish: (sessionId: string) => request('delete', `/feed/unpublish/${sessionId}`)
+  unpublish: (sessionId: string) => request('delete', `/feed/unpublish/${sessionId}`),
+  getHotRank: () => request('get', '/feed/hot-rank'),
+  getFriendFeed: (params?: { page?: number; size?: number }) =>
+    request('get', '/feed/friend-feed', undefined, { params })
+}
+
+// 关注相关接口
+export const followApi = {
+  toggleFollow: (userId: number) => request('post', `/follow/${userId}`),
+  getFollowingList: (params?: { page?: number; size?: number }) =>
+    request('get', '/follow/following', undefined, { params }),
+  getFollowersList: (params?: { page?: number; size?: number }) =>
+    request('get', '/follow/followers', undefined, { params }),
+  checkFollow: (userId: number) => request('get', `/follow/check/${userId}`),
+  getFollowStats: (userId: number) => request('get', `/follow/stats/${userId}`),
+  getMyFollowStats: () => request('get', '/follow/stats')
 }
 
 // 分享相关接口

@@ -50,6 +50,12 @@ public class FeedPost {
     @Column(name = "comment_count")
     private Integer commentCount = 0;
 
+    @Column(name = "view_count")
+    private Integer viewCount = 0;
+
+    @Column(name = "visibility", length = 20)
+    private String visibility = "public";
+
     @Column(name = "published_at")
     private LocalDateTime publishedAt;
 

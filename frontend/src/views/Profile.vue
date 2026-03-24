@@ -54,6 +54,14 @@
 
     <!-- Stats -->
     <div class="stats-card animate-fade-up delay-300 animate-start-hidden">
+      <div class="stat-item" @click="router.push('/follow?type=following')">
+        <div class="stat-value">{{ followStats.followingCount }}</div>
+        <div class="stat-label">关注</div>
+      </div>
+      <div class="stat-item" @click="router.push('/follow?type=followers')">
+        <div class="stat-value">{{ followStats.followerCount }}</div>
+        <div class="stat-label">粉丝</div>
+      </div>
       <div class="stat-item">
         <div class="stat-value">{{ conversationCount }}</div>
         <div class="stat-label">推荐记录</div>
@@ -73,7 +81,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { userApi, recordApi } from '@/api'
+import { userApi, recordApi, followApi } from '@/api'
 import { showSuccess, showError } from '@/utils/toast'
 
 const router = useRouter()
@@ -87,6 +95,10 @@ const avatarInitial = computed(() => {
 
 const signingIn = ref(false)
 const conversationCount = ref(0)
+const followStats = reactive({
+  followingCount: 0,
+  followerCount: 0
+})
 const signStatus = reactive({
   totalDays: 0,
   continuousDays: 0,
@@ -127,8 +139,15 @@ async function fetchData() {
   }
 
   try {
-    const listRes = await recordApi.getRecordList({ page: 0, size: 1 })
+    const [listRes, statsRes] = await Promise.all([
+      recordApi.getRecordList({ page: 0, size: 1 }),
+      followApi.getMyFollowStats()
+    ])
     conversationCount.value = listRes?.total || 0
+    if (statsRes) {
+      followStats.followingCount = statsRes.followingCount || 0
+      followStats.followerCount = statsRes.followerCount || 0
+    }
   } catch {
     // ignore
   }

@@ -57,6 +57,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/follow',
+    name: 'FollowList',
+    component: () => import('@/views/FollowList.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/share/:token',
     name: 'share',
     component: () => import('@/views/Share.vue'),

@@ -28,4 +28,18 @@ public interface FeedPostRepository extends JpaRepository<FeedPost, Long> {
     Page<FeedPost> findByFilters(@Param("foodName") String foodName,
                                  @Param("paramValue") String paramValue,
                                  Pageable pageable);
+
+    @Query("SELECT f FROM FeedPost f WHERE f.visibility = 'public' AND " +
+           "(:foodName IS NULL OR f.foodName LIKE %:foodName%) AND " +
+           "(:paramValue IS NULL OR f.collectedParams LIKE %:paramValue%) " +
+           "ORDER BY f.publishedAt DESC")
+    Page<FeedPost> findPublicByFilters(@Param("foodName") String foodName,
+                                       @Param("paramValue") String paramValue,
+                                       Pageable pageable);
+
+    @Query("SELECT f FROM FeedPost f WHERE f.userId IN :userIds " +
+           "ORDER BY f.publishedAt DESC")
+    Page<FeedPost> findByUserIdsOrderByPublishedAtDesc(@Param("userIds") List<Long> userIds, Pageable pageable);
+
+    List<FeedPost> findByIdIn(List<Long> ids);
 }
