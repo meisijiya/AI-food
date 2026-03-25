@@ -27,11 +27,31 @@ function safeParseItem<T>(key: string): T | null {
   }
 }
 
+const CACHE_KEY = 'userInfo'
+const EXPIRY_KEY = 'userInfoExpiry'
+const BASE_EXPIRE_MS = 30 * 60 * 1000 // 30 分钟
+const JITTER_MAX_MS = 5 * 60 * 1000   // 随机 0~5 分钟
+
+function isCacheExpired(): boolean {
+  const expiry = safeGetItem(EXPIRY_KEY)
+  if (!expiry) return true
+  return Date.now() > Number(expiry)
+}
+
+function setCacheExpiry() {
+  const jitter = Math.floor(Math.random() * JITTER_MAX_MS)
+  const expiry = Date.now() + BASE_EXPIRE_MS + jitter
+  localStorage.setItem(EXPIRY_KEY, String(expiry))
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string>(safeGetItem('token') || '')
-  const userInfo = ref<UserInfo | null>(safeParseItem<UserInfo>('userInfo'))
+  const userInfo = ref<UserInfo | null>(
+    isCacheExpired() ? null : safeParseItem<UserInfo>(CACHE_KEY)
+  )
 
   const isLoggedIn = computed(() => !!token.value)
+  const isCacheValid = computed(() => !isCacheExpired() && !!userInfo.value)
 
   function setToken(newToken: string) {
     token.value = newToken
@@ -40,29 +60,38 @@ export const useAuthStore = defineStore('auth', () => {
 
   function setUserInfo(info: UserInfo) {
     userInfo.value = info
-    localStorage.setItem('userInfo', JSON.stringify(info))
+    localStorage.setItem(CACHE_KEY, JSON.stringify(info))
+    setCacheExpiry()
   }
 
-  function logout() {
+  async function logout() {
+    // 先通知后端删除 Redis token
+    try {
+      const { authApi } = await import('@/api')
+      await authApi.logout()
+    } catch {
+      // 忽略网络错误
+    }
     token.value = ''
     userInfo.value = null
     localStorage.removeItem('token')
-    localStorage.removeItem('userInfo')
+    localStorage.removeItem(CACHE_KEY)
+    localStorage.removeItem(EXPIRY_KEY)
   }
 
   // 清除所有可能的脏数据
   function clearStale() {
     const t = safeGetItem('token')
-    const u = safeGetItem('userInfo')
     if (!t) {
       token.value = ''
       localStorage.removeItem('token')
     }
-    if (!u) {
+    if (isCacheExpired()) {
       userInfo.value = null
-      localStorage.removeItem('userInfo')
+      localStorage.removeItem(CACHE_KEY)
+      localStorage.removeItem(EXPIRY_KEY)
     }
   }
 
-  return { token, userInfo, isLoggedIn, setToken, setUserInfo, logout, clearStale }
+  return { token, userInfo, isLoggedIn, isCacheValid, setToken, setUserInfo, logout, clearStale }
 })

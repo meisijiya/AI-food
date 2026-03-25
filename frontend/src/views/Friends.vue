@@ -88,9 +88,9 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
       </div>
       <div v-else class="empty-state">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="empty-icon"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <div class="empty-text">还没有聊过天</div>
-        <div class="empty-hint">去聊天列表开始吧</div>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="empty-icon"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <div class="empty-text">还没有聊过天呢～</div>
+        <div class="empty-hint">去好友列表找人开始愉快地聊天吧！</div>
       </div>
     </div>
 
@@ -156,6 +156,10 @@ function switchTab(tab: string) {
     fetchConversations()
   } else if (tab === 'direct') {
     loadLastPartner()
+    if (lastPartner.value) {
+      openDirectChat()
+      return
+    }
   } else if (tab === 'friends') {
     fetchFriends()
   }
@@ -186,7 +190,8 @@ function openChat(conv: any) {
     query: {
       userId: conv.userId,
       conversationId: conv.conversationId,
-      nickname: conv.nickname
+      nickname: conv.nickname,
+      avatar: conv.avatar || ''
     }
   })
 }
@@ -229,7 +234,8 @@ function openDirectChat() {
     query: {
       userId: lastPartner.value.userId,
       conversationId: lastPartner.value.conversationId,
-      nickname: lastPartner.value.nickname
+      nickname: lastPartner.value.nickname,
+      avatar: lastPartner.value.avatar || ''
     }
   })
 }
@@ -266,12 +272,12 @@ async function openFriendChat(friend: any) {
     if (existing) {
       router.push({
         path: '/chat-room',
-        query: { userId: friend.userId, conversationId: existing.conversationId, nickname: friend.nickname }
+        query: { userId: friend.userId, conversationId: existing.conversationId, nickname: friend.nickname, avatar: friend.avatar || '' }
       })
     } else {
       router.push({
         path: '/chat-room',
-        query: { userId: friend.userId, nickname: friend.nickname }
+        query: { userId: friend.userId, nickname: friend.nickname, avatar: friend.avatar || '' }
       })
     }
   } catch {

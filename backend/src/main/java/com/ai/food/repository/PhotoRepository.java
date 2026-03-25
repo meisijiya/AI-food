@@ -15,4 +15,8 @@ public interface PhotoRepository extends JpaRepository<Photo, Long> {
     Optional<Photo> findFirstByRelatedSessionIdOrderByCreatedAtDesc(String sessionId);
 
     List<Photo> findByUserIdAndRelatedSessionId(Long userId, String sessionId);
+
+    Optional<Photo> findByUserIdAndOriginalPath(Long userId, String originalPath);
+
+    Optional<Photo> findByThumbnailPath(String thumbnailPath);
 }

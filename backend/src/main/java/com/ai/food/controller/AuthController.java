@@ -11,6 +11,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -38,5 +40,15 @@ public class AuthController {
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest req) {
         LoginResponse response = authService.login(req);
         return ApiResponse.success("登录成功", response);
+    }
+
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null) {
+            Long userId = Long.parseLong(authentication.getPrincipal().toString());
+            authService.logout(userId);
+        }
+        return ApiResponse.success("已退出登录", null);
     }
 }

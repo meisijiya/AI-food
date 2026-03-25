@@ -88,16 +88,17 @@ async function openChat(contact: any) {
         query: {
           userId: contact.userId,
           conversationId: existing.conversationId,
-          nickname: contact.nickname
+          nickname: contact.nickname,
+          avatar: contact.avatar || ''
         }
       })
     } else {
-      // 新对话，conversationId 会在发送消息时创建
       router.push({
         path: '/chat-room',
         query: {
           userId: contact.userId,
-          nickname: contact.nickname
+          nickname: contact.nickname,
+          avatar: contact.avatar || ''
         }
       })
     }
@@ -106,7 +107,8 @@ async function openChat(contact: any) {
       path: '/chat-room',
       query: {
         userId: contact.userId,
-        nickname: contact.nickname
+        nickname: contact.nickname,
+        avatar: contact.avatar || ''
       }
     })
   }

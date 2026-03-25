@@ -13,7 +13,7 @@
 
     <groupId>com.ai</groupId>
     <artifactId>ai-food</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.2</version>
     <name>AI美食推荐应用</name>
     <description>AI Food Recommendation Application</description>
 

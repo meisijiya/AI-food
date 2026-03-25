@@ -9,7 +9,7 @@
     </h1>
 
     <!-- User info card -->
-    <div class="user-card animate-fade-up delay-100 animate-start-hidden">
+    <div class="user-card animate-fade-up delay-100 animate-start-hidden" @click="router.push('/profile-edit')">
       <div class="avatar-circle">
         <span v-if="!userInfo?.avatar">{{ avatarInitial }}</span>
         <img v-else :src="userInfo.avatar" alt="avatar" />
@@ -246,6 +246,12 @@ onMounted(fetchData)
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   margin-bottom: 16px;
   z-index: 1;
+  cursor: pointer;
+  transition: transform 0.2s;
+
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 .avatar-circle {

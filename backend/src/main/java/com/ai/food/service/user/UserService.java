@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -23,6 +24,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final StringRedisTemplate redisTemplate;
+    private final PasswordEncoder passwordEncoder;
 
     public SysUser getUserInfo(Long userId) {
         return userRepository.findById(userId)
@@ -84,8 +86,7 @@ public class UserService {
         Pageable pageable = PageRequest.of(page, size);
         Page<SysUser> userPage = userRepository.searchUsers(keyword, currentUserId, pageable);
 
-        List<SysUser> users = userPage.getContent();
-        List<Long> userIds = users.stream().map(SysUser::getId).collect(Collectors.toList());
+        List<SysUser> users = new ArrayList<>(userPage.getContent());
 
         // Batch compute continuous days
         Map<Long, Integer> continuousMap = new LinkedHashMap<>();
@@ -96,9 +97,9 @@ public class UserService {
         }
 
         // Sort by continuous days DESC within the page
-        List<Map<String, Object>> items = new ArrayList<>();
         users.sort((a, b) -> continuousMap.getOrDefault(b.getId(), 0) - continuousMap.getOrDefault(a.getId(), 0));
 
+        List<Map<String, Object>> items = new ArrayList<>();
         for (SysUser user : users) {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("userId", user.getId());
@@ -115,6 +116,39 @@ public class UserService {
         result.put("totalElements", userPage.getTotalElements());
         result.put("totalPages", userPage.getTotalPages());
         return result;
+    }
+
+    public SysUser updateNickname(Long userId, String nickname) {
+        if (nickname == null || nickname.isBlank()) {
+            throw new RuntimeException("昵称不能为空");
+        }
+        if (nickname.length() > 50) {
+            throw new RuntimeException("昵称不能超过50个字符");
+        }
+        SysUser user = getUserInfo(userId);
+        user.setNickname(nickname.trim());
+        return userRepository.save(user);
+    }
+
+    public void updatePassword(Long userId, String oldPassword, String newPassword) {
+        if (oldPassword == null || oldPassword.isBlank()) {
+            throw new RuntimeException("请输入旧密码");
+        }
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new RuntimeException("新密码不能少于6个字符");
+        }
+        SysUser user = getUserInfo(userId);
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new RuntimeException("旧密码不正确");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    public SysUser updateAvatar(Long userId, String avatarUrl) {
+        SysUser user = getUserInfo(userId);
+        user.setAvatar(avatarUrl);
+        return userRepository.save(user);
     }
 
     private int calculateContinuousDays(Long userId, LocalDate date) {

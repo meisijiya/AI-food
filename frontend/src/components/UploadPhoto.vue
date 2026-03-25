@@ -6,7 +6,7 @@
     </div>
 
     <!-- Uploaded state -->
-    <div v-if="uploadedThumbnailUrl" class="uploaded-card">
+    <div v-if="uploadedThumbnailUrl" class="uploaded-card" @click="triggerFileInput">
       <img :src="uploadedThumbnailUrl" class="uploaded-image" alt="已上传" />
       <div class="uploaded-check">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
@@ -135,7 +135,8 @@ async function upload() {
   uploading.value = true
   try {
     const compressed = await compressImage(selectedFile.value)
-    const uploadRes = await uploadApi.uploadPhoto(compressed, props.sessionId)
+    const oldPhotoUrl = uploadedThumbnailUrl.value || undefined
+    const uploadRes = await uploadApi.uploadPhoto(compressed, props.sessionId, oldPhotoUrl)
 
     const thumbnailUrl = uploadRes?.thumbnailUrl || uploadRes?.url || uploadRes?.photoUrl
     const originalUrl = uploadRes?.originalUrl || uploadRes?.url || uploadRes?.photoUrl
@@ -314,6 +315,12 @@ async function upload() {
   border-radius: 1.5rem;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: transform 0.2s;
+
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 .uploaded-image {

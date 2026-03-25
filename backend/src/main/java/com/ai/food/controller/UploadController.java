@@ -22,10 +22,11 @@ public class UploadController {
     @PostMapping("/photo")
     public ApiResponse<Map<String, Object>> uploadPhoto(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "sessionId", required = false) String sessionId) {
+            @RequestParam(value = "sessionId", required = false) String sessionId,
+            @RequestParam(value = "oldPhotoUrl", required = false) String oldPhotoUrl) {
         try {
             Long userId = getCurrentUserId();
-            Map<String, Object> result = fileUploadService.uploadPhoto(file, userId, sessionId);
+            Map<String, Object> result = fileUploadService.uploadPhoto(file, userId, sessionId, oldPhotoUrl);
             return ApiResponse.success("上传成功", result);
         } catch (Exception e) {
             log.error("Photo upload failed", e);

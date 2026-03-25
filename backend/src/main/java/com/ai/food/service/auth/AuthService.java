@@ -79,6 +79,9 @@ public class AuthService {
         String token = jwtService.generateToken(user.getId(), user.getUsername());
         log.info("用户注册成功: {}", user.getUsername());
 
+        // 存入 Redis，踢掉旧 token
+        storeToken(user.getId(), token);
+
         return new LoginResponse(token, user.getId(), user.getUsername(),
                 user.getNickname(), user.getEmail(), user.getAvatar());
     }
@@ -94,7 +97,39 @@ public class AuthService {
         String token = jwtService.generateToken(user.getId(), user.getUsername());
         log.info("用户登录成功: {}", user.getUsername());
 
+        // 存入 Redis，踢掉旧 token
+        storeToken(user.getId(), token);
+
         return new LoginResponse(token, user.getId(), user.getUsername(),
                 user.getNickname(), user.getEmail(), user.getAvatar());
+    }
+
+    /**
+     * 校验 Redis 中的 token 是否匹配（踢旧机制）
+     */
+    public boolean isTokenValidInRedis(Long userId, String token) {
+        String stored = redisTemplate.opsForValue().get("token:" + userId);
+        return stored != null && stored.equals(token);
+    }
+
+    /**
+     * 续期 Redis token TTL
+     */
+    public void renewTokenTtl(Long userId) {
+        redisTemplate.expire("token:" + userId, Duration.ofDays(3));
+    }
+
+    private void storeToken(Long userId, String token) {
+        String key = "token:" + userId;
+        redisTemplate.delete(key);  // 踢掉旧 token
+        redisTemplate.opsForValue().set(key, token, Duration.ofDays(3));
+    }
+
+    /**
+     * 登出，删除 Redis 中的 token
+     */
+    public void logout(Long userId) {
+        redisTemplate.delete("token:" + userId);
+        log.info("用户登出: userId={}", userId);
     }
 }

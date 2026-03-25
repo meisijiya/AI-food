@@ -26,12 +26,6 @@ api.interceptors.request.use(
 // 响应拦截器 - 自动解包 ApiResponse
 api.interceptors.response.use(
   (response: AxiosResponse) => {
-    const newToken = response.headers['x-new-token']
-    if (newToken) {
-      const authStore = useAuthStore()
-      authStore.setToken(newToken)
-    }
-
     const body = response.data
     if (body === undefined || body === null) return body
 
@@ -76,7 +70,8 @@ export const authApi = {
   sendCode: (email: string) => request('post', '/auth/send-code', { email }),
   register: (data: { username: string; password: string; nickname: string; email: string; code: string }) =>
     request('post', '/auth/register', data),
-  login: (data: { username: string; password: string }) => request('post', '/auth/login', data)
+  login: (data: { username: string; password: string }) => request('post', '/auth/login', data),
+  logout: () => request('post', '/auth/logout')
 }
 
 // 用户相关接口
@@ -93,7 +88,9 @@ export const userApi = {
     })
   },
   searchUsers: (params: { keyword: string; page?: number; size?: number }) =>
-    request('get', '/user/search', undefined, { params })
+    request('get', '/user/search', undefined, { params }),
+  updatePassword: (data: { oldPassword: string; newPassword: string }) =>
+    request('put', '/user/password', data)
 }
 
 // 记录相关接口
@@ -110,10 +107,11 @@ export const recordApi = {
 
 // 上传相关接口
 export const uploadApi = {
-  uploadPhoto: (file: File, sessionId?: string) => {
+  uploadPhoto: (file: File, sessionId?: string, oldPhotoUrl?: string) => {
     const formData = new FormData()
     formData.append('file', file)
     if (sessionId) formData.append('sessionId', sessionId)
+    if (oldPhotoUrl) formData.append('oldPhotoUrl', oldPhotoUrl)
     return request<any>('post', '/upload/photo', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })

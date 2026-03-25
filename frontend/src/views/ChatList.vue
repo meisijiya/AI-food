@@ -71,12 +71,19 @@ async function fetchConversations() {
 }
 
 function openChat(conv: any) {
+  localStorage.setItem('lastChatPartner', JSON.stringify({
+    userId: conv.userId,
+    conversationId: conv.conversationId,
+    nickname: conv.nickname,
+    avatar: conv.avatar
+  }))
   router.push({
     path: '/chat-room',
     query: {
       userId: conv.userId,
       conversationId: conv.conversationId,
-      nickname: conv.nickname
+      nickname: conv.nickname,
+      avatar: conv.avatar || ''
     }
   })
 }

@@ -25,9 +25,17 @@
         class="message-item"
         :class="{ 'message-self': msg.senderId === currentUserId }"
       >
+        <div v-if="msg.senderId !== currentUserId" class="msg-avatar">
+          <img v-if="partnerAvatar" :src="partnerAvatar" alt="" />
+          <span v-else>{{ nickname?.charAt(0) || '?' }}</span>
+        </div>
         <div class="message-bubble">
           <div class="message-content">{{ msg.content }}</div>
           <div class="message-time">{{ formatTime(msg.createdAt) }}</div>
+        </div>
+        <div v-if="msg.senderId === currentUserId" class="msg-avatar msg-avatar-self">
+          <img v-if="myAvatar" :src="myAvatar" alt="" />
+          <span v-else>{{ authStore.userInfo?.nickname?.charAt(0) || '?' }}</span>
         </div>
       </div>
     </div>
@@ -62,6 +70,8 @@ const currentUserId = computed(() => authStore.userInfo?.userId)
 const targetUserId = computed(() => Number(route.query.userId))
 const conversationId = computed(() => Number(route.query.conversationId))
 const nickname = computed(() => route.query.nickname as string || '聊天')
+const partnerAvatar = computed(() => route.query.avatar as string || '')
+const myAvatar = computed(() => authStore.userInfo?.avatar || '')
 
 const messages = ref<any[]>([])
 const inputMessage = ref('')
@@ -342,7 +352,8 @@ onUnmounted(() => {
 
 .message-item {
   display: flex;
-  justify-content: flex-start;
+  align-items: flex-end;
+  gap: 8px;
 
   &.message-self {
     justify-content: flex-end;
@@ -354,6 +365,29 @@ onUnmounted(() => {
     .message-time {
       color: rgba(255, 255, 255, 0.7);
     }
+  }
+}
+
+.msg-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 13px;
+  font-weight: 400;
+  flex-shrink: 0;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 }
 

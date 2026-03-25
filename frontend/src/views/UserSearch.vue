@@ -169,7 +169,7 @@ function openChatWith(user: any) {
   }))
   router.push({
     path: '/chat-room',
-    query: { userId: user.userId, nickname: user.nickname }
+    query: { userId: user.userId, nickname: user.nickname, avatar: user.avatar || '' }
   })
 }
 
