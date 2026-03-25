@@ -90,12 +90,12 @@ public class RecordService {
 
     @Transactional
     public void deleteRecord(String sessionId) {
-        log.info("Soft deleting record: {}", sessionId);
+        log.debug("Soft deleting record: {}", sessionId);
         // 删除关联的 FeedPost + 评论（通过 sessionId 查找）
         feedPostRepository.findBySessionId(sessionId).ifPresent(post -> {
             feedCommentRepository.softDeleteByPostId(post.getId());
             feedPostRepository.softDeleteByPostId(post.getId());
-            log.info("Soft-deleted FeedPost id={} and comments for session {}", post.getId(), sessionId);
+            log.debug("Soft-deleted FeedPost and comments for session {}", sessionId);
         });
         // 删除硬盘上的照片文件
         photoRepository.findFirstByRelatedSessionIdOrderByCreatedAtDesc(sessionId).ifPresent(photo -> {
@@ -134,7 +134,7 @@ public class RecordService {
 
     @Transactional
     public void updateRecommendationPhoto(String sessionId, String photoUrl) {
-        log.info("Updating photo for session: {}", sessionId);
+        log.debug("Updating photo for session: {}", sessionId);
         recommendationResultRepository.findBySessionId(sessionId).ifPresent(r -> {
             r.setPhotoUrl(photoUrl);
             recommendationResultRepository.save(r);
@@ -149,7 +149,7 @@ public class RecordService {
 
     @Transactional
     public void deleteRecommendationPhoto(String sessionId) {
-        log.info("Deleting photo for session: {}", sessionId);
+        log.debug("Deleting photo for session: {}", sessionId);
         // 清除 recommendation_result 的 photo_url
         recommendationResultRepository.findBySessionId(sessionId).ifPresent(r -> {
             r.setPhotoUrl(null);
@@ -171,6 +171,19 @@ public class RecordService {
             r.setComment(comment);
             recommendationResultRepository.save(r);
         });
+    }
+
+    public void validateSessionOwnership(String sessionId, Long userId) {
+        ConversationSession session = conversationSessionRepository.findBySessionId(sessionId)
+                .orElseThrow(() -> new RuntimeException("会话不存在"));
+        if (!userId.equals(session.getUserId())) {
+            throw new RuntimeException("无权访问此会话");
+        }
+        // 已完成超过 30 天的会话不可读取
+        if ("completed".equals(session.getStatus()) && session.getCompletedAt() != null
+                && session.getCompletedAt().isBefore(LocalDateTime.now().minusDays(30))) {
+            throw new RuntimeException("会话已过期");
+        }
     }
 
     private void deletePhysicalFile(String relativePath) {
@@ -207,18 +220,13 @@ public class RecordService {
         return detail;
     }
 
-    public Map<String, Object> getPendingRecommendation(Long userId) {
+    public String getPendingSessionId(Long userId) {
         String cacheKey = "pending:recommend:" + userId;
         String cached = redisTemplate.opsForValue().get(cacheKey);
         if (cached == null || cached.isBlank()) {
             return null;
         }
-        try {
-            return OBJECT_MAPPER.readValue(cached, new TypeReference<Map<String, Object>>() {});
-        } catch (Exception e) {
-            log.warn("Failed to parse cached pending recommendation for user {}", userId, e);
-            return null;
-        }
+        return cached;
     }
 
     @Data

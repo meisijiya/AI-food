@@ -29,6 +29,8 @@ public class FileUploadService {
     @Value("${app.upload.base-url:/uploads}")
     private String baseUrl;
 
+    private static final long MAX_CHAT_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
     private Path getUploadRoot() {
         return Paths.get(System.getProperty("user.dir"), "uploads").toAbsolutePath();
     }
@@ -239,6 +241,101 @@ public class FileUploadService {
         return Map.of(
                 "originalUrl", "/uploads/avatars/" + fileName,
                 "thumbnailUrl", "/uploads/avatars/" + thumbName
+        );
+    }
+
+    // ==================== 聊天照片上传 ====================
+
+    public Map<String, Object> uploadChatPhoto(MultipartFile file) throws IOException {
+        if (file.isEmpty()) throw new IOException("文件为空");
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new IOException("仅支持图片格式");
+        }
+
+        byte[] originalBytes = file.getBytes();
+        if (originalBytes.length > 10 * 1024 * 1024) {
+            throw new IOException("图片大小不能超过10MB");
+        }
+
+        Path root = getUploadRoot();
+        String dateDir = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        Path dirPath = root.resolve("chat-photos").resolve(dateDir);
+        Files.createDirectories(dirPath);
+
+        String originalName = file.getOriginalFilename();
+        String ext = ".jpg";
+        if (originalName != null && originalName.contains(".")) {
+            String e = originalName.substring(originalName.lastIndexOf(".")).toLowerCase();
+            if (e.matches("\\.(jpg|jpeg|png|gif|webp|bmp)")) ext = e;
+        }
+        String baseName = UUID.randomUUID().toString().replace("-", "");
+        String fileName = baseName + ext;
+        String thumbName = baseName + "_thumb.jpg";
+
+        Path originalPath = dirPath.resolve(fileName);
+        Files.write(originalPath, originalBytes);
+
+        Path thumbPath = dirPath.resolve(thumbName);
+        try {
+            Thumbnails.of(new ByteArrayInputStream(originalBytes))
+                    .width(400)
+                    .outputFormat("jpg")
+                    .outputQuality(0.7)
+                    .toFile(thumbPath.toFile());
+        } catch (Exception e) {
+            log.warn("Chat photo thumbnail failed: {}", e.getMessage());
+            Files.copy(originalPath, thumbPath);
+        }
+
+        long thumbSize = Files.size(thumbPath);
+
+        log.info("Chat photo uploaded: original={}B, thumb={}B", originalBytes.length, thumbSize);
+
+        return Map.of(
+                "originalUrl", "/uploads/chat-photos/" + dateDir + "/" + fileName,
+                "thumbnailUrl", "/uploads/chat-photos/" + dateDir + "/" + thumbName,
+                "fileName", originalName != null ? originalName : fileName,
+                "originalSize", (long) originalBytes.length,
+                "thumbnailSize", thumbSize,
+                "mimeType", contentType
+        );
+    }
+
+    // ==================== 聊天文件上传 ====================
+
+    public Map<String, Object> uploadChatFile(MultipartFile file) throws IOException {
+        if (file.isEmpty()) throw new IOException("文件为空");
+
+        byte[] fileBytes = file.getBytes();
+        if (fileBytes.length > MAX_CHAT_FILE_SIZE) {
+            throw new IOException("文件大小不能超过50MB");
+        }
+
+        Path root = getUploadRoot();
+        String dateDir = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        Path dirPath = root.resolve("chat-files").resolve(dateDir);
+        Files.createDirectories(dirPath);
+
+        String originalName = file.getOriginalFilename();
+        String ext = "";
+        if (originalName != null && originalName.contains(".")) {
+            ext = originalName.substring(originalName.lastIndexOf("."));
+        }
+        String baseName = UUID.randomUUID().toString().replace("-", "");
+        String fileName = baseName + ext;
+
+        Path filePath = dirPath.resolve(fileName);
+        Files.write(filePath, fileBytes);
+
+        log.info("Chat file uploaded: name={}, size={}B", originalName, fileBytes.length);
+
+        return Map.of(
+                "fileUrl", "/uploads/chat-files/" + dateDir + "/" + fileName,
+                "fileName", originalName != null ? originalName : fileName,
+                "fileSize", (long) fileBytes.length,
+                "mimeType", file.getContentType() != null ? file.getContentType() : "application/octet-stream"
         );
     }
 }

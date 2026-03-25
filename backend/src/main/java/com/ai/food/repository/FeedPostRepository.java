@@ -58,4 +58,7 @@ public interface FeedPostRepository extends JpaRepository<FeedPost, Long> {
     @Modifying
     @Query("DELETE FROM FeedPost f WHERE f.isDeleted = true")
     int hardDeleteAllSoftDeleted();
+
+    @Query("SELECT f FROM FeedPost f WHERE f.isDeleted = true")
+    List<FeedPost> findAllByIsDeletedTrue();
 }

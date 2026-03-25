@@ -34,6 +34,28 @@ public class UploadController {
         }
     }
 
+    @PostMapping("/chat-photo")
+    public ApiResponse<Map<String, Object>> uploadChatPhoto(@RequestParam("file") MultipartFile file) {
+        try {
+            Map<String, Object> result = fileUploadService.uploadChatPhoto(file);
+            return ApiResponse.success("上传成功", result);
+        } catch (Exception e) {
+            log.error("Chat photo upload failed", e);
+            return ApiResponse.error("上传失败: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/chat-file")
+    public ApiResponse<Map<String, Object>> uploadChatFile(@RequestParam("file") MultipartFile file) {
+        try {
+            Map<String, Object> result = fileUploadService.uploadChatFile(file);
+            return ApiResponse.success("上传成功", result);
+        } catch (Exception e) {
+            log.error("Chat file upload failed", e);
+            return ApiResponse.error("上传失败: " + e.getMessage());
+        }
+    }
+
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return Long.parseLong(auth.getPrincipal().toString());

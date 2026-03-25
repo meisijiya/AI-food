@@ -81,8 +81,9 @@ public class FeedController {
         if (content == null || content.isBlank()) {
             return ApiResponse.error("评论内容不能为空");
         }
+        String imageUrl = body.get("imageUrl");
         Long userId = getCurrentUserId();
-        Map<String, Object> result = feedService.addComment(postId, userId, content);
+        Map<String, Object> result = feedService.addComment(postId, userId, content, imageUrl);
         return ApiResponse.success("评论成功", result);
     }
 

@@ -30,10 +30,27 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
         String sessionId = extractSessionId(session);
-        if (sessionId != null) {
-            sessions.put(sessionId, session);
-            log.info("WebSocket connected: {}", sessionId);
+        if (sessionId == null) {
+            closeSession(session, CloseStatus.NOT_ACCEPTABLE);
+            return;
         }
+
+        Long userId = (Long) session.getAttributes().get("userId");
+        if (userId == null) {
+            closeSession(session, CloseStatus.NOT_ACCEPTABLE);
+            return;
+        }
+
+        try {
+            conversationService.validateOwnership(sessionId, userId);
+        } catch (Exception e) {
+            log.warn("WebSocket ownership check failed for session {}: {}", sessionId, e.getMessage());
+            closeSession(session, CloseStatus.NOT_ACCEPTABLE);
+            return;
+        }
+
+        sessions.put(sessionId, session);
+        log.debug("WebSocket connected and verified: {}", sessionId);
     }
 
     @Override
@@ -73,7 +90,7 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
         conversationStates.put(sessionId, state);
         WebSocketMessage firstQuestion = conversationService.getFirstQuestion(state);
         sendMessage(session, firstQuestion);
-        log.info("Conversation started: {}", sessionId);
+        log.debug("Conversation started: {}", sessionId);
     }
 
     // ==================== 处理用户回答 ====================
@@ -229,7 +246,7 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
         if (sessionId != null) {
             sessions.remove(sessionId);
             conversationStates.remove(sessionId);
-            log.info("WebSocket closed: {}", sessionId);
+            log.debug("WebSocket closed: {}", sessionId);
         }
     }
 
@@ -281,6 +298,16 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
             }
         } catch (IOException e) {
             log.error("Failed to send error", e);
+        }
+    }
+
+    private void closeSession(WebSocketSession session, CloseStatus status) {
+        try {
+            if (session.isOpen()) {
+                session.close(status);
+            }
+        } catch (IOException e) {
+            log.error("Failed to close session", e);
         }
     }
 }

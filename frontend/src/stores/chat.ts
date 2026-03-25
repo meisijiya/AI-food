@@ -24,6 +24,7 @@ export const useChatStore = defineStore('chat', () => {
   const currentPhase = ref<'chat' | 'recommend'>('chat')
   const recommendationResult = ref<any>(null)
   const collectedParamValues = ref<Record<string, string>>({})
+  const pendingSessionId = ref<string>('')
 
   const messageCount = computed(() => messages.value.length)
 
@@ -64,7 +65,7 @@ export const useChatStore = defineStore('chat', () => {
   return {
     sessionId, messages, progress, isConnected, isLoading,
     currentPhase, recommendationResult, collectedParamValues,
-    messageCount,
+    messageCount, pendingSessionId,
     setSessionId, addMessage, setCollectedParamValue,
     updateProgress, setConnected, setLoading, setPhase,
     setRecommendationResult, clearChat

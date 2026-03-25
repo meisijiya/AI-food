@@ -1,6 +1,7 @@
 <template>
   <div class="detail-container">
     <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
 
     <!-- Loading -->
     <div v-if="loading" class="loading-state">
@@ -8,44 +9,45 @@
     </div>
 
     <template v-if="detail">
-      <!-- Header -->
-      <h1 class="page-title animate-fade-up">
-        <em>{{ foodName }}</em>
-      </h1>
-
-      <!-- Recommendation card (dark) -->
-      <div class="recommend-card animate-fade-up delay-100 animate-start-hidden">
+      <!-- Recommendation card (light) -->
+      <div class="recommend-card card-enter card-delay-1">
+        <div class="recommend-accent"></div>
+        <div class="recommend-glow"></div>
         <div class="recommend-food">{{ foodName }}</div>
         <div class="recommend-reason" v-if="reason">{{ reason }}</div>
+        <div v-if="detail.session" class="recommend-meta">
+          <span v-if="detail.session.mode">{{ detail.session.mode === 'inertia' ? '惯性模式' : '随机模式' }}</span>
+          <span v-if="detail.session.totalQuestions">{{ detail.session.currentQuestionCount }}/{{ detail.session.totalQuestions }} 轮</span>
+          <span v-if="detail.session.createdAt">{{ formatDate(detail.session.createdAt) }}</span>
+        </div>
       </div>
 
       <!-- Photo section -->
       <template v-if="detail.recommendation">
-        <!-- Already uploaded photo with thumbnail -->
-        <div v-if="detail.photo && !showUpload" class="photo-card animate-fade-up delay-150 animate-start-hidden">
-          <div class="photo-header">
-            <div class="photo-label">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-              <span>美食照片</span>
-            </div>
+        <div v-if="detail.photo && !showUpload" class="photo-card card-enter card-delay-2">
+          <div class="section-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            <span>美食照片</span>
+          </div>
+          <div class="photo-body">
+            <div class="photo-glow"></div>
+            <img
+              :src="detail.photo.thumbnailPath"
+              class="photo-image"
+              alt="美食照片"
+              @click="openPhotoModal(detail.photo.originalPath)"
+            />
             <div class="photo-actions">
-              <button class="photo-action-btn replace" @click="showUpload = true" title="更换照片">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+              <button class="photo-action-btn" @click="showUpload = true" title="更换照片">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
               </button>
               <button class="photo-action-btn delete" @click="handleDeletePhoto" title="删除照片">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
               </button>
             </div>
           </div>
-          <img
-            :src="detail.photo.thumbnailPath"
-            class="photo-image"
-            alt="美食照片"
-            @click="openPhotoModal(detail.photo.originalPath)"
-          />
         </div>
 
-        <!-- Upload / Re-upload -->
         <UploadPhoto
           v-if="!detail.photo || showUpload"
           :session-id="sessionId"
@@ -54,8 +56,8 @@
       </template>
 
       <!-- Comment section -->
-      <div v-if="detail.recommendation" class="comment-section animate-fade-up delay-180 animate-start-hidden">
-        <div class="comment-label">
+      <div v-if="detail.recommendation" class="comment-section card-enter card-delay-3">
+        <div class="section-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           <span>美食评价</span>
         </div>
@@ -85,65 +87,59 @@
         </div>
       </div>
 
-    <!-- Emoji Picker -->
-    <EmojiPicker :show="showEmoji" @select="insertEmoji" @close="showEmoji = false" />
+      <EmojiPicker :show="showEmoji" @select="insertEmoji" @close="showEmoji = false" />
 
-      <!-- Share section -->
-      <div v-if="sessionId" class="share-section animate-fade-up delay-190 animate-start-hidden">
-        <div class="share-card" v-if="!shareUrl">
-          <button class="share-btn" @click="handleShare" :disabled="sharing">
+      <!-- Actions row: Share + Publish -->
+      <div class="actions-row card-enter card-delay-4">
+        <!-- Share -->
+        <div v-if="sessionId && !shareUrl" class="action-chip">
+          <button class="chip-btn share-chip" @click="handleShare" :disabled="sharing">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
-            {{ sharing ? '创建中...' : '分享此美食' }}
+            {{ sharing ? '创建中...' : '分享' }}
           </button>
         </div>
-        <div class="share-link-card" v-else>
-          <div class="share-link-label">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
-            <span>分享链接</span>
-          </div>
-          <div class="share-link-row">
-            <input class="share-link-input" :value="shareUrl" readonly />
-            <button class="share-copy-btn" @click="copyShareUrl">复制链接</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Publish to feed section -->
-      <div v-if="sessionId && detail.recommendation" class="publish-section animate-fade-up delay-195 animate-start-hidden">
-        <div v-if="!isPublished" class="publish-card">
-          <button class="publish-btn" @click="openPublishDialog">
+        <div v-if="sessionId && detail.recommendation && !isPublished" class="action-chip">
+          <button class="chip-btn publish-chip" @click="openPublishDialog">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
             发布到大厅
           </button>
         </div>
-        <div v-else class="publish-card">
-          <button class="unpublish-btn" @click="handleUnpublish" :disabled="unpublishing">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+        <div v-if="sessionId && detail.recommendation && isPublished" class="action-chip">
+          <button class="chip-btn unpublish-chip" @click="handleUnpublish" :disabled="unpublishing">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
             {{ unpublishing ? '取消中...' : '取消发布' }}
           </button>
         </div>
       </div>
 
+      <!-- Share link (after copy) -->
+      <div v-if="shareUrl" class="share-link-card card-enter">
+        <div class="section-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+          <span>分享链接</span>
+        </div>
+        <div class="share-link-row">
+          <input class="share-link-input" :value="shareUrl" readonly />
+          <button class="share-copy-btn" @click="copyShareUrl">复制</button>
+        </div>
+      </div>
+
       <!-- Collected params -->
-      <div v-if="paramsList.length" class="params-section animate-fade-up delay-200 animate-start-hidden">
+      <div v-if="paramsList.length" class="params-section card-enter card-delay-5">
         <div class="section-label">收集信息</div>
         <div class="params-chips">
-          <span
-            v-for="p in paramsList"
-            :key="p.paramName"
-            class="param-chip"
-          >
-            {{ paramLabel(p.paramName) }}: {{ p.paramValue }}
+          <span v-for="p in paramsList" :key="p.paramName" class="param-chip">
+            <span class="param-key">{{ paramLabel(p.paramName) }}</span>
+            <span class="param-val">{{ p.paramValue }}</span>
           </span>
         </div>
       </div>
 
       <!-- Q&A timeline -->
-      <div v-if="qaList.length" class="timeline-section animate-fade-up delay-300 animate-start-hidden">
+      <div v-if="qaList.length" class="timeline-section card-enter card-delay-6">
         <div class="section-label">对话记录</div>
         <div class="timeline">
           <template v-for="(qa, index) in qaList" :key="index">
-            <!-- AI question -->
             <div class="timeline-item">
               <div class="timeline-dot assistant"></div>
               <div class="timeline-line"></div>
@@ -152,7 +148,6 @@
                 <div class="timeline-text">{{ qa.aiQuestion }}</div>
               </div>
             </div>
-            <!-- User answer -->
             <div class="timeline-item">
               <div class="timeline-dot user"></div>
               <div class="timeline-line" v-if="index < qaList.length - 1"></div>
@@ -164,19 +159,11 @@
           </template>
         </div>
       </div>
-
-      <!-- Session info -->
-      <div v-if="detail.session" class="session-info animate-fade-up delay-400 animate-start-hidden">
-        <div class="session-meta">
-          <span v-if="detail.session.mode">{{ detail.session.mode === 'inertia' ? '惯性模式' : '随机模式' }}</span>
-          <span v-if="detail.session.totalQuestions">{{ detail.session.currentQuestionCount }}/{{ detail.session.totalQuestions }} 轮</span>
-          <span v-if="detail.session.createdAt">{{ formatDate(detail.session.createdAt) }}</span>
-        </div>
-      </div>
     </template>
 
     <!-- Back button -->
-    <button class="back-btn animate-fade-up delay-500 animate-start-hidden" @click="router.back()">
+    <button class="back-btn card-enter card-delay-7" @click="router.back()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
       返回
     </button>
 
@@ -198,6 +185,7 @@
     <Transition name="fade">
       <div v-if="publishDialog" class="photo-modal" @click.self="publishDialog = false">
         <div class="publish-dialog">
+          <div class="publish-dialog-glow"></div>
           <div class="publish-dialog-title">发布到大厅</div>
           <p class="publish-dialog-hint">编辑评论预览（展示在大厅卡片上，最多30字）</p>
           <textarea
@@ -327,8 +315,9 @@ async function fetchDetail() {
     if (!res?.recommendation?.comment) {
       editingComment.value = true
     }
-  } catch {
-    // ignore
+  } catch (e: any) {
+    showError(e?.message || '记录不存在或已被删除')
+    router.back()
   } finally {
     loading.value = false
   }
@@ -467,6 +456,7 @@ function openPhotoModal(url: string) {
 </script>
 
 <style lang="scss" scoped>
+/* ===== Container ===== */
 .detail-container {
   min-height: 100vh;
   display: flex;
@@ -477,23 +467,58 @@ function openPhotoModal(url: string) {
   overflow-y: auto;
 }
 
+/* ===== Background Glows ===== */
 .bg-glow {
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
   pointer-events: none;
-  animation: sanctuary-glow-pulse 6s ease-in-out infinite;
 }
 
 .bg-glow-1 {
-  top: -60px;
-  right: -40px;
-  width: 240px;
-  height: 240px;
+  top: -80px;
+  right: -60px;
+  width: 280px;
+  height: 280px;
   background: var(--color-primary-container);
-  opacity: 0.12;
+  opacity: 0.1;
+  animation: glow-drift 8s ease-in-out infinite;
 }
 
+.bg-glow-2 {
+  bottom: 200px;
+  left: -80px;
+  width: 200px;
+  height: 200px;
+  background: var(--color-secondary-fixed);
+  opacity: 0.06;
+  animation: glow-drift 10s ease-in-out infinite reverse;
+}
+
+@keyframes glow-drift {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(10px, -10px); }
+}
+
+/* ===== Card Entrance Animation ===== */
+.card-enter {
+  animation: card-slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.card-delay-1 { animation-delay: 0.05s; }
+.card-delay-2 { animation-delay: 0.1s; }
+.card-delay-3 { animation-delay: 0.15s; }
+.card-delay-4 { animation-delay: 0.2s; }
+.card-delay-5 { animation-delay: 0.25s; }
+.card-delay-6 { animation-delay: 0.3s; }
+.card-delay-7 { animation-delay: 0.35s; }
+
+@keyframes card-slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Loading ===== */
 .loading-state {
   flex: 1;
   display: flex;
@@ -514,14 +539,15 @@ function openPhotoModal(url: string) {
   to { transform: rotate(360deg); }
 }
 
+/* ===== Page Title ===== */
 .page-title {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 32px;
-  font-weight: 400;
+  font-size: 36px;
+  font-weight: 500;
   color: var(--color-on-surface);
-  margin-bottom: 24px;
-  z-index: 1;
+  margin-bottom: 28px;
+  letter-spacing: -0.01em;
 
   em {
     font-style: italic;
@@ -529,34 +555,53 @@ function openPhotoModal(url: string) {
   }
 }
 
-/* Recommendation card */
+/* ===== Recommend Card (Light) ===== */
 .recommend-card {
-  background: var(--color-inverse-surface);
-  border-radius: 2rem;
-  padding: 28px 24px;
-  margin-bottom: 20px;
-  z-index: 1;
+  background: var(--color-surface-container-lowest);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 2.5rem;
+  padding: 32px 28px;
+  margin-bottom: 24px;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 89, 182, 0.06);
+  transition: box-shadow 0.4s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 
-  &::after {
-    content: '';
-    position: absolute;
-    top: -40px;
-    right: -40px;
-    width: 160px;
-    height: 160px;
-    background: rgba(140, 225, 243, 0.08);
-    border-radius: 50%;
-    filter: blur(40px);
+  &:hover {
+    box-shadow: 0 12px 40px rgba(0, 89, 182, 0.1);
+    transform: translateY(-2px);
   }
+}
+
+.recommend-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-primary-container), var(--color-primary), var(--color-secondary-fixed));
+  border-radius: 2.5rem 2.5rem 0 0;
+}
+
+.recommend-glow {
+  position: absolute;
+  top: -60px;
+  right: -40px;
+  width: 200px;
+  height: 200px;
+  background: var(--color-secondary-fixed);
+  opacity: 0.08;
+  border-radius: 50%;
+  filter: blur(50px);
+  pointer-events: none;
 }
 
 .recommend-food {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 24px;
-  color: white;
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--color-primary);
   margin-bottom: 12px;
   position: relative;
   z-index: 1;
@@ -564,92 +609,141 @@ function openPhotoModal(url: string) {
 
 .recommend-reason {
   font-size: 14px;
-  line-height: 1.8;
-  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.9;
+  color: var(--color-on-surface);
+  opacity: 0.75;
   position: relative;
   z-index: 1;
 }
 
-/* Photo card */
-.photo-card {
-  margin-bottom: 20px;
+.recommend-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  position: relative;
   z-index: 1;
-}
 
-.photo-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.photo-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.photo-action-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &.replace {
-    background: rgba(0, 89, 182, 0.08);
-    color: var(--color-primary);
-    &:active { background: rgba(0, 89, 182, 0.15); }
-  }
-
-  &.delete {
-    background: rgba(239, 68, 68, 0.08);
-    color: #ef4444;
-    &:active { background: rgba(239, 68, 68, 0.15); }
+  span {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--color-on-surface-variant);
+    padding: 5px 14px;
+    background: var(--color-surface-container-low);
+    border-radius: 100px;
   }
 }
 
-.photo-label {
+/* ===== Section Title (shared) ===== */
+.section-title {
   display: flex;
   align-items: center;
   gap: 8px;
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 500;
   color: var(--color-on-surface);
+  margin-bottom: 14px;
 
   svg {
     color: var(--color-primary);
   }
 }
 
+/* ===== Photo Card ===== */
+.photo-card {
+  margin-bottom: 24px;
+}
+
+.photo-body {
+  position: relative;
+  overflow: hidden;
+  border-radius: 2rem;
+  background: var(--color-surface-container-lowest);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.photo-glow {
+  position: absolute;
+  top: -40px;
+  left: -30px;
+  width: 140px;
+  height: 140px;
+  background: var(--color-primary-container);
+  opacity: 0.06;
+  border-radius: 50%;
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 0;
+}
+
 .photo-image {
   width: 100%;
-  border-radius: 1.5rem;
   display: block;
-  max-height: 300px;
+  max-height: 360px;
   object-fit: cover;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  z-index: 1;
 
   &:hover {
-    transform: scale(1.01);
+    transform: scale(1.02);
   }
 }
 
-/* Photo modal */
+.photo-actions {
+  display: flex;
+  gap: 6px;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+}
+
+.photo-action-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--color-on-surface);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.95);
+    transform: scale(1.08);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  &.delete {
+    color: #ef4444;
+    &:hover { background: rgba(255, 240, 240, 0.95); }
+  }
+}
+
+/* ===== Photo Modal ===== */
 .photo-modal {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(11, 15, 16, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -667,108 +761,98 @@ function openPhotoModal(url: string) {
   max-height: 85vh;
   border-radius: 1.5rem;
   object-fit: contain;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
 .photo-modal-close {
   position: absolute;
   top: -12px;
   right: -12px;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: none;
   background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.2s;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.3);
-  }
-}
-
-/* Comment section */
-.comment-section {
-  margin-bottom: 20px;
-  z-index: 1;
-}
-
-.comment-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--color-on-surface);
-  margin-bottom: 12px;
-
-  svg {
-    color: var(--color-primary);
-  }
-}
-
-.comment-display {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 16px 20px;
-  background: var(--color-surface-container-lowest);
-  border-radius: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-}
-
-.comment-text {
-  flex: 1;
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--color-on-surface);
-  white-space: pre-wrap;
-}
-
-.comment-edit-btn {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(0, 89, 182, 0.08);
-  color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
 
-  &:active { background: rgba(0, 89, 182, 0.15); }
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+  }
+}
+
+/* ===== Comment Section ===== */
+.comment-section {
+  margin-bottom: 24px;
+}
+
+.comment-display {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px 24px;
+  background: var(--color-surface-container-lowest);
+  border-radius: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+}
+
+.comment-text {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--color-on-surface);
+  white-space: pre-wrap;
+}
+
+.comment-edit-btn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 89, 182, 0.06);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s;
+
+  &:hover { background: rgba(0, 89, 182, 0.12); }
+  &:active { transform: scale(0.92); }
 }
 
 .comment-edit {
   padding: 4px;
   background: var(--color-surface-container-lowest);
-  border-radius: 1.25rem;
+  border-radius: 2rem;
   border: 1px solid var(--color-surface-container-low);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
 }
 
 .comment-textarea {
   width: 100%;
-  padding: 14px 18px;
+  padding: 16px 22px;
   border: none;
   background: none;
   font-family: var(--font-sans);
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.7;
   color: var(--color-on-surface);
   resize: none;
   outline: none;
 
   &::placeholder {
     color: var(--color-on-surface-variant);
-    opacity: 0.5;
+    opacity: 0.45;
   }
 }
 
@@ -776,14 +860,21 @@ function openPhotoModal(url: string) {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 18px 12px;
+  padding: 6px 22px 14px;
 }
 
 .emoji-trigger {
-  width: 36px; height: 36px;
-  display: flex; align-items: center; justify-content: center;
-  background: none; border: none; color: var(--color-on-surface-variant);
-  cursor: pointer; border-radius: 50%; flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+  border-radius: 50%;
+  flex-shrink: 0;
   transition: background 0.2s;
   &:active { background: var(--color-surface-container-low); }
 }
@@ -791,105 +882,100 @@ function openPhotoModal(url: string) {
 .comment-count {
   font-size: 11px;
   color: var(--color-on-surface-variant);
-  opacity: 0.5;
+  opacity: 0.45;
+  font-variant-numeric: tabular-nums;
 }
 
 .comment-save-btn {
-  padding: 8px 20px;
+  margin-left: auto;
+  padding: 10px 24px;
   border: none;
   border-radius: 100px;
   background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
   color: white;
   font-family: var(--font-sans);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 89, 182, 0.2);
-  transition: all 0.2s;
+  box-shadow: 0 4px 16px rgba(0, 89, 182, 0.2);
+  transition: all 0.25s;
 
-  &:hover { transform: translateY(-1px); }
+  &:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 89, 182, 0.3); }
   &:active { transform: scale(0.97); }
   &:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 }
 
-/* Params */
-.params-section {
-  margin-bottom: 20px;
-  z-index: 1;
-}
-
-/* Share section */
-.share-section {
-  margin-bottom: 20px;
-  z-index: 1;
-}
-
-.share-card {
+/* ===== Actions Row ===== */
+.actions-row {
   display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
 }
 
-.share-btn {
+.chip-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border: 1.5px solid var(--color-primary);
+  gap: 6px;
+  padding: 12px 22px;
   border-radius: 2rem;
-  background: none;
-  color: var(--color-primary);
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s;
 
-  &:hover {
-    background: rgba(0, 89, 182, 0.06);
-  }
-
-  &:active {
-    transform: scale(0.97);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+  &:active { transform: scale(0.96); }
+  &:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 }
 
+.share-chip {
+  border: 1.5px solid var(--color-primary);
+  background: none;
+  color: var(--color-primary);
+
+  &:hover { background: rgba(0, 89, 182, 0.06); }
+}
+
+.publish-chip {
+  border: 1.5px solid #06b6d4;
+  background: none;
+  color: #06b6d4;
+
+  &:hover { background: rgba(6, 182, 212, 0.06); }
+}
+
+.unpublish-chip {
+  border: 1.5px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.04);
+  color: #ef4444;
+
+  &:hover { background: rgba(239, 68, 68, 0.08); }
+}
+
+/* ===== Share Link Card ===== */
 .share-link-card {
   background: var(--color-surface-container-lowest);
-  border-radius: 1.25rem;
-  padding: 16px 20px;
-  border: 1px solid var(--color-surface-container-low);
-  width: 100%;
-}
-
-.share-link-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-on-surface-variant);
-  margin-bottom: 12px;
-
-  svg {
-    color: var(--color-primary);
-  }
+  border-radius: 2rem;
+  padding: 20px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  margin-bottom: 24px;
 }
 
 .share-link-row {
   display: flex;
   gap: 8px;
   align-items: center;
+  margin-top: 4px;
 }
 
 .share-link-input {
   flex: 1;
-  padding: 10px 14px;
+  padding: 12px 16px;
   border: 1px solid var(--color-surface-container-low);
-  border-radius: 1rem;
+  border-radius: 1.25rem;
   background: var(--color-surface);
   font-family: var(--font-sans);
   font-size: 12px;
@@ -900,191 +986,34 @@ function openPhotoModal(url: string) {
 
 .share-copy-btn {
   flex-shrink: 0;
-  padding: 10px 16px;
+  padding: 12px 20px;
   border: none;
-  border-radius: 1rem;
+  border-radius: 1.25rem;
   background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
   color: white;
   font-family: var(--font-sans);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s;
   white-space: nowrap;
 
-  &:hover {
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: scale(0.97);
-  }
+  &:hover { transform: translateY(-1px); }
+  &:active { transform: scale(0.97); }
 }
 
-/* Publish section */
-.publish-section {
-  margin-bottom: 20px;
-  z-index: 1;
-}
-
-.publish-card {
-  display: flex;
-}
-
-.publish-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border: 1.5px solid #22d3ee;
-  border-radius: 2rem;
-  background: none;
-  color: #22d3ee;
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background: rgba(34, 211, 238, 0.06);
-  }
-
-  &:active {
-    transform: scale(0.97);
-  }
-}
-
-.unpublish-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border: 1.5px solid rgba(239, 68, 68, 0.4);
-  border-radius: 2rem;
-  background: rgba(239, 68, 68, 0.06);
-  color: #ef4444;
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background: rgba(239, 68, 68, 0.12);
-  }
-
-  &:active {
-    transform: scale(0.97);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
-.publish-dialog {
-  width: calc(100% - 48px);
-  max-width: 400px;
-  background: var(--color-surface-container-lowest);
-  border-radius: 2rem;
-  padding: 28px 24px;
-}
-
-.publish-dialog-title {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 22px;
-  font-weight: 500;
-  color: var(--color-on-surface);
-  margin-bottom: 8px;
-}
-
-.publish-dialog-hint {
-  font-size: 12px;
-  color: var(--color-on-surface-variant);
-  margin-bottom: 16px;
-  opacity: 0.7;
-}
-
-.publish-textarea {
-  width: 100%;
-  padding: 14px 18px;
-  border: 1.5px solid var(--color-surface-container-low);
-  border-radius: 1.25rem;
-  background: var(--color-surface);
-  font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--color-on-surface);
-  resize: none;
-  outline: none;
-
-  &:focus {
-    border-color: var(--color-primary);
-  }
-
-  &::placeholder {
-    color: var(--color-on-surface-variant);
-    opacity: 0.5;
-  }
-}
-
-.publish-dialog-count {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--color-on-surface-variant);
-  opacity: 0.5;
-  margin-top: 6px;
-  margin-bottom: 16px;
-}
-
-.publish-dialog-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.publish-cancel-btn {
-  flex: 1;
-  padding: 12px;
-  border: 1.5px solid var(--color-surface-container-low);
-  border-radius: 1rem;
-  background: none;
-  color: var(--color-on-surface-variant);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.publish-confirm-btn {
-  flex: 1;
-  padding: 12px;
-  border: none;
-  border-radius: 1rem;
-  background: linear-gradient(135deg, #22d3ee, #0891b2);
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+/* ===== Params Section ===== */
+.params-section {
+  margin-bottom: 24px;
 }
 
 .section-label {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--color-on-surface-variant);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 12px;
+  letter-spacing: 0.2em;
+  margin-bottom: 14px;
 }
 
 .params-chips {
@@ -1094,18 +1023,37 @@ function openPhotoModal(url: string) {
 }
 
 .param-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 16px;
   background: var(--color-surface-container-lowest);
   border-radius: 100px;
   border: 1px solid var(--color-surface-container-low);
   font-size: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+  transition: box-shadow 0.2s;
+
+  &:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+}
+
+.param-key {
+  font-weight: 700;
+  color: var(--color-primary);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.param-val {
   color: var(--color-on-surface);
 }
 
-/* Timeline */
+/* ===== Timeline ===== */
 .timeline-section {
-  z-index: 1;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .timeline {
@@ -1116,7 +1064,7 @@ function openPhotoModal(url: string) {
 .timeline-item {
   position: relative;
   padding-bottom: 16px;
-  padding-left: 20px;
+  padding-left: 24px;
 
   &:last-child {
     padding-bottom: 0;
@@ -1125,45 +1073,54 @@ function openPhotoModal(url: string) {
 
 .timeline-dot {
   position: absolute;
-  left: -10px;
-  top: 4px;
-  width: 12px;
-  height: 12px;
+  left: -12px;
+  top: 6px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  border: 2px solid var(--color-primary);
+  border: 2.5px solid var(--color-primary);
   background: var(--color-surface);
+  z-index: 1;
 
   &.assistant {
-    border-color: #22d3ee;
+    border-color: var(--color-secondary-fixed);
+    background: radial-gradient(circle, var(--color-secondary-fixed) 30%, transparent 30%);
   }
 
   &.user {
     border-color: var(--color-primary);
+    background: radial-gradient(circle, var(--color-primary) 30%, transparent 30%);
   }
 }
 
 .timeline-line {
   position: absolute;
-  left: -5px;
-  top: 18px;
+  left: -6px;
+  top: 22px;
   bottom: 0;
   width: 2px;
-  background: var(--color-surface-container-low);
+  background: linear-gradient(to bottom, var(--color-surface-container-low), transparent);
 }
 
 .timeline-content {
   background: var(--color-surface-container-lowest);
-  border-radius: 1.25rem;
-  padding: 14px 18px;
+  border-radius: 1.5rem;
+  padding: 16px 20px;
   border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  transition: box-shadow 0.2s;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  }
 }
 
 .timeline-role {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #22d3ee;
+  letter-spacing: 0.15em;
+  color: var(--color-secondary-fixed);
   margin-bottom: 6px;
 
   &.user-role {
@@ -1173,48 +1130,34 @@ function openPhotoModal(url: string) {
 
 .timeline-text {
   font-size: 13px;
-  line-height: 1.7;
+  line-height: 1.8;
   color: var(--color-on-surface);
 }
 
-/* Session info */
-.session-info {
-  margin-bottom: 16px;
-  z-index: 1;
-}
-
-.session-meta {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-
-  span {
-    font-size: 11px;
-    color: var(--color-on-surface-variant);
-    padding: 4px 12px;
-    background: var(--color-surface-container-low);
-    border-radius: 100px;
-  }
-}
-
-/* Back button */
+/* ===== Back Button ===== */
 .back-btn {
-  padding: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 28px;
   border: 1.5px solid var(--color-surface-container-low);
   border-radius: 2rem;
-  background: none;
+  background: var(--color-surface-container-lowest);
   color: var(--color-on-surface-variant);
   font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  z-index: 1;
+  transition: all 0.25s;
   margin-top: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 
   &:hover {
     border-color: var(--color-primary);
     color: var(--color-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 89, 182, 0.08);
   }
 
   &:active {
@@ -1226,9 +1169,154 @@ function openPhotoModal(url: string) {
   height: 80px;
 }
 
+/* ===== Publish Dialog ===== */
+.publish-dialog {
+  width: calc(100% - 48px);
+  max-width: 400px;
+  background: var(--color-surface-container-lowest);
+  border-radius: 2.5rem;
+  padding: 32px 28px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+}
+
+.publish-dialog-glow {
+  position: absolute;
+  top: -60px;
+  right: -40px;
+  width: 180px;
+  height: 180px;
+  background: var(--color-primary-container);
+  opacity: 0.06;
+  border-radius: 50%;
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+.publish-dialog-title {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--color-on-surface);
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.publish-dialog-hint {
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+  margin-bottom: 18px;
+  opacity: 0.65;
+  line-height: 1.6;
+  position: relative;
+  z-index: 1;
+}
+
+.publish-textarea {
+  width: 100%;
+  padding: 14px 18px;
+  border: 1.5px solid var(--color-surface-container-low);
+  border-radius: 1.5rem;
+  background: var(--color-surface);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-on-surface);
+  resize: none;
+  outline: none;
+  position: relative;
+  z-index: 1;
+
+  &:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(0, 89, 182, 0.08);
+  }
+
+  &::placeholder {
+    color: var(--color-on-surface-variant);
+    opacity: 0.4;
+  }
+}
+
+.publish-dialog-count {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-on-surface-variant);
+  opacity: 0.45;
+  margin-top: 6px;
+  margin-bottom: 18px;
+  font-variant-numeric: tabular-nums;
+  position: relative;
+  z-index: 1;
+}
+
+.publish-dialog-actions {
+  display: flex;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.publish-cancel-btn {
+  flex: 1;
+  padding: 14px;
+  border: 1.5px solid var(--color-surface-container-low);
+  border-radius: 1.5rem;
+  background: none;
+  color: var(--color-on-surface-variant);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: var(--color-on-surface-variant);
+  }
+}
+
+.publish-confirm-btn {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: 1.5rem;
+  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 89, 182, 0.2);
+  transition: all 0.25s;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 89, 182, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+/* ===== Responsive ===== */
+@media (min-width: 1024px) {
+  .detail-container {
+    max-width: 60%;
+    margin: 0 auto;
+  }
+}
+
+/* ===== Transitions ===== */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.25s ease;
+  transition: opacity 0.3s ease;
 }
 
 .fade-enter-from,

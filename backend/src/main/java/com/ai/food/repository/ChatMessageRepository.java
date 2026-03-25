@@ -29,4 +29,8 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     @Query("SELECT COUNT(m) FROM ChatMessage m WHERE m.conversationId = :conversationId AND m.receiverId = :userId AND m.isRead = false")
     long countUnreadByConversationIdAndReceiverId(@Param("conversationId") Long conversationId, @Param("userId") Long userId);
+
+    @Modifying
+    @Query("UPDATE ChatMessage m SET m.isDeleted = true WHERE m.conversationId = :conversationId")
+    void softDeleteByConversationId(@Param("conversationId") Long conversationId);
 }

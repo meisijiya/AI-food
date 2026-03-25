@@ -91,7 +91,7 @@ public class FeedService {
         post.setPublishedAt(LocalDateTime.now());
 
         FeedPost saved = feedPostRepository.save(post);
-        log.info("Feed post published: postId={}, user={}, session={}, visibility={}", saved.getId(), userId, sessionId, visibility);
+        log.debug("Feed post published: postId={}, user={}, visibility={}", saved.getId(), userId, visibility);
 
         // Push to followers' friend feed
         pushToFollowersFeeds(saved, userId);
@@ -419,7 +419,7 @@ public class FeedService {
     }
 
     @Transactional
-    public Map<String, Object> addComment(Long postId, Long userId, String content) {
+    public Map<String, Object> addComment(Long postId, Long userId, String content, String imageUrl) {
         FeedPost post = feedPostRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("动态不存在"));
 
@@ -427,6 +427,7 @@ public class FeedService {
         comment.setPostId(postId);
         comment.setUserId(userId);
         comment.setContent(content);
+        comment.setImageUrl(imageUrl);
         FeedComment saved = feedCommentRepository.save(comment);
 
         // Increment comment count
@@ -452,6 +453,7 @@ public class FeedService {
         result.put("postId", saved.getPostId());
         result.put("userId", saved.getUserId());
         result.put("content", saved.getContent());
+        result.put("imageUrl", saved.getImageUrl());
         result.put("createdAt", saved.getCreatedAt());
         enrichUserInfo(result, saved.getUserId());
         return result;
@@ -468,6 +470,7 @@ public class FeedService {
             item.put("postId", comment.getPostId());
             item.put("userId", comment.getUserId());
             item.put("content", comment.getContent());
+            item.put("imageUrl", comment.getImageUrl());
             item.put("createdAt", comment.getCreatedAt());
             enrichUserInfo(item, comment.getUserId());
             items.add(item);
@@ -504,7 +507,48 @@ public class FeedService {
         stringRedisTemplate.delete(likeKey);
         stringRedisTemplate.delete(countKey);
 
-        log.info("Feed post unpublished: postId={}, user={}, session={}", post.getId(), userId, sessionId);
+        // Clean up Redis hot rank
+        stringRedisTemplate.opsForZSet().remove(HOT_RANK_KEY, post.getId().toString());
+        stringRedisTemplate.opsForHash().delete(HOT_DETAILS_KEY, post.getId().toString());
+
+        // Clean up friend feed entries for all followers
+        try {
+            List<Long> followerIds = followService.getFollowerIds(userId);
+            for (Long followerId : followerIds) {
+                String friendKey = FRIEND_FEED_KEY + followerId;
+                List<String> entries = stringRedisTemplate.opsForList().range(friendKey, 0, -1);
+                if (entries != null) {
+                    for (String entry : entries) {
+                        try {
+                            Map<?, ?> map = objectMapper.readValue(entry, Map.class);
+                            if (post.getId().toString().equals(String.valueOf(map.get("postId")))) {
+                                stringRedisTemplate.opsForList().remove(friendKey, 1, entry);
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to clean friend feed entries for post {}", post.getId(), e);
+        }
+
+        // Clean up physical photo files
+        deletePhotoFiles(post.getThumbnailUrl());
+        deletePhotoFiles(post.getOriginalPhotoUrl());
+
+        log.debug("Feed post unpublished: postId={}, user={}", post.getId(), userId);
+    }
+
+    private void deletePhotoFiles(String url) {
+        if (url == null || url.isBlank()) return;
+        try {
+            // Extract file path from URL (e.g., /uploads/photos/xxx.jpg)
+            String path = url.startsWith("/") ? url : "/" + url;
+            java.io.File file = new java.io.File("." + path);
+            if (file.exists()) file.delete();
+        } catch (Exception e) {
+            log.warn("Failed to delete photo file: {}", url, e);
+        }
     }
 
     private void updateDbLikeCount(Long postId, int count) {
@@ -525,7 +569,6 @@ public class FeedService {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", post.getId());
         map.put("userId", post.getUserId());
-        map.put("sessionId", post.getSessionId());
         map.put("foodName", post.getFoodName());
         map.put("commentPreview", post.getCommentPreview());
         map.put("thumbnailUrl", post.getThumbnailUrl());

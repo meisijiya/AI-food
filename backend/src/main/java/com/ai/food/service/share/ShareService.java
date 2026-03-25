@@ -49,7 +49,7 @@ public class ShareService {
         shareRecord.setViewCount(0);
         ShareRecord saved = shareRecordRepository.save(shareRecord);
 
-        log.info("Share created: token={}, session={}, user={}", shareToken, sessionId, userId);
+        log.debug("Share created: token={}, user={}", shareToken, userId);
 
         return buildShareResponse(saved);
     }

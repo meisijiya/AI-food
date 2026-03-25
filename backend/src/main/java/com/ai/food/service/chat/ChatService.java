@@ -4,7 +4,9 @@ import com.ai.food.model.ChatConversation;
 import com.ai.food.model.ChatMessage;
 import com.ai.food.model.SysUser;
 import com.ai.food.repository.ChatConversationRepository;
+import com.ai.food.repository.ChatFileRepository;
 import com.ai.food.repository.ChatMessageRepository;
+import com.ai.food.repository.ChatPhotoRepository;
 import com.ai.food.repository.UserRepository;
 import com.ai.food.service.follow.FollowService;
 import com.ai.food.service.notification.NotificationService;
@@ -27,6 +29,8 @@ public class ChatService {
 
     private final ChatConversationRepository conversationRepository;
     private final ChatMessageRepository messageRepository;
+    private final ChatPhotoRepository chatPhotoRepository;
+    private final ChatFileRepository chatFileRepository;
     private final UserRepository userRepository;
     private final FollowService followService;
     private final NotificationService notificationService;
@@ -241,6 +245,45 @@ public class ChatService {
         }
 
         return result;
+    }
+
+    // ==================== 清除聊天 ====================
+
+    @Transactional
+    public void clearConversation(Long userId, Long conversationId) {
+        ChatConversation conv = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("对话不存在"));
+
+        // 标记当前用户已清除
+        if (conv.getUser1Id().equals(userId)) {
+            conversationRepository.setClearedByUser1(conversationId);
+        } else {
+            conversationRepository.setClearedByUser2(conversationId);
+        }
+
+        // 刷新实体以获取最新 cleared 状态
+        conv = conversationRepository.findById(conversationId).orElse(conv);
+
+        // 检查是否满足软删除条件
+        boolean bothCleared = Boolean.TRUE.equals(conv.getClearedByUser1())
+                && Boolean.TRUE.equals(conv.getClearedByUser2());
+        boolean notMutual = !followService.isMutualFollow(conv.getUser1Id(), conv.getUser2Id());
+
+        if (bothCleared || notMutual) {
+            softDeleteConversation(conv);
+            log.info("Conversation {} soft-deleted (bothCleared={}, notMutual={})",
+                    conversationId, bothCleared, notMutual);
+        } else {
+            log.info("Conversation {} cleared by user {} (waiting for other user)",
+                    conversationId, userId);
+        }
+    }
+
+    private void softDeleteConversation(ChatConversation conv) {
+        Long conversationId = conv.getId();
+        messageRepository.softDeleteByConversationId(conversationId);
+        chatPhotoRepository.softDeleteByConversationId(conversationId);
+        chatFileRepository.softDeleteByConversationId(conversationId);
     }
 
     // ==================== Redis 操作 ====================

@@ -41,17 +41,18 @@ export class WebSocketClient {
   connect(): void {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const wsHost = import.meta.env.VITE_WS_HOST || window.location.host
+    const token = localStorage.getItem('token') || ''
     
     let wsUrl: string
     if (wsHost.startsWith('/')) {
       // 相对路径配置，直接拼接
-      wsUrl = `${protocol}//${window.location.host}${wsHost}/conversation/${this.sessionId}`
+      wsUrl = `${protocol}//${window.location.host}${wsHost}/conversation/${this.sessionId}?token=${encodeURIComponent(token)}`
     } else {
       // 完整主机名配置
-      wsUrl = `${protocol}//${wsHost}/ws/conversation/${this.sessionId}`
+      wsUrl = `${protocol}//${wsHost}/ws/conversation/${this.sessionId}?token=${encodeURIComponent(token)}`
     }
 
-    console.log('[WS] Connecting to:', wsUrl)
+    console.log('[WS] Connecting...')
 
     try {
       this.ws = new WebSocket(wsUrl)
@@ -76,7 +77,7 @@ export class WebSocketClient {
           console.log('[WS] Received:', message.type, message.param || '')
           this.onMessage(message)
         } catch (error) {
-          console.error('[WS] Failed to parse message:', error, 'raw:', event.data)
+          console.error('[WS] Failed to parse message')
         }
       }
 

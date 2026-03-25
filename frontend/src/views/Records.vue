@@ -582,4 +582,11 @@ onMounted(() => {
 .nav-spacer {
   height: 80px;
 }
+
+@media (min-width: 1024px) {
+  .records-container {
+    max-width: 60%;
+    margin: 0 auto;
+  }
+}
 </style>

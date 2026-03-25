@@ -21,7 +21,7 @@ class ChatWebSocketClient {
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const host = import.meta.env.VITE_WS_HOST || window.location.host
-    const url = `${protocol}//${host}/ws/chat`
+    const url = `${protocol}//${host}/ws/chat?token=${encodeURIComponent(authStore.token)}`
 
     this.ws = new WebSocket(url)
 
@@ -66,7 +66,7 @@ class ChatWebSocketClient {
     if (type === 'auth' && data.success) {
       this.isAuthenticated = true
       this.startPing()
-      console.log('Chat authenticated, userId:', data.userId)
+      console.log('Chat authenticated')
     }
 
     // 触发注册的处理器

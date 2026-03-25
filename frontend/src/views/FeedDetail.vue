@@ -1,5 +1,5 @@
 <template>
-  <div class="detail-page">
+  <div class="detail-page" @click="closePanels">
     <div class="bg-glow bg-glow-1"></div>
 
     <div v-if="loading" class="loading-state">
@@ -11,8 +11,8 @@
       <h1 class="page-title animate-fade-up"><em>{{ post.foodName }}</em></h1>
 
       <!-- Photo -->
-      <div v-if="post.thumbnailUrl || post.originalPhotoUrl" class="photo-section animate-fade-up delay-100 animate-start-hidden">
-        <CachedImage :src="post.thumbnailUrl || post.originalPhotoUrl" :alt="post.foodName" class="detail-photo" />
+      <div v-if="post.originalPhotoUrl || post.thumbnailUrl" class="photo-section animate-fade-up delay-100 animate-start-hidden">
+        <CachedImage :src="post.originalPhotoUrl || post.thumbnailUrl" :alt="post.foodName" class="detail-photo" @click="openPhotoModal(post.originalPhotoUrl || post.thumbnailUrl)" />
       </div>
 
       <!-- Reason (dark card) -->
@@ -83,6 +83,9 @@
               <span class="comment-time">{{ formatTime(c.createdAt) }}</span>
             </div>
             <div class="comment-content">{{ c.content }}</div>
+            <div v-if="c.imageUrl" class="comment-image" @click.stop="openPhotoModal(c.imageUrl)">
+              <CachedImage :src="c.imageUrl" alt="评论图片" />
+            </div>
           </div>
         </div>
 
@@ -95,32 +98,82 @@
 
     <!-- Bottom comment input -->
     <div class="comment-input-bar" v-if="post">
-      <button class="emoji-trigger" @click="showEmoji = !showEmoji">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
+      <button class="plus-btn-comment" :class="{ active: showAttach }" @click.stop="toggleAttach">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
       </button>
+      <button class="emoji-trigger-comment" :class="{ active: showEmoji }" @click.stop="toggleEmoji">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
+      </button>
+      <!-- Image preview -->
+      <div v-if="commentImagePreview" class="comment-image-preview">
+        <img :src="commentImagePreview" alt="" />
+        <button class="comment-image-remove" @click.stop="removeCommentImage">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
       <input
         v-model="newComment"
         class="comment-input"
         placeholder="写下你的评论..."
         @keyup.enter="submitComment"
+        @focus="closePanels"
       />
-      <button class="comment-send" :disabled="!newComment.trim() || sending" @click="submitComment">
+      <button class="comment-send" :disabled="(!newComment.trim() && !commentImageFile) || sending" @click="submitComment">
         {{ sending ? '...' : '发送' }}
       </button>
     </div>
 
-    <!-- Emoji Picker -->
-    <EmojiPicker :show="showEmoji" @select="insertEmoji" @close="showEmoji = false" />
+    <!-- Attachment Panel (comment) -->
+    <Transition name="panel-slide">
+      <div v-if="showAttach" class="comment-attach-panel" @click.stop>
+        <div class="attach-panel-header">
+          <span class="attach-panel-title"><em>附件</em></span>
+          <button class="attach-close-btn" @click="showAttach = false">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="attach-grid">
+          <button class="attach-item" @click="triggerCommentPhoto">
+            <div class="attach-icon attach-photo-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+            <span class="attach-label">照片</span>
+          </button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Emoji Picker (comment) -->
+    <Transition name="panel-slide">
+      <div v-if="showEmoji" class="comment-emoji-wrapper" @click.stop>
+        <EmojiPicker :show="showEmoji" @select="insertEmoji" @close="showEmoji = false" />
+      </div>
+    </Transition>
+
+    <!-- Hidden file input for comment image -->
+    <input ref="commentPhotoInput" type="file" accept="image/*" style="display:none" @change="handleCommentPhoto" />
 
     <!-- Back button -->
     <button class="back-btn animate-fade-up delay-450 animate-start-hidden" @click="router.back()">返回</button>
+
+    <!-- Photo modal -->
+    <Transition name="fade">
+      <div v-if="photoModalUrl" class="photo-modal" @click.self="photoModalUrl = null">
+        <div class="photo-modal-content">
+          <img :src="photoModalUrl" class="full-photo" alt="原始照片" />
+          <button class="photo-modal-close" @click="photoModalUrl = null">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { feedApi, followApi } from '@/api'
+import { feedApi, followApi, uploadApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
 import { showSuccess, showError } from '@/utils/toast'
 import CachedImage from '@/components/CachedImage.vue'
@@ -132,6 +185,7 @@ const authStore = useAuthStore()
 
 const post = ref<any>(null)
 const loading = ref(true)
+const photoModalUrl = ref<string | null>(null)
 const isLiked = ref(false)
 const likeCount = ref(0)
 const comments = ref<any[]>([])
@@ -143,10 +197,29 @@ const newComment = ref('')
 const sending = ref(false)
 const isFollowing = ref(false)
 const showEmoji = ref(false)
+const showAttach = ref(false)
+const commentImageFile = ref<File | null>(null)
+const commentImagePreview = ref<string | null>(null)
+const commentPhotoInput = ref<HTMLInputElement>()
 
 function insertEmoji(icon: string) {
   newComment.value += icon
   showEmoji.value = false
+}
+
+function toggleEmoji() {
+  showAttach.value = false
+  showEmoji.value = !showEmoji.value
+}
+
+function toggleAttach() {
+  showEmoji.value = false
+  showAttach.value = !showAttach.value
+}
+
+function closePanels() {
+  showEmoji.value = false
+  showAttach.value = false
 }
 const checkingFollow = ref(false)
 
@@ -201,8 +274,9 @@ async function fetchDetail() {
     isLiked.value = res.isLiked || false
     likeCount.value = res.likeCount || 0
     commentTotal.value = res.commentCount || 0
-  } catch {
-    // ignore
+  } catch (e: any) {
+    showError(e?.message || '动态不存在或已被删除')
+    router.back()
   } finally {
     loading.value = false
   }
@@ -255,24 +329,65 @@ async function toggleFollow() {
 }
 
 async function submitComment() {
-  if (!newComment.value.trim()) return
+  const text = newComment.value.trim()
+  if (!text && !commentImageFile.value) return
   sending.value = true
   try {
-    await feedApi.addComment(postId.value, newComment.value.trim())
+    let imageUrl: string | undefined
+    if (commentImageFile.value) {
+      const res = await uploadApi.uploadChatPhoto(commentImageFile.value)
+      imageUrl = res.originalUrl || res.thumbnailUrl
+    }
+    await feedApi.addComment(postId.value, text, imageUrl)
+    // Optimistic update with cached user info
+    const me = authStore.userInfo
     comments.value.unshift({
       id: Date.now(),
-      content: newComment.value.trim(),
-      userNickname: '我',
+      content: text,
+      imageUrl: imageUrl || undefined,
+      userId: me?.userId,
+      nickname: me?.nickname || '我',
+      avatar: me?.avatar || null,
       createdAt: new Date().toISOString()
     })
     commentTotal.value++
     newComment.value = ''
+    removeCommentImage()
+    closePanels()
     showSuccess('评论成功')
   } catch {
     showError('评论失败')
   } finally {
     sending.value = false
   }
+}
+
+function openPhotoModal(url: string) {
+  photoModalUrl.value = url
+}
+
+function triggerCommentPhoto() {
+  showAttach.value = false
+  commentPhotoInput.value?.click()
+}
+
+function handleCommentPhoto(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  commentImageFile.value = file
+  // Local preview
+  if (commentImagePreview.value) URL.revokeObjectURL(commentImagePreview.value)
+  commentImagePreview.value = URL.createObjectURL(file)
+  // Reset input
+  if (commentPhotoInput.value) commentPhotoInput.value.value = ''
+}
+
+function removeCommentImage() {
+  if (commentImagePreview.value) {
+    URL.revokeObjectURL(commentImagePreview.value)
+  }
+  commentImageFile.value = null
+  commentImagePreview.value = null
 }
 
 onMounted(async () => {
@@ -347,6 +462,11 @@ onMounted(async () => {
   width: 100%; border-radius: 2rem; display: block;
   max-height: 400px; object-fit: cover;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  &:hover {
+    transform: scale(1.01);
+  }
 }
 
 /* Reason */
@@ -499,6 +619,19 @@ onMounted(async () => {
 .comment-time { font-size: 11px; color: var(--color-on-surface-variant); }
 .comment-content { font-size: 14px; line-height: 1.5; color: var(--color-on-surface); }
 
+.comment-image {
+  margin-top: 8px;
+  max-width: 180px;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  img {
+    width: 100%;
+    display: block;
+    border-radius: 12px;
+  }
+}
+
 .load-more-btn {
   display: block; width: 100%; padding: 12px;
   border: 1px solid var(--color-surface-container-low);
@@ -520,13 +653,44 @@ onMounted(async () => {
   z-index: 100;
 }
 
-.emoji-trigger {
-  width: 40px; height: 40px;
+.emoji-trigger-comment {
+  width: 36px; height: 36px;
   display: flex; align-items: center; justify-content: center;
   background: none; border: none; color: var(--color-on-surface-variant);
   cursor: pointer; border-radius: 50%; flex-shrink: 0;
-  transition: background 0.2s;
+  transition: background 0.2s, color 0.2s;
   &:active { background: var(--color-surface-container-low); }
+  &.active { color: var(--color-primary); background: rgba(0, 89, 182, 0.08); }
+}
+
+.plus-btn-comment {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; color: var(--color-on-surface-variant);
+  cursor: pointer; border-radius: 50%; flex-shrink: 0;
+  transition: background 0.2s, transform 0.2s, color 0.2s;
+  &:active { background: var(--color-surface-container-low); }
+  &.active {
+    color: var(--color-primary);
+    background: rgba(0, 89, 182, 0.08);
+    svg { transform: rotate(45deg); }
+  }
+}
+
+.comment-image-preview {
+  position: relative;
+  width: 36px; height: 36px; flex-shrink: 0;
+  border-radius: 8px; overflow: hidden;
+  img { width: 100%; height: 100%; object-fit: cover; }
+}
+
+.comment-image-remove {
+  position: absolute; top: 2px; right: 2px;
+  width: 16px; height: 16px;
+  border: none; border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5); color: white;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
 }
 
 .comment-input {
@@ -546,6 +710,92 @@ onMounted(async () => {
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
+/* Comment attachment panel */
+.comment-attach-panel {
+  position: fixed; bottom: 64px; left: 0; right: 0;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 1.5rem 1.5rem 0 0;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06);
+  z-index: 101;
+}
+
+.attach-panel-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.attach-panel-title {
+  font-family: var(--font-serif); font-style: italic;
+  font-size: 16px; font-weight: 500;
+  color: var(--color-on-surface-variant);
+  em { font-style: italic; }
+}
+
+.attach-close-btn {
+  background: none; border: none;
+  color: var(--color-on-surface-variant);
+  cursor: pointer; padding: 4px;
+  display: flex; align-items: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+  &:active { background: rgba(0, 0, 0, 0.05); }
+}
+
+.attach-grid {
+  display: flex; gap: 16px; padding: 20px 24px;
+}
+
+.attach-item {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 16px 24px;
+  border: none; border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  &:active {
+    background: rgba(0, 89, 182, 0.08);
+    transform: scale(0.95);
+  }
+}
+
+.attach-icon {
+  width: 48px; height: 48px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  &.attach-photo-icon {
+    background: linear-gradient(135deg, rgba(0, 89, 182, 0.12), rgba(0, 89, 182, 0.06));
+    color: var(--color-primary);
+  }
+}
+
+.attach-label {
+  font-size: 13px; font-weight: 600; color: var(--color-on-surface);
+}
+
+.comment-emoji-wrapper {
+  position: fixed; bottom: 64px; left: 0; right: 0;
+  z-index: 101;
+}
+
+/* Panel slide transition */
+.panel-slide-enter-active {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
+}
+.panel-slide-leave-active {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s;
+}
+.panel-slide-enter-from {
+  transform: translateY(100%);
+  opacity: 0;
+}
+.panel-slide-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
 .back-btn {
   position: fixed; top: 16px; left: 16px;
   width: 36px; height: 36px; border: none; border-radius: 50%;
@@ -553,5 +803,70 @@ onMounted(async () => {
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; z-index: 100; backdrop-filter: blur(8px);
   &:active { transform: scale(0.9); }
+}
+
+/* Photo modal */
+.photo-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.photo-modal-content {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.full-photo {
+  max-width: 100%;
+  max-height: 85vh;
+  border-radius: 1.5rem;
+  object-fit: contain;
+}
+
+.photo-modal-close {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+@media (min-width: 1024px) {
+  .detail-page {
+    max-width: 60%;
+    margin: 0 auto;
+  }
 }
 </style>

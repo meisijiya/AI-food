@@ -408,4 +408,12 @@ onMounted(() => {
 .empty-text { font-size: 14px; color: var(--color-on-surface-variant); opacity: 0.6; }
 
 .nav-spacer { height: 80px; }
+
+@media (min-width: 1024px) {
+  .notifications-container {
+    max-width: 60%;
+    margin: 0 auto;
+    padding: 0 40px 100px;
+  }
+}
 </style>

@@ -115,6 +115,20 @@ export const uploadApi = {
     return request<any>('post', '/upload/photo', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
+  },
+  uploadChatPhoto: (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request<any>('post', '/upload/chat-photo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+  uploadChatFile: (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request<any>('post', '/upload/chat-file', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
   }
 }
 
@@ -135,7 +149,7 @@ export const feedApi = {
     request('get', '/feed/list', undefined, { params }),
   getDetail: (postId: number) => request('get', `/feed/detail/${postId}`),
   toggleLike: (postId: number) => request('post', `/feed/like/${postId}`),
-  addComment: (postId: number, content: string) => request('post', `/feed/comment/${postId}`, { content }),
+  addComment: (postId: number, content: string, imageUrl?: string) => request('post', `/feed/comment/${postId}`, { content, imageUrl }),
   getComments: (postId: number, params?: { page?: number; size?: number }) =>
     request('get', `/feed/comments/${postId}`, undefined, { params }),
   checkPublished: (sessionId: string) => request('get', `/feed/check/${sessionId}`),
@@ -179,7 +193,8 @@ export const chatApi = {
   getContacts: () => request('get', '/chat/contacts'),
   sendMessage: (data: { receiverId: number; content: string; messageType?: string }) =>
     request('post', '/chat/send', data),
-  checkPermission: (receiverId: number) => request('get', `/chat/permission/${receiverId}`)
+  checkPermission: (receiverId: number) => request('get', `/chat/permission/${receiverId}`),
+  clearConversation: (conversationId: number) => request('delete', `/chat/conversation/${conversationId}`)
 }
 
 // 分享相关接口

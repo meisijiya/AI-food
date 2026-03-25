@@ -140,6 +140,7 @@ CREATE TABLE IF NOT EXISTS feed_comment (
     post_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
     content TEXT NOT NULL,
+    image_url VARCHAR(500),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     is_deleted BOOLEAN DEFAULT FALSE,
     INDEX idx_post_id (post_id, created_at DESC),
@@ -165,6 +166,8 @@ CREATE TABLE IF NOT EXISTS chat_conversation (
     user2_id BIGINT NOT NULL COMMENT '用户2 ID（较大的ID）',
     last_message TEXT COMMENT '最后一条消息预览',
     last_message_at DATETIME COMMENT '最后消息时间',
+    cleared_by_user1 BOOLEAN DEFAULT FALSE COMMENT 'user1是否已选择清除',
+    cleared_by_user2 BOOLEAN DEFAULT FALSE COMMENT 'user2是否已选择清除',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uk_conversation_key (conversation_key),
     INDEX idx_user1 (user1_id, last_message_at DESC),
@@ -178,10 +181,48 @@ CREATE TABLE IF NOT EXISTS chat_message (
     sender_id BIGINT NOT NULL COMMENT '发送者ID',
     receiver_id BIGINT NOT NULL COMMENT '接收者ID',
     content TEXT NOT NULL COMMENT '消息内容',
-    message_type VARCHAR(20) DEFAULT 'text' COMMENT '消息类型: text/image',
+    message_type VARCHAR(20) DEFAULT 'text' COMMENT '消息类型: text/image/file',
     is_read BOOLEAN DEFAULT FALSE COMMENT '是否已读',
+    is_deleted BOOLEAN DEFAULT FALSE COMMENT '软删除标记',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_conversation (conversation_id, created_at DESC),
     INDEX idx_receiver_read (receiver_id, is_read),
-    INDEX idx_sender (sender_id)
+    INDEX idx_sender (sender_id),
+    INDEX idx_deleted (is_deleted)
+);
+
+-- 聊天照片表（30天自动过期）
+CREATE TABLE IF NOT EXISTS chat_photo (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    conversation_id BIGINT NOT NULL COMMENT '关联对话ID',
+    sender_id BIGINT NOT NULL COMMENT '发送者ID',
+    original_path VARCHAR(500) NOT NULL COMMENT '原图路径',
+    thumbnail_path VARCHAR(500) COMMENT '缩略图路径',
+    file_name VARCHAR(255) COMMENT '原始文件名',
+    original_size BIGINT COMMENT '原图大小(bytes)',
+    thumbnail_size BIGINT COMMENT '缩略图大小(bytes)',
+    mime_type VARCHAR(50) COMMENT 'MIME类型',
+    is_deleted BOOLEAN DEFAULT FALSE COMMENT '软删除标记',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_conversation (conversation_id),
+    INDEX idx_sender (sender_id),
+    INDEX idx_created (created_at),
+    INDEX idx_deleted (is_deleted)
+);
+
+-- 聊天文件表（30天自动过期，50MB限制）
+CREATE TABLE IF NOT EXISTS chat_file (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    conversation_id BIGINT NOT NULL COMMENT '关联对话ID',
+    sender_id BIGINT NOT NULL COMMENT '发送者ID',
+    file_path VARCHAR(500) NOT NULL COMMENT '文件存储路径',
+    original_name VARCHAR(255) COMMENT '原始文件名',
+    file_size BIGINT COMMENT '文件大小(bytes)',
+    mime_type VARCHAR(50) COMMENT 'MIME类型',
+    is_deleted BOOLEAN DEFAULT FALSE COMMENT '软删除标记',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_conversation (conversation_id),
+    INDEX idx_sender (sender_id),
+    INDEX idx_created (created_at),
+    INDEX idx_deleted (is_deleted)
 );

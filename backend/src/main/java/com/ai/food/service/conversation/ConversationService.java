@@ -60,6 +60,21 @@ public class ConversationService {
         "restriction", "preference", "health"
     );
 
+    // ==================== 权限校验 ====================
+
+    public void validateOwnership(String sessionId, Long userId) {
+        ConversationSession session = conversationSessionRepository.findBySessionId(sessionId)
+                .orElseThrow(() -> new RuntimeException("会话不存在"));
+        if (!userId.equals(session.getUserId())) {
+            throw new RuntimeException("无权访问此会话");
+        }
+        // 已完成超过 30 天的会话不可读取
+        if ("completed".equals(session.getStatus()) && session.getCompletedAt() != null
+                && session.getCompletedAt().isBefore(LocalDateTime.now().minusDays(30))) {
+            throw new RuntimeException("会话已过期");
+        }
+    }
+
     // ==================== 初始化 ====================
 
     public ConversationState initializeConversation(String sessionId) {
@@ -67,7 +82,7 @@ public class ConversationService {
         int effectiveMax = Math.max(maxQuestions, effectiveMin);
         int totalQuestions = new Random().nextInt(effectiveMax - effectiveMin + 1) + effectiveMin;
 
-        log.info("Initializing session {} with {} total questions", sessionId, totalQuestions);
+        log.debug("Initializing session with {} total questions", totalQuestions);
 
         ConversationState state = new ConversationState(sessionId, totalQuestions, "inertia");
         state.setCurrentParam("time");
@@ -211,15 +226,7 @@ public class ConversationService {
         try {
             Long userId = getUserIdFromSession(sessionId);
             String cacheKey = "pending:recommend:" + userId;
-            Map<String, Object> cacheData = new LinkedHashMap<>();
-            cacheData.put("sessionId", sessionId);
-            cacheData.put("foodName", parseFoodName(normalizedJson));
-            cacheData.put("reason", parseReason(normalizedJson));
-            cacheData.put("paramValues", state.getParamValues());
-            cacheData.put("photoUploaded", false);
-            cacheData.put("photoUrl", null);
-            cacheData.put("createdAt", LocalDateTime.now().toString());
-            redisTemplate.opsForValue().set(cacheKey, OBJECT_MAPPER.writeValueAsString(cacheData), 7, TimeUnit.DAYS);
+            redisTemplate.opsForValue().set(cacheKey, sessionId, 7, TimeUnit.DAYS);
         } catch (Exception e) {
             log.warn("Failed to cache pending recommendation to Redis for session {}", sessionId, e);
         }
@@ -322,9 +329,9 @@ public class ConversationService {
             result.setFoodName(payload.getOrDefault("foodName", "暂无推荐结果"));
             result.setReason(payload.getOrDefault("reason", "该会话暂无可展示的推荐说明"));
             RecommendationResult saved = recommendationResultRepository.saveAndFlush(result);
-            log.info("Saved recommendation result: sessionId={}, foodName={}", sessionId, saved.getFoodName());
+            log.debug("Saved recommendation result: foodName={}", saved.getFoodName());
         } catch (Exception e) {
-            log.error("Failed to save recommendation result for session {}", sessionId, e);
+            log.error("Failed to save recommendation result", e);
         }
     }
 

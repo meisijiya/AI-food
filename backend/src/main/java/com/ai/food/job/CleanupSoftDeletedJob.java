@@ -1,5 +1,8 @@
 package com.ai.food.job;
 
+import com.ai.food.model.ChatFile;
+import com.ai.food.model.ChatPhoto;
+import com.ai.food.model.FeedPost;
 import com.ai.food.model.Photo;
 import com.ai.food.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -8,10 +11,12 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -22,57 +27,106 @@ public class CleanupSoftDeletedJob extends QuartzJobBean {
     private final FeedCommentRepository feedCommentRepository;
     private final FeedPostRepository feedPostRepository;
     private final PhotoRepository photoRepository;
+    private final ChatPhotoRepository chatPhotoRepository;
+    private final ChatFileRepository chatFileRepository;
     private final QaRecordRepository qaRecordRepository;
     private final CollectedParamRepository collectedParamRepository;
     private final RecommendationResultRepository recommendationResultRepository;
     private final ConversationSessionRepository conversationSessionRepository;
 
+    private static final int CHAT_MEDIA_TTL_DAYS = 30;
+
     @Override
+    @Transactional
     protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
         log.info("=== 开始清理软删除记录 ===");
         int total = 0;
 
         // 1. 先清理评论（依赖 feed_post 的外键）
-        int fcDeleted = feedCommentRepository.hardDeleteAllSoftDeleted();
-        log.info("清理 feed_comment: {} 条", fcDeleted);
-        total += fcDeleted;
+        total += feedCommentRepository.hardDeleteAllSoftDeleted();
+        log.info("清理 feed_comment");
 
-        // 2. 清理动态（依赖 session）
-        int fpDeleted = feedPostRepository.hardDeleteAllSoftDeleted();
-        log.info("清理 feed_post: {} 条", fpDeleted);
-        total += fpDeleted;
+        // 1.5 清理动态嵌入的照片文件（thumbnailUrl / originalPhotoUrl）
+        total += cleanupFeedPostPhotos();
+        log.info("清理 feed_post 嵌入照片文件");
+
+        // 2. 清理动态
+        total += feedPostRepository.hardDeleteAllSoftDeleted();
+        log.info("清理 feed_post");
 
         // 3. 清理照片（先删物理文件，再删数据库记录）
-        int photoDeleted = cleanupPhotos();
-        log.info("清理 photo: {} 条（含物理文件）", photoDeleted);
-        total += photoDeleted;
+        total += cleanupPhotos();
+        log.info("清理 photo（含物理文件）");
 
         // 4. 清理推荐相关子表
         total += qaRecordRepository.hardDeleteAllSoftDeleted();
-        log.info("清理 qa_record");
-
         total += collectedParamRepository.hardDeleteAllSoftDeleted();
-        log.info("清理 collected_params");
-
         total += recommendationResultRepository.hardDeleteAllSoftDeleted();
-        log.info("清理 recommendation_result");
-
         total += conversationSessionRepository.hardDeleteAllSoftDeleted();
-        log.info("清理 conversation_session");
+        log.info("清理推荐相关子表");
 
-        log.info("=== 软删除记录清理完成，共清理 {} 条 ===", total);
+        // 5. 清理聊天照片（软删除 + 30天过期）
+        total += cleanupChatPhotos();
+        log.info("清理 chat_photo（含物理文件）");
+
+        // 6. 清理聊天文件（软删除 + 30天过期）
+        total += cleanupChatFiles();
+        log.info("清理 chat_file（含物理文件）");
+
+        log.info("=== 软删除记录清理完成，共清理约 {} 条 ===", total);
     }
 
     private int cleanupPhotos() {
         List<Photo> photos = photoRepository.findAllByIsDeletedTrue();
-        Path uploadRoot = Paths.get(System.getProperty("user.dir"), "uploads").toAbsolutePath();
-
+        Path uploadRoot = getUploadRoot();
         for (Photo photo : photos) {
             deletePhysicalFile(uploadRoot, photo.getOriginalPath());
             deletePhysicalFile(uploadRoot, photo.getThumbnailPath());
         }
-
         return photoRepository.hardDeleteAllSoftDeleted();
+    }
+
+    private int cleanupFeedPostPhotos() {
+        List<FeedPost> posts = feedPostRepository.findAllByIsDeletedTrue();
+        Path uploadRoot = getUploadRoot();
+        for (FeedPost post : posts) {
+            deletePhysicalFile(uploadRoot, post.getThumbnailUrl());
+            deletePhysicalFile(uploadRoot, post.getOriginalPhotoUrl());
+        }
+        return posts.size();
+    }
+
+    private int cleanupChatPhotos() {
+        Path uploadRoot = getUploadRoot();
+
+        // 先软删除过期的（30天前创建的）
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(CHAT_MEDIA_TTL_DAYS);
+        chatPhotoRepository.softDeleteExpired(cutoff);
+        chatFileRepository.softDeleteExpired(cutoff);
+
+        // 再硬删除所有软删除的（含刚软删除的过期记录）
+        List<ChatPhoto> photos = chatPhotoRepository.findAllByIsDeletedTrue();
+        for (ChatPhoto photo : photos) {
+            deletePhysicalFile(uploadRoot, photo.getOriginalPath());
+            deletePhysicalFile(uploadRoot, photo.getThumbnailPath());
+        }
+        return chatPhotoRepository.hardDeleteAllSoftDeleted();
+    }
+
+    private int cleanupChatFiles() {
+        Path uploadRoot = getUploadRoot();
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(CHAT_MEDIA_TTL_DAYS);
+
+        // 过期的已在 cleanupChatPhotos 中软删除，这里硬删除
+        List<ChatFile> files = chatFileRepository.findAllByIsDeletedTrue();
+        for (ChatFile file : files) {
+            deletePhysicalFile(uploadRoot, file.getFilePath());
+        }
+        return chatFileRepository.hardDeleteAllSoftDeleted();
+    }
+
+    private Path getUploadRoot() {
+        return Paths.get(System.getProperty("user.dir"), "uploads").toAbsolutePath();
     }
 
     private void deletePhysicalFile(Path uploadRoot, String relativePath) {

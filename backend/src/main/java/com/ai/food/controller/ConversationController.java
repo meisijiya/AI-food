@@ -52,7 +52,7 @@ public class ConversationController {
         session.setMode("inertia");
         conversationSessionRepository.save(session);
 
-        log.info("Conversation session created: {} for user: {}", sessionId, userId);
+        log.info("Conversation session created for user: {}", userId);
 
         StartConversationResponse response = new StartConversationResponse();
         response.setSessionId(sessionId);
@@ -67,6 +67,8 @@ public class ConversationController {
     public ResponseEntity<ConversationStatus> getConversationStatus(
             @Parameter(description = "会话ID", required = true)
             @PathVariable String sessionId) {
+        Long userId = getCurrentUserId();
+        conversationService.validateOwnership(sessionId, userId);
 
         var optSession = conversationSessionRepository.findBySessionId(sessionId);
         if (optSession.isEmpty()) {
@@ -94,6 +96,8 @@ public class ConversationController {
     public ResponseEntity<Map<String, Object>> completeConversation(
             @Parameter(description = "会话ID", required = true)
             @PathVariable String sessionId) {
+        Long userId = getCurrentUserId();
+        conversationService.validateOwnership(sessionId, userId);
 
         var optSession = conversationSessionRepository.findBySessionId(sessionId);
         if (optSession.isPresent()) {
@@ -115,8 +119,10 @@ public class ConversationController {
     public ResponseEntity<Map<String, Object>> cancelConversation(
             @Parameter(description = "会话ID", required = true)
             @PathVariable String sessionId) {
+        Long userId = getCurrentUserId();
+        conversationService.validateOwnership(sessionId, userId);
 
-        log.info("Canceling conversation via API: {}", sessionId);
+        log.info("Canceling conversation via API");
         conversationService.cancelSession(sessionId);
 
         return ResponseEntity.ok(Map.of(
@@ -131,6 +137,8 @@ public class ConversationController {
     public ResponseEntity<Map<String, Object>> getConversationHistory(
             @Parameter(description = "会话ID", required = true)
             @PathVariable String sessionId) {
+        Long userId = getCurrentUserId();
+        conversationService.validateOwnership(sessionId, userId);
 
         List<QaRecord> records = qaRecordRepository.findBySessionIdOrderByQuestionOrderAsc(sessionId);
 
@@ -181,5 +189,10 @@ public class ConversationController {
 
         @io.swagger.v3.oas.annotations.media.Schema(description = "已收集的参数")
         private Map<String, String> collectedParams;
+    }
+
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return Long.parseLong(authentication.getPrincipal().toString());
     }
 }

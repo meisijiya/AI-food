@@ -93,6 +93,17 @@ public class ChatController {
         return ApiResponse.success(result);
     }
 
+    @DeleteMapping("/conversation/{conversationId}")
+    public ApiResponse<Void> clearConversation(@PathVariable Long conversationId) {
+        Long userId = getCurrentUserId();
+        try {
+            chatService.clearConversation(userId, conversationId);
+            return ApiResponse.success("已清除聊天记录", null);
+        } catch (RuntimeException e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return Long.parseLong(auth.getPrincipal().toString());

@@ -236,33 +236,54 @@ const unpublishing = ref(false)
 
 onMounted(async () => {
   try {
-    // Try fetching pending recommendation from backend
-    const res = await recordApi.getPendingRecommendation()
-    if (res) {
-      pendingData.value = res
-      // Populate chat store for rendering
-      if (res.content) {
-        chatStore.recommendationResult = typeof res.content === 'string'
-          ? res.content
-          : JSON.stringify(res.content)
-      }
-      if (res.paramValues) {
-        chatStore.collectedParamValues = res.paramValues
-      }
-      if (res.sessionId) {
-        chatStore.sessionId = res.sessionId
-      }
-      if (res.photoUrl) {
-        uploadedPhoto.value = {
-          thumbnailUrl: res.photoThumbnailUrl || res.photoUrl,
-          originalUrl: res.photoOriginalUrl || res.photoUrl
+    // Check if navigated from Feed reminder (sessionId passed via store, not URL)
+    const pendingSid = chatStore.pendingSessionId
+    if (pendingSid) {
+      try {
+        const detail = await recordApi.getRecordDetail(pendingSid)
+        if (detail) {
+          pendingData.value = {
+            sessionId: pendingSid,
+            content: detail.recommendation ? JSON.stringify({
+              foodName: detail.recommendation.foodName,
+              reason: detail.recommendation.reason
+            }) : null,
+            paramValues: detail.collectedParams
+          }
+          if (detail.recommendation) {
+            chatStore.recommendationResult = JSON.stringify({
+              foodName: detail.recommendation.foodName,
+              reason: detail.recommendation.reason
+            })
+            chatStore.collectedParamValues = detail.collectedParams || []
+          }
+          chatStore.sessionId = pendingSid
+          if (detail.photo) {
+            uploadedPhoto.value = {
+              thumbnailUrl: detail.photo.thumbnailPath,
+              originalUrl: detail.photo.originalPath
+            }
+          }
         }
+      } catch (e: any) {
+        showError(e?.message || '记录不存在或已被删除')
+        router.back()
+        return
+      } finally {
+        chatStore.pendingSessionId = ''
       }
-    } else if (chatStore.recommendationResult) {
-      // Fallback to chat store data
-      pendingData.value = {
-        sessionId: chatStore.sessionId,
-        content: chatStore.recommendationResult
+    } else {
+      // Try fetching pending recommendation from backend
+      const res = await recordApi.getPendingRecommendation()
+      if (res?.hasPending && res.sessionId) {
+        pendingData.value = res
+        chatStore.sessionId = res.sessionId
+      } else if (chatStore.recommendationResult) {
+        // Fallback to chat store data
+        pendingData.value = {
+          sessionId: chatStore.sessionId,
+          content: chatStore.recommendationResult
+        }
       }
     }
     // Check if already published

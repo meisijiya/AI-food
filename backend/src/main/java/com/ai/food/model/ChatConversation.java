@@ -33,6 +33,12 @@ public class ChatConversation {
     @Column(name = "last_message_at")
     private LocalDateTime lastMessageAt;
 
+    @Column(name = "cleared_by_user1")
+    private Boolean clearedByUser1 = false;
+
+    @Column(name = "cleared_by_user2")
+    private Boolean clearedByUser2 = false;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

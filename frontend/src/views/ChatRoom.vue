@@ -8,11 +8,13 @@
       <div class="header-info">
         <div class="header-name">{{ nickname }}</div>
       </div>
-      <div class="header-placeholder"></div>
+      <button class="clear-btn" @click="handleClearChat">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
     </div>
 
     <!-- Messages -->
-    <div class="messages-container" ref="messagesContainer" @scroll="onScroll">
+    <div class="messages-container" ref="messagesContainer" @scroll="onScroll" @click="closePanels">
       <!-- Load more indicator -->
       <div v-if="loadingMore" class="load-more">
         <div class="spinner"></div>
@@ -30,7 +32,24 @@
           <span v-else>{{ nickname?.charAt(0) || '?' }}</span>
         </div>
         <div class="message-bubble">
-          <div class="message-content">{{ msg.content }}</div>
+          <!-- 文本消息 -->
+          <div v-if="msg.messageType === 'text'" class="message-content">{{ msg.content }}</div>
+          <!-- 图片消息 -->
+          <div v-else-if="msg.messageType === 'image'" class="message-image" @click="previewImage(msg)">
+            <img :src="parseMediaUrl(msg.content, 'thumbnail')" alt="图片" />
+          </div>
+          <!-- 文件消息 -->
+          <div v-else-if="msg.messageType === 'file'" class="message-file" @click="downloadFile(msg)">
+            <div class="file-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div class="file-info">
+              <div class="file-name">{{ parseMediaUrl(msg.content, 'fileName') }}</div>
+              <div class="file-size">{{ formatFileSize(parseMediaUrl(msg.content, 'fileSize')) }}</div>
+            </div>
+          </div>
+          <!-- 兜底 -->
+          <div v-else class="message-content">{{ msg.content }}</div>
           <div class="message-time">{{ formatTime(msg.createdAt) }}</div>
         </div>
         <div v-if="msg.senderId === currentUserId" class="msg-avatar msg-avatar-self">
@@ -53,7 +72,10 @@
 
     <!-- Input -->
     <div class="input-container">
-      <button class="emoji-trigger" @click="toggleEmoji" :disabled="sendPermission !== 'ok'">
+      <button class="plus-btn" :class="{ active: showAttach }" @click="toggleAttach" :disabled="sendPermission !== 'ok'" title="附件">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+      </button>
+      <button class="emoji-trigger" @click="toggleEmoji" :disabled="sendPermission !== 'ok'" :class="{ active: showEmoji }">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
       </button>
       <input 
@@ -62,14 +84,49 @@
         :placeholder="sendPermission === 'ok' ? '输入消息...' : '无法发送消息'"
         :disabled="sendPermission !== 'ok'"
         @keyup.enter="sendMessage"
+        @focus="closePanels"
       />
       <button class="send-btn" @click="sendMessage" :disabled="!inputMessage.trim() || sendPermission !== 'ok'">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
     </div>
 
+    <!-- Attachment Panel -->
+    <Transition name="panel-slide">
+      <div v-if="showAttach" class="attachment-panel" @click.stop>
+        <div class="attachment-panel-header">
+          <span class="attachment-panel-title"><em>附件</em></span>
+          <button class="attachment-close-btn" @click="showAttach = false">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="attachment-grid">
+          <button class="attachment-item" @click="triggerPhoto" :disabled="sendPermission !== 'ok' || uploading">
+            <div class="attachment-icon photo-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+            <span class="attachment-label">照片</span>
+          </button>
+          <button class="attachment-item" @click="triggerFile" :disabled="sendPermission !== 'ok' || uploading">
+            <div class="attachment-icon file-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            </div>
+            <span class="attachment-label">文件</span>
+          </button>
+        </div>
+      </div>
+    </Transition>
+
     <!-- Emoji Picker -->
-    <EmojiPicker :show="showEmoji" @select="insertEmoji" @close="showEmoji = false" />
+    <Transition name="panel-slide">
+      <div v-if="showEmoji" class="emoji-panel-wrapper" @click.stop>
+        <EmojiPicker :show="showEmoji" @select="insertEmoji" @close="showEmoji = false" />
+      </div>
+    </Transition>
+
+    <!-- Hidden file inputs -->
+    <input ref="photoInput" type="file" accept="image/*" style="display:none" @change="handlePhotoUpload" />
+    <input ref="fileInput" type="file" style="display:none" @change="handleFileUpload" />
   </div>
 </template>
 
@@ -77,9 +134,10 @@
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { chatApi } from '@/api'
-import { showError } from '@/utils/toast'
+import { chatApi, uploadApi } from '@/api'
+import { showError, showSuccess } from '@/utils/toast'
 import { getCachedUser } from '@/utils/userCache'
+import { showImagePreview, showConfirmDialog } from 'vant'
 import chatWs from '@/websocket/chat'
 import EmojiPicker from '@/components/EmojiPicker.vue'
 
@@ -112,6 +170,10 @@ const hasMore = ref(true)
 const loadingMore = ref(false)
 const isLoading = ref(false)
 const showEmoji = ref(false)
+const showAttach = ref(false)
+const photoInput = ref<HTMLInputElement>()
+const fileInput = ref<HTMLInputElement>()
+const uploading = ref(false)
 
 // 发送权限
 const sendPermission = ref<'ok' | 'max_reached' | 'not_allowed'>('ok')
@@ -221,7 +283,20 @@ function insertEmoji(icon: string) {
 }
 
 function toggleEmoji() {
+  if (sendPermission.value !== 'ok') return
+  showAttach.value = false
   showEmoji.value = !showEmoji.value
+}
+
+function toggleAttach() {
+  if (sendPermission.value !== 'ok') return
+  showEmoji.value = false
+  showAttach.value = !showAttach.value
+}
+
+function closePanels() {
+  showEmoji.value = false
+  showAttach.value = false
 }
 
 function sendMessage() {
@@ -253,6 +328,145 @@ function sendMessage() {
     if (remaining.value <= 0) {
       sendPermission.value = 'max_reached'
     }
+  }
+}
+
+// ==================== 图片/文件收发 ====================
+
+function triggerPhoto() {
+  if (sendPermission.value !== 'ok') return
+  showAttach.value = false
+  photoInput.value?.click()
+}
+
+function triggerFile() {
+  if (sendPermission.value !== 'ok') return
+  showAttach.value = false
+  fileInput.value?.click()
+}
+
+async function handlePhotoUpload(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file || uploading.value) return
+  uploading.value = true
+
+  try {
+    const res = await uploadApi.uploadChatPhoto(file)
+    const content = JSON.stringify({
+      thumbnailUrl: res.thumbnailUrl,
+      originalUrl: res.originalUrl,
+      fileName: res.fileName
+    })
+    chatWs.sendMessage(targetUserId.value, content, 'image')
+
+    const localMsg = {
+      id: Date.now(),
+      conversationId: conversationId.value,
+      senderId: currentUserId.value,
+      receiverId: targetUserId.value,
+      content,
+      messageType: 'image',
+      isRead: false,
+      createdAt: new Date().toISOString()
+    }
+    messages.value.push(localMsg)
+    saveToCache(conversationId.value, messages.value)
+    scrollToBottom()
+  } catch (err: any) {
+    showError(err?.message || '图片发送失败')
+  } finally {
+    uploading.value = false
+    if (photoInput.value) photoInput.value.value = ''
+  }
+}
+
+async function handleFileUpload(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file || uploading.value) return
+
+  if (file.size > 50 * 1024 * 1024) {
+    showError('文件大小不能超过50MB')
+    return
+  }
+
+  uploading.value = true
+
+  try {
+    const res = await uploadApi.uploadChatFile(file)
+    const content = JSON.stringify({
+      fileUrl: res.fileUrl,
+      fileName: res.fileName,
+      fileSize: res.fileSize
+    })
+    chatWs.sendMessage(targetUserId.value, content, 'file')
+
+    const localMsg = {
+      id: Date.now(),
+      conversationId: conversationId.value,
+      senderId: currentUserId.value,
+      receiverId: targetUserId.value,
+      content,
+      messageType: 'file',
+      isRead: false,
+      createdAt: new Date().toISOString()
+    }
+    messages.value.push(localMsg)
+    saveToCache(conversationId.value, messages.value)
+    scrollToBottom()
+  } catch (err: any) {
+    showError(err?.message || '文件发送失败')
+  } finally {
+    uploading.value = false
+    if (fileInput.value) fileInput.value.value = ''
+  }
+}
+
+function parseMediaUrl(content: string, field: string): string {
+  try {
+    const data = JSON.parse(content)
+    return data[field] || ''
+  } catch {
+    return ''
+  }
+}
+
+function previewImage(msg: any) {
+  try {
+    const data = JSON.parse(msg.content)
+    showImagePreview([data.originalUrl || data.thumbnailUrl])
+  } catch { /* ignore */ }
+}
+
+function downloadFile(msg: any) {
+  try {
+    const data = JSON.parse(msg.content)
+    const link = document.createElement('a')
+    link.href = data.fileUrl
+    link.download = data.fileName || 'file'
+    link.click()
+  } catch { /* ignore */ }
+}
+
+function formatFileSize(size: string | number): string {
+  const bytes = Number(size) || 0
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
+// ==================== 清除聊天 ====================
+
+async function handleClearChat() {
+  const convId = conversationId.value
+  if (!convId || isNaN(convId)) return
+
+  try {
+    await showConfirmDialog({ title: '清除聊天', message: '确定清除所有聊天记录吗？清除后将无法恢复。' })
+    await chatApi.clearConversation(convId)
+    showSuccess('聊天记录已清除')
+    router.back()
+  } catch {
+    // 用户取消
   }
 }
 
@@ -524,9 +738,100 @@ onUnmounted(() => {
   cursor: pointer;
   border-radius: 50%;
   flex-shrink: 0;
-  transition: background 0.2s;
+  transition: background 0.2s, color 0.2s;
   &:active { background: var(--color-surface-container-low); }
   &:disabled { opacity: 0.3; cursor: not-allowed; }
+  &.active { color: var(--color-primary); background: rgba(0, 89, 182, 0.08); }
+}
+
+.plus-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.2s, transform 0.2s, color 0.2s;
+  &:active { background: var(--color-surface-container-low); }
+  &:disabled { opacity: 0.3; cursor: not-allowed; }
+  &.active {
+    color: var(--color-primary);
+    background: rgba(0, 89, 182, 0.08);
+    svg { transform: rotate(45deg); }
+  }
+}
+
+.clear-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  &:active { background: var(--color-surface-container-low); }
+}
+
+.message-image {
+  cursor: pointer;
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 200px;
+  img {
+    width: 100%;
+    display: block;
+    border-radius: 12px;
+  }
+}
+
+.message-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.file-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--color-surface-container-low);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-on-surface-variant);
+  flex-shrink: 0;
+}
+
+.file-info {
+  min-width: 0;
+}
+
+.file-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.file-size {
+  font-size: 11px;
+  color: var(--color-on-surface-variant);
+  opacity: 0.7;
 }
 
 .message-input {
@@ -561,5 +866,123 @@ onUnmounted(() => {
     opacity: 0.5;
     cursor: not-allowed;
   }
+}
+
+/* Attachment panel */
+.attachment-panel {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 1.5rem 1.5rem 0 0;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+}
+
+.attachment-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.attachment-panel-title {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-on-surface-variant);
+
+  em {
+    font-style: italic;
+  }
+}
+
+.attachment-close-btn {
+  background: none;
+  border: none;
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+  &:active { background: rgba(0, 0, 0, 0.05); }
+}
+
+.attachment-grid {
+  display: flex;
+  gap: 16px;
+  padding: 20px 24px;
+}
+
+.attachment-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+
+  &:active:not(:disabled) {
+    background: rgba(0, 89, 182, 0.08);
+    transform: scale(0.95);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+}
+
+.attachment-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.photo-icon {
+    background: linear-gradient(135deg, rgba(0, 89, 182, 0.12), rgba(0, 89, 182, 0.06));
+    color: var(--color-primary);
+  }
+
+  &.file-icon {
+    background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(34, 211, 238, 0.06));
+    color: #0891b2;
+  }
+}
+
+.attachment-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-on-surface);
+}
+
+.emoji-panel-wrapper {
+  flex-shrink: 0;
+}
+
+/* Panel slide transition */
+.panel-slide-enter-active {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
+}
+.panel-slide-leave-active {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s;
+}
+.panel-slide-enter-from {
+  transform: translateY(100%);
+  opacity: 0;
+}
+.panel-slide-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
 }
 </style>

@@ -8,70 +8,73 @@
       <em>个人中心</em>
     </h1>
 
-    <!-- User info card -->
-    <div class="user-card animate-fade-up delay-100 animate-start-hidden" @click="router.push('/profile-edit')">
-      <div class="avatar-circle">
-        <span v-if="!userInfo?.avatar">{{ avatarInitial }}</span>
-        <img v-else :src="userInfo.avatar" alt="avatar" />
-      </div>
-      <div class="user-info">
-        <div class="nickname">{{ userInfo?.nickname || '未设置昵称' }}</div>
-        <div class="email">{{ userInfo?.email || '' }}</div>
-      </div>
-    </div>
-
-    <!-- Sign-in card -->
-    <div class="signin-card animate-fade-up delay-200 animate-start-hidden">
-      <div class="signin-header">
-        <span class="signin-title">本月签到</span>
-        <span class="signin-count">{{ signStatus.totalDays }} 天</span>
-      </div>
-
-      <!-- Calendar grid -->
-      <div class="calendar-grid">
-        <div
-          v-for="day in daysInMonth"
-          :key="day"
-          class="calendar-day"
-          :class="{ signed: signedDaysSet.has(day), today: day === today }"
-        >
-          <div v-if="signedDaysSet.has(day)" class="signed-circle"></div>
-          <span v-else class="day-num">{{ day }}</span>
+    <!-- Bento grid wrapper -->
+    <div class="bento-grid">
+      <!-- User info card -->
+      <div class="user-card bento-full animate-fade-up delay-100 animate-start-hidden" @click="router.push('/profile-edit')">
+        <div class="avatar-circle">
+          <span v-if="!userInfo?.avatar">{{ avatarInitial }}</span>
+          <img v-else :src="userInfo.avatar" alt="avatar" />
+        </div>
+        <div class="user-info">
+          <div class="nickname">{{ userInfo?.nickname || '未设置昵称' }}</div>
+          <div class="email">{{ userInfo?.email || '' }}</div>
         </div>
       </div>
 
-      <div class="signin-footer">
-        <span class="continuous">连续 {{ signStatus.continuousDays }} 天</span>
-        <button
-          class="signin-btn"
-          :disabled="signStatus.todaySigned || signingIn"
-          @click="handleSignIn"
-        >
-          {{ signStatus.todaySigned ? '已签到' : '签到' }}
-        </button>
-      </div>
-    </div>
+      <!-- Sign-in card -->
+      <div class="signin-card animate-fade-up delay-200 animate-start-hidden">
+        <div class="signin-header">
+          <span class="signin-title">本月签到</span>
+          <span class="signin-count">{{ signStatus.totalDays }} 天</span>
+        </div>
 
-    <!-- Stats -->
-    <div class="stats-card animate-fade-up delay-300 animate-start-hidden">
-      <div class="stat-item" @click="router.push('/follow?type=following')">
-        <div class="stat-value">{{ followStats.followingCount }}</div>
-        <div class="stat-label">关注</div>
-      </div>
-      <div class="stat-item" @click="router.push('/follow?type=followers')">
-        <div class="stat-value">{{ followStats.followerCount }}</div>
-        <div class="stat-label">粉丝</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-value">{{ conversationCount }}</div>
-        <div class="stat-label">推荐记录</div>
-      </div>
-    </div>
+        <!-- Calendar grid -->
+        <div class="calendar-grid">
+          <div
+            v-for="day in daysInMonth"
+            :key="day"
+            class="calendar-day"
+            :class="{ signed: signedDaysSet.has(day), today: day === today }"
+          >
+            <div v-if="signedDaysSet.has(day)" class="signed-circle"></div>
+            <span v-else class="day-num">{{ day }}</span>
+          </div>
+        </div>
 
-    <!-- Logout -->
-    <button class="logout-btn animate-fade-up delay-400 animate-start-hidden" @click="handleLogout">
-      退出登录
-    </button>
+        <div class="signin-footer">
+          <span class="continuous">连续 {{ signStatus.continuousDays }} 天</span>
+          <button
+            class="signin-btn"
+            :disabled="signStatus.todaySigned || signingIn"
+            @click="handleSignIn"
+          >
+            {{ signStatus.todaySigned ? '已签到' : '签到' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-card animate-fade-up delay-300 animate-start-hidden">
+        <div class="stat-item" @click="router.push('/follow?type=following')">
+          <div class="stat-value">{{ followStats.followingCount }}</div>
+          <div class="stat-label">关注</div>
+        </div>
+        <div class="stat-item" @click="router.push('/follow?type=followers')">
+          <div class="stat-value">{{ followStats.followerCount }}</div>
+          <div class="stat-label">粉丝</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">{{ conversationCount }}</div>
+          <div class="stat-label">推荐记录</div>
+        </div>
+      </div>
+
+      <!-- Logout -->
+      <button class="logout-btn animate-fade-up delay-400 animate-start-hidden" @click="handleLogout">
+        退出登录
+      </button>
+    </div>
 
     <div class="nav-spacer"></div>
   </div>
@@ -244,7 +247,6 @@ onMounted(fetchData)
   border-radius: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  margin-bottom: 16px;
   z-index: 1;
   cursor: pointer;
   transition: transform 0.2s;
@@ -302,7 +304,6 @@ onMounted(fetchData)
   background: var(--color-inverse-surface);
   border-radius: 2rem;
   padding: 24px;
-  margin-bottom: 16px;
   z-index: 1;
 }
 
@@ -411,7 +412,6 @@ onMounted(fetchData)
   border-radius: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  margin-bottom: 24px;
   z-index: 1;
 }
 
@@ -459,5 +459,64 @@ onMounted(fetchData)
 
 .nav-spacer {
   height: 80px;
+}
+
+/* Bento grid wrapper — mobile: flex column, desktop: CSS masonry columns */
+.bento-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 1;
+}
+
+.bento-full {
+  /* mobile: no effect, desktop: column-span all */
+}
+
+@media (min-width: 1024px) {
+  .profile-container {
+    max-width: 60%;
+    margin: 0 auto;
+  }
+  .bento-grid {
+    display: block;
+    column-count: 2;
+    column-gap: 16px;
+  }
+  .bento-full {
+    column-span: all;
+    margin-bottom: 16px;
+  }
+  .signin-card,
+  .stats-card,
+  .logout-btn {
+    break-inside: avoid;
+    margin-bottom: 16px;
+  }
+  /* Compact sign-in calendar on desktop */
+  .signin-card {
+    padding: 12px;
+  }
+  .signin-count {
+    font-size: 14px;
+  }
+  .calendar-grid {
+    gap: 3px;
+    margin-bottom: 10px;
+  }
+  .calendar-day .day-num {
+    font-size: 9px;
+  }
+  .calendar-day.signed .signed-circle {
+    width: 14px;
+    height: 14px;
+  }
+  .signin-btn {
+    padding: 6px 16px;
+    font-size: 12px;
+  }
+  .continuous {
+    font-size: 11px;
+  }
 }
 </style>

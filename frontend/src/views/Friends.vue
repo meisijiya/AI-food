@@ -740,5 +740,14 @@ onUnmounted(() => {
 .empty-text { font-size: 15px; font-weight: 600; color: var(--color-on-surface-variant); margin-bottom: 6px; }
 .empty-hint { font-size: 12px; color: var(--color-on-surface-variant); opacity: 0.6; }
 
-.nav-spacer { height: 80px; }
+.nav-spacer {
+  height: 80px;
+}
+
+@media (min-width: 1024px) {
+  .friends-container {
+    max-width: 60%;
+    margin: 0 auto;
+  }
+}
 </style>

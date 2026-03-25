@@ -2,6 +2,18 @@
   <div class="feed-container" ref="scrollContainer" @scroll="onScroll">
     <div class="bg-glow bg-glow-1"></div>
 
+    <!-- Pending recommendation reminder -->
+    <div v-if="pendingSessionId" class="pending-reminder animate-fade-up" @click="goToPending">
+      <div class="pending-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+      </div>
+      <div class="pending-text">
+        <div class="pending-title">有未完成的推荐记录</div>
+        <div class="pending-hint">点击查看详情并拍照打卡</div>
+      </div>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+
     <!-- Header -->
     <div class="feed-header animate-fade-up">
       <div class="header-left">
@@ -356,10 +368,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { feedApi, notificationApi } from "@/api";
+import { feedApi, notificationApi, recordApi } from "@/api";
+import { useChatStore } from "@/stores/chat";
 import CachedImage from "@/components/CachedImage.vue";
 
 const router = useRouter();
+const chatStore = useChatStore();
 const scrollContainer = ref<HTMLElement>();
 
 const activeTab = ref("feed");
@@ -371,6 +385,7 @@ const pageSize = 10;
 const loading = ref(false);
 const finished = ref(false);
 const unreadCount = ref(0);
+const pendingSessionId = ref<string | null>(null);
 
 const showFilter = ref(false);
 const filterFoodName = ref("");
@@ -495,9 +510,26 @@ function formatTime(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
+async function fetchPendingRecommendation() {
+  try {
+    const res = await recordApi.getPendingRecommendation();
+    pendingSessionId.value = res?.hasPending ? res.sessionId : null;
+  } catch {
+    /* ignore */
+  }
+}
+
+function goToPending() {
+  if (pendingSessionId.value) {
+    chatStore.pendingSessionId = pendingSessionId.value;
+    router.push('/result');
+  }
+}
+
 onMounted(() => {
   fetchPosts(true);
   fetchNotifications();
+  fetchPendingRecommendation();
 });
 </script>
 
@@ -713,6 +745,8 @@ onMounted(() => {
     width: 100%;
     display: block;
     border-radius: 1.25rem 1.25rem 0 0;
+    max-height: 240px;
+    object-fit: cover;
   }
 }
 
@@ -1037,6 +1071,50 @@ onMounted(() => {
   height: 80px;
 }
 
+/* Pending recommendation reminder */
+.pending-reminder {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(0, 89, 182, 0.08), rgba(34, 211, 238, 0.06));
+  border: 1px solid rgba(0, 89, 182, 0.15);
+  border-radius: 1.25rem;
+  margin-bottom: 16px;
+  cursor: pointer;
+  z-index: 1;
+  position: relative;
+  transition: transform 0.2s;
+  &:active { transform: scale(0.98); }
+}
+
+.pending-icon {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  display: flex; align-items: center; justify-content: center;
+  color: white; flex-shrink: 0;
+}
+
+.pending-text { flex: 1; min-width: 0; }
+
+.pending-title {
+  font-size: 14px; font-weight: 600;
+  color: var(--color-on-surface); margin-bottom: 2px;
+}
+
+.pending-hint {
+  font-size: 11px;
+  color: var(--color-on-surface-variant);
+  opacity: 0.7;
+}
+
+.pending-reminder > svg:last-child {
+  color: var(--color-on-surface-variant);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
 /* Filter */
 .filter-overlay {
   position: fixed;
@@ -1155,6 +1233,18 @@ onMounted(() => {
   }
   .feed-card {
     margin-bottom: 14px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .feed-container {
+    max-width: 60%;
+    margin: 0 auto;
+    padding: 40px 40px 100px;
+  }
+  .waterfall {
+    column-count: 4;
+    column-gap: 16px;
   }
 }
 </style>

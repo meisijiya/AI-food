@@ -2,7 +2,7 @@
   <Transition name="emoji-panel">
     <div v-if="show" class="emoji-panel" @click.stop>
       <div class="emoji-panel-header">
-        <span class="emoji-panel-title">表情</span>
+        <span class="emoji-panel-title"><em>表情</em></span>
         <button class="emoji-close-btn" @click="$emit('close')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -38,10 +38,12 @@ const emojis = emojiData.list
 
 <style lang="scss" scoped>
 .emoji-panel {
-  background: var(--color-surface-container-lowest);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 1.5rem 1.5rem 0 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06);
   max-height: 280px;
   display: flex;
   flex-direction: column;
@@ -53,13 +55,19 @@ const emojis = emojiData.list
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px 8px;
-  border-bottom: 1px solid var(--color-surface-container-low);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .emoji-panel-title {
-  font-size: 13px;
-  font-weight: 600;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 16px;
+  font-weight: 500;
   color: var(--color-on-surface-variant);
+
+  em {
+    font-style: italic;
+  }
 }
 
 .emoji-close-btn {
@@ -117,5 +125,20 @@ const emojis = emojiData.list
 .emoji-panel-leave-to {
   transform: translateY(100%);
   opacity: 0;
+}
+
+@media (min-width: 1024px) {
+  .emoji-panel {
+    max-height: 360px;
+  }
+  .emoji-grid {
+    gap: 2px;
+    padding: 6px 8px;
+    grid-template-columns: repeat(8, 1fr);
+  }
+  .emoji-item {
+    font-size: 22px;
+    border-radius: 8px;
+  }
 }
 </style>

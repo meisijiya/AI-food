@@ -6,11 +6,7 @@
 
     <!-- Pending photo check-in notification -->
     <div
-      v-if="
-        pendingRecommendation &&
-        pendingRecommendation.sessionId &&
-        !pendingRecommendation.photoUploaded
-      "
+      v-if="pendingRecommendation && pendingRecommendation.hasPending && pendingRecommendation.sessionId"
       class="pending-notification animate-fade-up animate-start-hidden"
     >
       <div class="pending-icon">
@@ -174,7 +170,7 @@ const releaseDate = import.meta.env.VITE_TIME || "未知日期";
 onMounted(async () => {
   try {
     const res = await recordApi.getPendingRecommendation();
-    if (res) {
+    if (res?.hasPending) {
       pendingRecommendation.value = res;
     }
   } catch {
@@ -183,10 +179,7 @@ onMounted(async () => {
 });
 
 const hasPendingPhoto = () => {
-  return (
-    pendingRecommendation.value?.sessionId &&
-    !pendingRecommendation.value?.photoUploaded
-  );
+  return pendingRecommendation.value?.hasPending && pendingRecommendation.value?.sessionId;
 };
 
 const startChat = async () => {

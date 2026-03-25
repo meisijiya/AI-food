@@ -11,6 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,10 +27,10 @@ public class RecordController {
     @GetMapping("/pending")
     public ApiResponse<Map<String, Object>> getPendingRecommendation() {
         Long userId = getCurrentUserId();
-        Map<String, Object> data = recordService.getPendingRecommendation(userId);
-        if (data == null) {
-            return ApiResponse.success("暂无待处理推荐", new HashMap<>());
-        }
+        String sessionId = recordService.getPendingSessionId(userId);
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("hasPending", sessionId != null);
+        data.put("sessionId", sessionId);
         return ApiResponse.success(data);
     }
 
@@ -51,14 +52,21 @@ public class RecordController {
 
     @GetMapping("/detail/{sessionId}")
     public ApiResponse<RecordService.RecordDetail> getRecordDetail(@PathVariable String sessionId) {
+        Long userId = getCurrentUserId();
+        recordService.validateSessionOwnership(sessionId, userId);
         RecordService.RecordDetail detail = recordService.getRecordDetail(sessionId);
         return ApiResponse.success(detail);
     }
 
     @DeleteMapping("/delete/{sessionId}")
     public ApiResponse<Void> deleteRecord(@PathVariable String sessionId) {
-        log.info("Delete record: {}", sessionId);
+        Long userId = getCurrentUserId();
+        recordService.validateSessionOwnership(sessionId, userId);
+        log.debug("Delete record: {}", sessionId);
         recordService.deleteRecord(sessionId);
+        //删除Redis保存的 pending 推荐缓存sessionID
+        String cacheKey = "pending:recommend:" + userId;
+        redisTemplate.delete(cacheKey);
         return ApiResponse.success("删除成功", null);
     }
 
@@ -67,6 +75,10 @@ public class RecordController {
         List<String> sessionIds = body.get("sessionIds");
         if (sessionIds == null || sessionIds.isEmpty()) {
             return ApiResponse.error("请选择要删除的记录");
+        }
+        Long userId = getCurrentUserId();
+        for (String sid : sessionIds) {
+            recordService.validateSessionOwnership(sid, userId);
         }
         log.info("Batch delete {} records", sessionIds.size());
         recordService.batchDeleteRecords(sessionIds);
@@ -81,23 +93,37 @@ public class RecordController {
             return ApiResponse.error("请提供图片URL");
         }
         Long userId = getCurrentUserId();
+        recordService.validateSessionOwnership(sessionId, userId);
         recordService.updateRecommendationPhoto(sessionId, photoUrl);
-        redisTemplate.delete("pending:recommend:" + userId);
+        // Compare with Redis primary key and delete if match
+        String cacheKey = "pending:recommend:" + userId;
+        String cachedSessionId = redisTemplate.opsForValue().get(cacheKey);
+        if (sessionId.equals(cachedSessionId)) {
+            redisTemplate.delete(cacheKey);
+        }
         return ApiResponse.success("照片已保存", null);
     }
 
     @DeleteMapping("/photo/{sessionId}")
     public ApiResponse<Void> deletePhoto(@PathVariable String sessionId) {
         Long userId = getCurrentUserId();
-        log.info("Delete photo for session: {}", sessionId);
+        recordService.validateSessionOwnership(sessionId, userId);
+        log.debug("Delete photo for session: {}", sessionId);
         recordService.deleteRecommendationPhoto(sessionId);
-        redisTemplate.delete("pending:recommend:" + userId);
+        // Compare with Redis primary key and delete if match
+        String cacheKey = "pending:recommend:" + userId;
+        String cachedSessionId = redisTemplate.opsForValue().get(cacheKey);
+        if (sessionId.equals(cachedSessionId)) {
+            redisTemplate.delete(cacheKey);
+        }
         return ApiResponse.success("照片已删除", null);
     }
 
     @PutMapping("/comment/{sessionId}")
     public ApiResponse<Void> updateComment(@PathVariable String sessionId,
                                            @RequestBody Map<String, String> body) {
+        Long userId = getCurrentUserId();
+        recordService.validateSessionOwnership(sessionId, userId);
         String comment = body.get("comment");
         recordService.updateComment(sessionId, comment != null ? comment : "");
         return ApiResponse.success("评价已保存", null);
