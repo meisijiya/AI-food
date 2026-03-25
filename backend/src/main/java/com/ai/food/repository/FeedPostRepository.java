@@ -4,6 +4,7 @@ import com.ai.food.model.FeedPost;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -42,4 +43,19 @@ public interface FeedPostRepository extends JpaRepository<FeedPost, Long> {
     Page<FeedPost> findByUserIdsOrderByPublishedAtDesc(@Param("userIds") List<Long> userIds, Pageable pageable);
 
     List<FeedPost> findByIdIn(List<Long> ids);
+
+    @Modifying
+    @Query("UPDATE FeedPost f SET f.isDeleted = true WHERE f.sessionId = :sessionId")
+    void softDeleteBySessionId(@Param("sessionId") String sessionId);
+
+    @Modifying
+    @Query("UPDATE FeedPost f SET f.isDeleted = true WHERE f.id = :postId")
+    void softDeleteByPostId(@Param("postId") Long postId);
+
+    @Query("SELECT f FROM FeedPost f WHERE f.sessionId = :sessionId AND f.isDeleted = false")
+    Optional<FeedPost> findBySessionId(@Param("sessionId") String sessionId);
+
+    @Modifying
+    @Query("DELETE FROM FeedPost f WHERE f.isDeleted = true")
+    int hardDeleteAllSoftDeleted();
 }

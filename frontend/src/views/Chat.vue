@@ -63,6 +63,9 @@
     <!-- Input area -->
     <div class="input-area">
       <div class="input-wrapper">
+        <button class="emoji-trigger" @click="toggleEmoji" :disabled="!chatStore.isConnected">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
+        </button>
         <input
           v-model="inputValue"
           type="text"
@@ -76,6 +79,9 @@
         </button>
       </div>
     </div>
+
+    <!-- Emoji Picker -->
+    <EmojiPicker :show="showEmoji" @select="insertEmoji" @close="showEmoji = false" />
 
     <!-- Sanctuary Action Sheet -->
     <Transition name="overlay-fade">
@@ -126,12 +132,14 @@ import { useRouter } from 'vue-router'
 import { conversationApi } from '@/api'
 import { useChatStore } from '@/stores/chat'
 import { WebSocketClient, type WebSocketMessage } from '@/websocket'
+import EmojiPicker from '@/components/EmojiPicker.vue'
 
 const router = useRouter()
 const chatStore = useChatStore()
 const messageListRef = ref<HTMLElement | null>(null)
 const inputValue = ref('')
 const showActions = ref(false)
+const showEmoji = ref(false)
 const connectionFailed = ref(false)
 const connectionTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 
@@ -228,6 +236,15 @@ const handleWebSocketClose = () => {
   if (chatStore.messages.length === 0) {
     connectionFailed.value = true
   }
+}
+
+function insertEmoji(icon: string) {
+  inputValue.value += icon
+  showEmoji.value = false
+}
+
+function toggleEmoji() {
+  showEmoji.value = !showEmoji.value
 }
 
 const sendMessage = () => {
@@ -480,9 +497,18 @@ onUnmounted(() => {
 
 .input-wrapper {
   display: flex; align-items: center; gap: 10px; background: var(--color-surface);
-  border-radius: 2rem; padding: 4px 4px 4px 20px; border: 1px solid var(--color-surface-container-low);
+  border-radius: 2rem; padding: 4px 4px 4px 10px; border: 1px solid var(--color-surface-container-low);
   transition: border-color 0.2s;
   &:focus-within { border-color: var(--color-primary-container); }
+}
+
+.emoji-trigger {
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  background: none; border: none; color: var(--color-on-surface-variant);
+  cursor: pointer; border-radius: 50%; flex-shrink: 0;
+  transition: background 0.2s;
+  &:active { background: var(--color-surface-container-low); }
+  &:disabled { opacity: 0.3; cursor: not-allowed; }
 }
 
 .chat-input {

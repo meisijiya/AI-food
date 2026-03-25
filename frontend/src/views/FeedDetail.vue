@@ -95,6 +95,9 @@
 
     <!-- Bottom comment input -->
     <div class="comment-input-bar" v-if="post">
+      <button class="emoji-trigger" @click="showEmoji = !showEmoji">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
+      </button>
       <input
         v-model="newComment"
         class="comment-input"
@@ -105,6 +108,9 @@
         {{ sending ? '...' : '发送' }}
       </button>
     </div>
+
+    <!-- Emoji Picker -->
+    <EmojiPicker :show="showEmoji" @select="insertEmoji" @close="showEmoji = false" />
 
     <!-- Back button -->
     <button class="back-btn animate-fade-up delay-450 animate-start-hidden" @click="router.back()">返回</button>
@@ -118,6 +124,7 @@ import { feedApi, followApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
 import { showSuccess, showError } from '@/utils/toast'
 import CachedImage from '@/components/CachedImage.vue'
+import EmojiPicker from '@/components/EmojiPicker.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -135,6 +142,12 @@ const hasMoreComments = ref(false)
 const newComment = ref('')
 const sending = ref(false)
 const isFollowing = ref(false)
+const showEmoji = ref(false)
+
+function insertEmoji(icon: string) {
+  newComment.value += icon
+  showEmoji.value = false
+}
 const checkingFollow = ref(false)
 
 const postId = computed(() => Number(route.params.postId))
@@ -505,6 +518,15 @@ onMounted(async () => {
   background: var(--color-surface-container-lowest);
   border-top: 1px solid var(--color-surface-container-low);
   z-index: 100;
+}
+
+.emoji-trigger {
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; color: var(--color-on-surface-variant);
+  cursor: pointer; border-radius: 50%; flex-shrink: 0;
+  transition: background 0.2s;
+  &:active { background: var(--color-surface-container-low); }
 }
 
 .comment-input {

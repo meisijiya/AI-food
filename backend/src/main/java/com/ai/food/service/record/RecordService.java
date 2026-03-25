@@ -7,6 +7,8 @@ import com.ai.food.model.QaRecord;
 import com.ai.food.model.RecommendationResult;
 import com.ai.food.repository.CollectedParamRepository;
 import com.ai.food.repository.ConversationSessionRepository;
+import com.ai.food.repository.FeedCommentRepository;
+import com.ai.food.repository.FeedPostRepository;
 import com.ai.food.repository.PhotoRepository;
 import com.ai.food.repository.QaRecordRepository;
 import com.ai.food.repository.RecommendationResultRepository;
@@ -39,6 +41,8 @@ public class RecordService {
     private final CollectedParamRepository collectedParamRepository;
     private final QaRecordRepository qaRecordRepository;
     private final PhotoRepository photoRepository;
+    private final FeedPostRepository feedPostRepository;
+    private final FeedCommentRepository feedCommentRepository;
     private final StringRedisTemplate redisTemplate;
 
     public Page<RecordListItem> getRecordList(Long userId, int page, int size, String sort) {
@@ -87,6 +91,12 @@ public class RecordService {
     @Transactional
     public void deleteRecord(String sessionId) {
         log.info("Soft deleting record: {}", sessionId);
+        // 删除关联的 FeedPost + 评论（通过 sessionId 查找）
+        feedPostRepository.findBySessionId(sessionId).ifPresent(post -> {
+            feedCommentRepository.softDeleteByPostId(post.getId());
+            feedPostRepository.softDeleteByPostId(post.getId());
+            log.info("Soft-deleted FeedPost id={} and comments for session {}", post.getId(), sessionId);
+        });
         // 删除硬盘上的照片文件
         photoRepository.findFirstByRelatedSessionIdOrderByCreatedAtDesc(sessionId).ifPresent(photo -> {
             deletePhysicalFile(photo.getOriginalPath());
@@ -104,6 +114,11 @@ public class RecordService {
     public void batchDeleteRecords(List<String> sessionIds) {
         log.info("Batch soft deleting {} records", sessionIds.size());
         for (String sessionId : sessionIds) {
+            // 删除关联的 FeedPost + 评论
+            feedPostRepository.findBySessionId(sessionId).ifPresent(post -> {
+                feedCommentRepository.softDeleteByPostId(post.getId());
+                feedPostRepository.softDeleteByPostId(post.getId());
+            });
             photoRepository.findFirstByRelatedSessionIdOrderByCreatedAtDesc(sessionId).ifPresent(photo -> {
                 deletePhysicalFile(photo.getOriginalPath());
                 deletePhysicalFile(photo.getThumbnailPath());

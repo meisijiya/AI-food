@@ -94,20 +94,6 @@ public class FeedController {
         return ApiResponse.success(result);
     }
 
-    @GetMapping("/notifications")
-    public ApiResponse<Map<String, Object>> getNotifications() {
-        Long userId = getCurrentUserId();
-        Map<String, Object> result = feedService.getNotifications(userId);
-        return ApiResponse.success(result);
-    }
-
-    @PostMapping("/notifications/read")
-    public ApiResponse<Void> markNotificationsRead() {
-        Long userId = getCurrentUserId();
-        feedService.markNotificationsRead(userId);
-        return ApiResponse.success("已读", null);
-    }
-
     @GetMapping("/check/{sessionId}")
     public ApiResponse<Map<String, Object>> checkPublished(@PathVariable String sessionId) {
         Long userId = getCurrentUserId();

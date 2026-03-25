@@ -3,6 +3,7 @@ package com.ai.food.service.feed;
 import com.ai.food.model.*;
 import com.ai.food.repository.*;
 import com.ai.food.service.follow.FollowService;
+import com.ai.food.service.notification.NotificationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,6 +36,7 @@ public class FeedService {
     private final ConversationSessionRepository conversationSessionRepository;
     private final UserRepository userRepository;
     private final FollowService followService;
+    private final NotificationService notificationService;
     private final StringRedisTemplate stringRedisTemplate;
     private final RedissonClient redissonClient;
 
@@ -431,9 +433,13 @@ public class FeedService {
         post.setCommentCount(post.getCommentCount() + 1);
         feedPostRepository.save(post);
 
-        // Add to unread comments notification for post owner
+        // Add notification for post owner
         if (!post.getUserId().equals(userId)) {
-            stringRedisTemplate.opsForValue().increment(UNREAD_COMMENTS_KEY + post.getUserId());
+            String commenterName = userRepository.findById(userId)
+                    .map(u -> u.getNickname() != null ? u.getNickname() : u.getUsername())
+                    .orElse("匿名用户");
+            notificationService.addCommentNotification(
+                    post.getUserId(), saved.getId(), postId, userId, commenterName, content);
         }
 
         // Increment hot score for comment (+5)
@@ -476,21 +482,6 @@ public class FeedService {
         return result;
     }
 
-    public Map<String, Object> getNotifications(Long userId) {
-        String likesStr = stringRedisTemplate.opsForValue().get(UNREAD_LIKES_KEY + userId);
-        String commentsStr = stringRedisTemplate.opsForValue().get(UNREAD_COMMENTS_KEY + userId);
-
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("unreadLikes", likesStr != null ? Integer.parseInt(likesStr) : 0);
-        result.put("unreadComments", commentsStr != null ? Integer.parseInt(commentsStr) : 0);
-        return result;
-    }
-
-    public void markNotificationsRead(Long userId) {
-        stringRedisTemplate.opsForValue().set(UNREAD_LIKES_KEY + userId, "0");
-        stringRedisTemplate.opsForValue().set(UNREAD_COMMENTS_KEY + userId, "0");
-    }
-
     public boolean checkPublished(String sessionId, Long userId) {
         return feedPostRepository.findBySessionIdAndUserId(sessionId, userId).isPresent();
     }
@@ -500,6 +491,10 @@ public class FeedService {
         FeedPost post = feedPostRepository.findBySessionIdAndUserId(sessionId, userId)
                 .orElseThrow(() -> new RuntimeException("该动态不存在或已被取消"));
 
+        // 软删除关联评论
+        feedCommentRepository.softDeleteByPostId(post.getId());
+
+        // 软删除动态
         post.setIsDeleted(true);
         feedPostRepository.save(post);
 

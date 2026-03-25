@@ -44,10 +44,13 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ApiResponse<Void> logout() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null) {
-            Long userId = Long.parseLong(authentication.getPrincipal().toString());
-            authService.logout(userId);
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.getPrincipal() instanceof Long userId) {
+                authService.logout(userId);
+            }
+        } catch (Exception ignore) {
+            // token 过期或无效时 principal 为 "anonymousUser"，直接返回 success
         }
         return ApiResponse.success("已退出登录", null);
     }

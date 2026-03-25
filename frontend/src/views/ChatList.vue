@@ -54,6 +54,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { chatApi } from '@/api'
+import { cacheUsersFromList } from '@/utils/userCache'
 import chatWs from '@/websocket/chat'
 
 const router = useRouter()
@@ -66,6 +67,8 @@ async function fetchConversations() {
   try {
     const res = await chatApi.getConversations()
     conversations.value = res || []
+    // 缓存用户信息（头像、昵称）
+    cacheUsersFromList(res || [])
   } catch { /* ignore */ }
   finally { loading.value = false }
 }

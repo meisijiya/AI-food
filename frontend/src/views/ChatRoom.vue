@@ -40,18 +40,36 @@
       </div>
     </div>
 
+    <!-- Permission hint -->
+    <div v-if="sendPermission === 'not_allowed'" class="permission-hint">
+      对方未关注你，无法发送消息
+    </div>
+    <div v-else-if="sendPermission === 'max_reached'" class="permission-hint">
+      非互关好友最多发送 5 条消息，已达上限
+    </div>
+    <div v-else-if="remaining > 0" class="permission-hint permission-hint-info">
+      非互关好友，还可发送 {{ remaining }} 条消息
+    </div>
+
     <!-- Input -->
     <div class="input-container">
+      <button class="emoji-trigger" @click="toggleEmoji" :disabled="sendPermission !== 'ok'">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
+      </button>
       <input 
         v-model="inputMessage" 
-        class="message-input" 
-        placeholder="输入消息..." 
+        class="message-input"
+        :placeholder="sendPermission === 'ok' ? '输入消息...' : '无法发送消息'"
+        :disabled="sendPermission !== 'ok'"
         @keyup.enter="sendMessage"
       />
-      <button class="send-btn" @click="sendMessage" :disabled="!inputMessage.trim()">
+      <button class="send-btn" @click="sendMessage" :disabled="!inputMessage.trim() || sendPermission !== 'ok'">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
     </div>
+
+    <!-- Emoji Picker -->
+    <EmojiPicker :show="showEmoji" @select="insertEmoji" @close="showEmoji = false" />
   </div>
 </template>
 
@@ -60,7 +78,10 @@ import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { chatApi } from '@/api'
+import { showError } from '@/utils/toast'
+import { getCachedUser } from '@/utils/userCache'
 import chatWs from '@/websocket/chat'
+import EmojiPicker from '@/components/EmojiPicker.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -69,8 +90,18 @@ const authStore = useAuthStore()
 const currentUserId = computed(() => authStore.userInfo?.userId)
 const targetUserId = computed(() => Number(route.query.userId))
 const conversationId = computed(() => Number(route.query.conversationId))
-const nickname = computed(() => route.query.nickname as string || '聊天')
-const partnerAvatar = computed(() => route.query.avatar as string || '')
+const nickname = computed(() => {
+  const q = route.query.nickname as string
+  if (q) return q
+  const cached = getCachedUser(targetUserId.value)
+  return cached?.nickname || '聊天'
+})
+const partnerAvatar = computed(() => {
+  const q = route.query.avatar as string
+  if (q) return q
+  const cached = getCachedUser(targetUserId.value)
+  return cached?.avatar || ''
+})
 const myAvatar = computed(() => authStore.userInfo?.avatar || '')
 
 const messages = ref<any[]>([])
@@ -80,6 +111,22 @@ const currentPage = ref(0)
 const hasMore = ref(true)
 const loadingMore = ref(false)
 const isLoading = ref(false)
+const showEmoji = ref(false)
+
+// 发送权限
+const sendPermission = ref<'ok' | 'max_reached' | 'not_allowed'>('ok')
+const remaining = ref(-1) // -1 = 无限制
+
+async function checkPermission() {
+  try {
+    const res = await chatApi.checkPermission(targetUserId.value)
+    sendPermission.value = res?.permission || 'not_allowed'
+    remaining.value = res?.remaining ?? 0
+  } catch {
+    sendPermission.value = 'not_allowed'
+    remaining.value = 0
+  }
+}
 
 const CACHE_PREFIX = 'chat:cache:'
 const CACHE_EXPIRE_MS = 5 * 60 * 1000 // 5 分钟
@@ -168,9 +215,18 @@ function onScroll() {
 
 // ==================== 发送消息 ====================
 
+function insertEmoji(icon: string) {
+  inputMessage.value += icon
+  showEmoji.value = false
+}
+
+function toggleEmoji() {
+  showEmoji.value = !showEmoji.value
+}
+
 function sendMessage() {
   const content = inputMessage.value.trim()
-  if (!content) return
+  if (!content || sendPermission.value !== 'ok') return
 
   chatWs.sendMessage(targetUserId.value, content)
 
@@ -190,6 +246,14 @@ function sendMessage() {
 
   // 更新缓存
   saveToCache(conversationId.value, messages.value)
+
+  // 非互关：更新剩余条数
+  if (remaining.value > 0) {
+    remaining.value--
+    if (remaining.value <= 0) {
+      sendPermission.value = 'max_reached'
+    }
+  }
 }
 
 // ==================== WebSocket 消息 ====================
@@ -200,6 +264,14 @@ function handleNewMessage(data: any) {
     scrollToBottom()
     saveToCache(conversationId.value, messages.value)
     chatWs.markRead(conversationId.value)
+  }
+}
+
+function handleError(data: any) {
+  showError(data.message || '发送失败')
+  // 权限被拒绝时重新检查
+  if (data.message?.includes('消息') || data.message?.includes('发送')) {
+    checkPermission()
   }
 }
 
@@ -234,6 +306,9 @@ function formatTime(dateStr: string): string {
 onMounted(() => {
   const convId = conversationId.value
 
+  // 检查发送权限
+  checkPermission()
+
   // 尝试从缓存加载
   if (convId && !isNaN(convId)) {
     const cached = loadFromCache(convId)
@@ -252,6 +327,7 @@ onMounted(() => {
 
   chatWs.on('message', handleNewMessage)
   chatWs.on('sent', handleSentMessage)
+  chatWs.on('error', handleError)
 
   if (!chatWs.connected) {
     chatWs.connect()
@@ -265,6 +341,7 @@ onMounted(() => {
 onUnmounted(() => {
   chatWs.off('message', handleNewMessage)
   chatWs.off('sent', handleSentMessage)
+  chatWs.off('error', handleError)
 })
 </script>
 
@@ -412,6 +489,20 @@ onUnmounted(() => {
   text-align: right;
 }
 
+.permission-hint {
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 12px;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.06);
+  flex-shrink: 0;
+}
+
+.permission-hint-info {
+  color: var(--color-on-surface-variant);
+  background: var(--color-surface-container-low);
+}
+
 .input-container {
   display: flex;
   gap: 8px;
@@ -419,6 +510,23 @@ onUnmounted(() => {
   background: var(--color-surface-container-lowest);
   border-top: 1px solid var(--color-surface-container-low);
   flex-shrink: 0;
+}
+
+.emoji-trigger {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  &:active { background: var(--color-surface-container-low); }
+  &:disabled { opacity: 0.3; cursor: not-allowed; }
 }
 
 .message-input {

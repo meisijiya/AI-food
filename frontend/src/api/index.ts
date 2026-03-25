@@ -138,13 +138,20 @@ export const feedApi = {
   addComment: (postId: number, content: string) => request('post', `/feed/comment/${postId}`, { content }),
   getComments: (postId: number, params?: { page?: number; size?: number }) =>
     request('get', `/feed/comments/${postId}`, undefined, { params }),
-  getNotifications: () => request('get', '/feed/notifications'),
-  markRead: () => request('post', '/feed/notifications/read'),
   checkPublished: (sessionId: string) => request('get', `/feed/check/${sessionId}`),
   unpublish: (sessionId: string) => request('delete', `/feed/unpublish/${sessionId}`),
   getHotRank: () => request('get', '/feed/hot-rank'),
   getFriendFeed: (params?: { page?: number; size?: number }) =>
     request('get', '/feed/friend-feed', undefined, { params })
+}
+
+// 通知相关接口
+export const notificationApi = {
+  getList: (params?: { page?: number; size?: number }) =>
+    request('get', '/notification/list', undefined, { params }),
+  getUnread: () => request('get', '/notification/unread'),
+  deleteOne: (notificationId: string) => request('delete', `/notification/${notificationId}`),
+  clearAll: () => request('delete', '/notification/clear-all')
 }
 
 // 关注相关接口
@@ -171,7 +178,8 @@ export const chatApi = {
   getUnread: () => request('get', '/chat/unread'),
   getContacts: () => request('get', '/chat/contacts'),
   sendMessage: (data: { receiverId: number; content: string; messageType?: string }) =>
-    request('post', '/chat/send', data)
+    request('post', '/chat/send', data),
+  checkPermission: (receiverId: number) => request('get', `/chat/permission/${receiverId}`)
 }
 
 // 分享相关接口

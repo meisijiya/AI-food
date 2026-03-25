@@ -2,6 +2,8 @@ package com.ai.food.repository;
 
 import com.ai.food.model.Photo;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
@@ -19,4 +21,10 @@ public interface PhotoRepository extends JpaRepository<Photo, Long> {
     Optional<Photo> findByUserIdAndOriginalPath(Long userId, String originalPath);
 
     Optional<Photo> findByThumbnailPath(String thumbnailPath);
+
+    List<Photo> findAllByIsDeletedTrue();
+
+    @Modifying
+    @Query("DELETE FROM Photo p WHERE p.isDeleted = true")
+    int hardDeleteAllSoftDeleted();
 }

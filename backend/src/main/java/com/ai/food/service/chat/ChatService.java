@@ -7,6 +7,7 @@ import com.ai.food.repository.ChatConversationRepository;
 import com.ai.food.repository.ChatMessageRepository;
 import com.ai.food.repository.UserRepository;
 import com.ai.food.service.follow.FollowService;
+import com.ai.food.service.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -28,14 +29,73 @@ public class ChatService {
     private final ChatMessageRepository messageRepository;
     private final UserRepository userRepository;
     private final FollowService followService;
+    private final NotificationService notificationService;
     private final StringRedisTemplate stringRedisTemplate;
 
     private static final String UNREAD_KEY = "chat:unread:";
     private static final String UNREAD_TOTAL_KEY = "chat:unread:total:";
     private static final String ONLINE_KEY = "chat:online:";
+    private static final String MSG_COUNT_KEY = "chat:msgcount:";
+    private static final int MAX_NON_MUTUAL_MESSAGES = 5;
+
+    /**
+     * 检查发送权限
+     * @return "ok"=可以发送, "max_reached"=已达上限, "not_allowed"=不允许发送
+     */
+    public String checkSendPermission(Long senderId, Long receiverId) {
+        // 互关：无限制
+        if (followService.isMutualFollow(senderId, receiverId)) {
+            return "ok";
+        }
+
+        boolean senderFollowsReceiver = followService.isFollowing(senderId, receiverId);
+        boolean receiverFollowsSender = followService.isFollowing(receiverId, senderId);
+
+        // sender 是 receiver 的粉丝（sender→receiver，但 receiver 没有回关）
+        if (senderFollowsReceiver && !receiverFollowsSender) {
+            String countKey = MSG_COUNT_KEY + senderId + ":" + receiverId;
+            String countStr = stringRedisTemplate.opsForValue().get(countKey);
+            int count = countStr != null ? Integer.parseInt(countStr) : 0;
+            return count >= MAX_NON_MUTUAL_MESSAGES ? "max_reached" : "ok";
+        }
+
+        // receiver 是 sender 的粉丝，或无关系：不允许 sender 发送
+        return "not_allowed";
+    }
+
+    /**
+     * 获取剩余可发送条数（用于前端展示）
+     */
+    public int getRemainingMessages(Long senderId, Long receiverId) {
+        String perm = checkSendPermission(senderId, receiverId);
+        if (perm.equals("ok") && followService.isMutualFollow(senderId, receiverId)) {
+            return -1; // 无限制
+        }
+        if (perm.equals("not_allowed")) return 0;
+
+        String countKey = MSG_COUNT_KEY + senderId + ":" + receiverId;
+        String countStr = stringRedisTemplate.opsForValue().get(countKey);
+        int count = countStr != null ? Integer.parseInt(countStr) : 0;
+        return Math.max(0, MAX_NON_MUTUAL_MESSAGES - count);
+    }
 
     @Transactional
     public ChatMessage sendMessage(Long senderId, Long receiverId, String content, String messageType) {
+        // 检查发送权限
+        String permission = checkSendPermission(senderId, receiverId);
+        if (permission.equals("not_allowed")) {
+            throw new RuntimeException("对方未关注你，无法发送消息");
+        }
+        if (permission.equals("max_reached")) {
+            throw new RuntimeException("非互关最多发送" + MAX_NON_MUTUAL_MESSAGES + "条消息");
+        }
+
+        // 增加非互关消息计数
+        if (!followService.isMutualFollow(senderId, receiverId)) {
+            String countKey = MSG_COUNT_KEY + senderId + ":" + receiverId;
+            stringRedisTemplate.opsForValue().increment(countKey);
+        }
+
         // 获取或创建对话
         ChatConversation conversation = getOrCreateConversation(senderId, receiverId);
 
@@ -56,6 +116,18 @@ public class ChatService {
 
         // 更新 Redis 未读计数
         incrementUnread(receiverId, conversation.getId());
+
+        // 更新通知中心的 chat 聚合通知
+        String senderName = "匿名用户";
+        String senderAvatar = null;
+        Optional<SysUser> senderOpt = userRepository.findById(senderId);
+        if (senderOpt.isPresent()) {
+            SysUser sender = senderOpt.get();
+            senderName = sender.getNickname() != null ? sender.getNickname() : sender.getUsername();
+            senderAvatar = sender.getAvatar();
+        }
+        notificationService.updateChatNotification(receiverId, conversation.getId(),
+                senderId, senderName, senderAvatar, content);
 
         log.info("Message sent: from={} to={}, conversationId={}", senderId, receiverId, conversation.getId());
         return saved;

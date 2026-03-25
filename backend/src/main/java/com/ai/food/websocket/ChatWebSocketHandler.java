@@ -111,6 +111,17 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
+        // 检查发送权限
+        String permission = chatService.checkSendPermission(senderId, receiverId);
+        if (permission.equals("not_allowed")) {
+            sendError(session, "对方未关注你，无法发送消息");
+            return;
+        }
+        if (permission.equals("max_reached")) {
+            sendError(session, "非互关最多发送5条消息");
+            return;
+        }
+
         // 发送消息
         ChatMessage chatMessage = chatService.sendMessage(senderId, receiverId, content, messageType);
 

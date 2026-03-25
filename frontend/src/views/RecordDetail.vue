@@ -74,6 +74,9 @@
             maxlength="500"
           ></textarea>
           <div class="comment-actions">
+            <button class="emoji-trigger" @click="openEmoji('comment')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
+            </button>
             <span class="comment-count">{{ (commentInput || '').length }}/500</span>
             <button class="comment-save-btn" @click="saveComment" :disabled="savingComment">
               {{ savingComment ? '保存中...' : '保存评价' }}
@@ -81,6 +84,9 @@
           </div>
         </div>
       </div>
+
+    <!-- Emoji Picker -->
+    <EmojiPicker :show="showEmoji" @select="insertEmoji" @close="showEmoji = false" />
 
       <!-- Share section -->
       <div v-if="sessionId" class="share-section animate-fade-up delay-190 animate-start-hidden">
@@ -201,7 +207,12 @@
             rows="3"
             maxlength="30"
           ></textarea>
-          <div class="publish-dialog-count">{{ (publishPreview || '').length }}/30</div>
+          <div class="publish-dialog-count">
+            <button class="emoji-trigger" @click="openEmoji('publish')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
+            </button>
+            <span>{{ (publishPreview || '').length }}/30</span>
+          </div>
           <div class="publish-dialog-actions">
             <button class="publish-cancel-btn" @click="publishDialog = false">取消</button>
             <button class="publish-confirm-btn" @click="handlePublish" :disabled="publishing">
@@ -220,9 +231,27 @@ import { useRoute, useRouter } from 'vue-router'
 import { recordApi, shareApi, feedApi } from '@/api'
 import { showSuccess, showError } from '@/utils/toast'
 import UploadPhoto from '@/components/UploadPhoto.vue'
+import EmojiPicker from '@/components/EmojiPicker.vue'
 
 const route = useRoute()
 const router = useRouter()
+
+const showEmoji = ref(false)
+const emojiTarget = ref<'comment' | 'publish'>('comment')
+
+function insertEmoji(icon: string) {
+  if (emojiTarget.value === 'comment') {
+    commentInput.value = (commentInput.value || '') + icon
+  } else {
+    publishPreview.value = (publishPreview.value || '') + icon
+  }
+  showEmoji.value = false
+}
+
+function openEmoji(target: 'comment' | 'publish') {
+  emojiTarget.value = target
+  showEmoji.value = !showEmoji.value
+}
 
 const loading = ref(true)
 const detail = ref<any>(null)
@@ -745,9 +774,18 @@ function openPhotoModal(url: string) {
 
 .comment-actions {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
   padding: 8px 18px 12px;
+}
+
+.emoji-trigger {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; color: var(--color-on-surface-variant);
+  cursor: pointer; border-radius: 50%; flex-shrink: 0;
+  transition: background 0.2s;
+  &:active { background: var(--color-surface-container-low); }
 }
 
 .comment-count {
@@ -994,7 +1032,10 @@ function openPhotoModal(url: string) {
 }
 
 .publish-dialog-count {
-  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
   font-size: 11px;
   color: var(--color-on-surface-variant);
   opacity: 0.5;

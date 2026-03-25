@@ -7,39 +7,109 @@
       <div class="header-left">
         <h1 class="page-title" @click="resetToHall"><em>大厅</em></h1>
         <button class="friends-entry" @click="router.push('/friends')">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
           好友
         </button>
       </div>
       <div class="header-actions">
-        <button v-if="activeTab === 'feed'" class="filter-btn" @click="showFilter = true">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        <button
+          v-if="activeTab === 'feed'"
+          class="filter-btn"
+          @click="showFilter = true"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+          </svg>
           筛选
         </button>
-        <button class="notify-btn" @click="router.push('/feed')">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-          <span v-if="unreadCount > 0" class="notify-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+        <button class="notify-btn" @click="router.push('/notifications')">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+          </svg>
+          <span v-if="unreadCount > 0" class="notify-badge">{{
+            unreadCount > 99 ? "99+" : unreadCount
+          }}</span>
         </button>
       </div>
     </div>
 
     <!-- Sub Navigation -->
     <div class="sub-nav animate-fade-up delay-100">
-      <button 
-        class="sub-nav-item" 
+      <button
+        class="sub-nav-item"
         :class="{ active: activeTab === 'hot' }"
         @click="switchTab('hot')"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"
+          />
+        </svg>
         热榜
       </button>
-      <button 
-        class="sub-nav-item" 
+      <button
+        class="sub-nav-item"
         :class="{ active: activeTab === 'friend' }"
         @click="switchTab('friend')"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        友榜
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+        关注榜
       </button>
     </div>
 
@@ -53,22 +123,58 @@
         @click="router.push('/feed/' + post.id)"
       >
         <div v-if="post.thumbnailUrl" class="card-photo">
-          <CachedImage :src="post.thumbnailUrl" :alt="post.foodName" :lazy="true" />
+          <CachedImage
+            :src="post.thumbnailUrl"
+            :alt="post.foodName"
+            :lazy="true"
+          />
         </div>
         <div class="card-body">
           <div class="card-food">{{ post.foodName }}</div>
-          <div v-if="post.commentPreview" class="card-preview">{{ post.commentPreview }}</div>
+          <div v-if="post.commentPreview" class="card-preview">
+            {{ post.commentPreview }}
+          </div>
         </div>
         <div class="card-footer">
           <div class="card-user">
-            <img v-if="post.avatar" :src="post.avatar" class="card-avatar" alt="" />
+            <img
+              v-if="post.avatar"
+              :src="post.avatar"
+              class="card-avatar"
+              alt=""
+            />
             <div v-else class="card-avatar-placeholder">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
             </div>
-            <span class="card-nickname">{{ post.nickname || '匿名' }}</span>
+            <span class="card-nickname">{{ post.nickname || "匿名" }}</span>
           </div>
           <div class="card-likes">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
+              />
+            </svg>
             {{ post.likeCount || 0 }}
           </div>
         </div>
@@ -77,27 +183,47 @@
 
     <!-- Hot Rank Tab Content -->
     <div v-else-if="activeTab === 'hot'" class="hot-rank-list">
-      <div 
-        v-for="(item, index) in hotRankList" 
-        :key="item.id" 
+      <div
+        v-for="(item, index) in hotRankList"
+        :key="item.id"
         class="hot-rank-item animate-fade-up"
         :style="{ animationDelay: (index % 10) * 0.05 + 's' }"
         @click="router.push('/feed/' + item.id)"
       >
-        <span class="rank-num" :class="{ 'top-3': index < 3 }">{{ index + 1 }}</span>
+        <span class="rank-num" :class="{ 'top-3': index < 3 }">{{
+          index + 1
+        }}</span>
         <div v-if="item.thumbnailUrl" class="rank-photo">
-          <CachedImage :src="item.thumbnailUrl" :alt="item.foodName" :lazy="true" />
+          <CachedImage
+            :src="item.thumbnailUrl"
+            :alt="item.foodName"
+            :lazy="true"
+          />
         </div>
         <div class="rank-content">
           <div class="rank-food">{{ item.foodName }}</div>
           <div class="rank-meta">
-            <span class="rank-user">{{ item.nickname || '匿名' }}</span>
+            <span class="rank-user">{{ item.nickname || "匿名" }}</span>
             <span class="rank-score">热度 {{ item.hotScore }}</span>
           </div>
         </div>
       </div>
       <div v-if="hotRankList.length === 0" class="empty-state">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="empty-icon"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="empty-icon"
+        >
+          <path
+            d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"
+          />
+        </svg>
         <div class="empty-text">暂无热榜数据</div>
         <div class="empty-hint">浏览、点赞、评论可增加热度</div>
       </div>
@@ -105,30 +231,49 @@
 
     <!-- Friend Feed Tab Content -->
     <div v-else-if="activeTab === 'friend'" class="friend-feed-list">
-      <div 
-        v-for="(item, index) in friendFeedList" 
-        :key="item.postId" 
+      <div
+        v-for="(item, index) in friendFeedList"
+        :key="item.postId"
         class="friend-feed-item animate-fade-up"
         :style="{ animationDelay: (index % 10) * 0.05 + 's' }"
         @click="router.push('/feed/' + item.postId)"
       >
         <div class="friend-avatar">
           <img v-if="item.avatar" :src="item.avatar" alt="" />
-          <span v-else>{{ item.nickname?.charAt(0) || '?' }}</span>
+          <span v-else>{{ item.nickname?.charAt(0) || "?" }}</span>
         </div>
         <div class="friend-content">
           <div class="friend-header">
-            <span class="friend-name">{{ item.nickname || '匿名' }}</span>
+            <span class="friend-name">{{ item.nickname || "匿名" }}</span>
             <span class="friend-time">{{ formatTime(item.publishedAt) }}</span>
           </div>
           <div class="friend-food">{{ item.foodName }}</div>
         </div>
         <div v-if="item.thumbnailUrl" class="friend-photo">
-          <CachedImage :src="item.thumbnailUrl" :alt="item.foodName" :lazy="true" />
+          <CachedImage
+            :src="item.thumbnailUrl"
+            :alt="item.foodName"
+            :lazy="true"
+          />
         </div>
       </div>
       <div v-if="friendFeedList.length === 0" class="empty-state">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="empty-icon"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="empty-icon"
+        >
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
         <div class="empty-text">暂无好友动态</div>
         <div class="empty-hint">关注更多人，看看他们在吃什么</div>
       </div>
@@ -140,8 +285,26 @@
     </div>
 
     <!-- Empty for feed -->
-    <div v-if="activeTab === 'feed' && !loading && posts.length === 0" class="empty-state">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="empty-icon"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+    <div
+      v-if="activeTab === 'feed' && !loading && posts.length === 0"
+      class="empty-state"
+    >
+      <svg
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="empty-icon"
+      >
+        <rect width="7" height="7" x="3" y="3" rx="1" />
+        <rect width="7" height="7" x="14" y="3" rx="1" />
+        <rect width="7" height="7" x="14" y="14" rx="1" />
+        <rect width="7" height="7" x="3" y="14" rx="1" />
+      </svg>
       <div class="empty-text">暂无发布内容</div>
       <div class="empty-hint">去推荐记录发布你的美食吧</div>
     </div>
@@ -155,7 +318,11 @@
           <div class="filter-title">筛选</div>
           <div class="filter-group">
             <label class="filter-label">食物名称</label>
-            <input v-model="filterFoodName" class="filter-input" placeholder="搜索食物名称..." />
+            <input
+              v-model="filterFoodName"
+              class="filter-input"
+              placeholder="搜索食物名称..."
+            />
           </div>
           <div class="filter-group">
             <label class="filter-label">参数筛选</label>
@@ -169,7 +336,12 @@
               <option value="companion">同行人员</option>
               <option value="weather">天气情况</option>
             </select>
-            <input v-if="filterParamName" v-model="filterParamValue" class="filter-input" placeholder="输入筛选值..." />
+            <input
+              v-if="filterParamName"
+              v-model="filterParamValue"
+              class="filter-input"
+              placeholder="输入筛选值..."
+            />
           </div>
           <div class="filter-actions">
             <button class="filter-reset" @click="resetFilter">重置</button>
@@ -182,141 +354,151 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { feedApi } from '@/api'
-import CachedImage from '@/components/CachedImage.vue'
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { feedApi, notificationApi } from "@/api";
+import CachedImage from "@/components/CachedImage.vue";
 
-const router = useRouter()
-const scrollContainer = ref<HTMLElement>()
+const router = useRouter();
+const scrollContainer = ref<HTMLElement>();
 
-const activeTab = ref('feed')
-const posts = ref<any[]>([])
-const hotRankList = ref<any[]>([])
-const friendFeedList = ref<any[]>([])
-const page = ref(0)
-const pageSize = 10
-const loading = ref(false)
-const finished = ref(false)
-const unreadCount = ref(0)
+const activeTab = ref("feed");
+const posts = ref<any[]>([]);
+const hotRankList = ref<any[]>([]);
+const friendFeedList = ref<any[]>([]);
+const page = ref(0);
+const pageSize = 10;
+const loading = ref(false);
+const finished = ref(false);
+const unreadCount = ref(0);
 
-const showFilter = ref(false)
-const filterFoodName = ref('')
-const filterParamName = ref('')
-const filterParamValue = ref('')
+const showFilter = ref(false);
+const filterFoodName = ref("");
+const filterParamName = ref("");
+const filterParamValue = ref("");
 
 function switchTab(tab: string) {
-  activeTab.value = tab
-  if (tab === 'feed') {
-    fetchPosts(true)
-  } else if (tab === 'hot') {
-    fetchHotRank()
-  } else if (tab === 'friend') {
-    fetchFriendFeed()
+  activeTab.value = tab;
+  if (tab === "feed") {
+    fetchPosts(true);
+  } else if (tab === "hot") {
+    fetchHotRank();
+  } else if (tab === "friend") {
+    fetchFriendFeed();
   }
 }
 
 function resetToHall() {
-  activeTab.value = 'feed'
+  activeTab.value = "feed";
   if (scrollContainer.value) {
-    scrollContainer.value.scrollTop = 0
+    scrollContainer.value.scrollTop = 0;
   }
-  fetchPosts(true)
+  fetchPosts(true);
 }
 
 function onScroll() {
-  const el = scrollContainer.value
-  if (!el || loading.value || finished.value || activeTab.value !== 'feed') return
+  const el = scrollContainer.value;
+  if (!el || loading.value || finished.value || activeTab.value !== "feed")
+    return;
   if (el.scrollTop + el.clientHeight >= el.scrollHeight - 100) {
-    fetchPosts()
+    fetchPosts();
   }
 }
 
 async function fetchPosts(reset = false) {
-  if (loading.value) return
-  if (!reset && finished.value) return
-  loading.value = true
-  if (reset) { page.value = 0; finished.value = false }
+  if (loading.value) return;
+  if (!reset && finished.value) return;
+  loading.value = true;
+  if (reset) {
+    page.value = 0;
+    finished.value = false;
+  }
 
   try {
-    const params: any = { page: page.value, size: pageSize }
-    if (filterFoodName.value) params.foodName = filterFoodName.value
+    const params: any = { page: page.value, size: pageSize };
+    if (filterFoodName.value) params.foodName = filterFoodName.value;
     if (filterParamName.value && filterParamValue.value) {
-      params.paramName = filterParamName.value
-      params.paramValue = filterParamValue.value
+      params.paramName = filterParamName.value;
+      params.paramValue = filterParamValue.value;
     }
 
-    const res = await feedApi.getList(params)
-    const list = res?.items || []
+    const res = await feedApi.getList(params);
+    const list = res?.items || [];
     if (reset) {
-      posts.value = list
+      posts.value = list;
     } else {
-      posts.value.push(...list)
+      posts.value.push(...list);
     }
     if (list.length < pageSize) {
-      finished.value = true
+      finished.value = true;
     } else {
-      page.value++
+      page.value++;
     }
   } catch {
     // ignore
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function fetchHotRank() {
   try {
-    const res = await feedApi.getHotRank()
-    hotRankList.value = res?.items || []
-  } catch { /* ignore */ }
+    const res = await feedApi.getHotRank();
+    hotRankList.value = res?.items || [];
+  } catch {
+    /* ignore */
+  }
 }
 
 async function fetchFriendFeed() {
   try {
-    const res = await feedApi.getFriendFeed({ page: 0, size: 20 })
-    friendFeedList.value = res?.items || []
-  } catch { /* ignore */ }
+    const res = await feedApi.getFriendFeed({ page: 0, size: 20 });
+    friendFeedList.value = res?.items || [];
+  } catch {
+    /* ignore */
+  }
 }
 
 async function fetchNotifications() {
   try {
-    const res = await feedApi.getNotifications()
-    unreadCount.value = (res?.unreadLikes || 0) + (res?.unreadComments || 0)
-  } catch { /* ignore */ }
+    const res = await notificationApi.getUnread();
+    unreadCount.value = res?.unread || 0;
+  } catch {
+    /* ignore */
+  }
 }
 
 function resetFilter() {
-  filterFoodName.value = ''
-  filterParamName.value = ''
-  filterParamValue.value = ''
+  filterFoodName.value = "";
+  filterParamName.value = "";
+  filterParamValue.value = "";
 }
 
 function applyFilter() {
-  showFilter.value = false
-  fetchPosts(true)
+  showFilter.value = false;
+  fetchPosts(true);
 }
 
 function formatTime(dateStr: string): string {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
-  
-  if (minutes < 1) return '刚刚'
-  if (minutes < 60) return `${minutes}分钟前`
-  if (hours < 24) return `${hours}小时前`
-  if (days < 7) return `${days}天前`
-  return date.toLocaleDateString()
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 1) return "刚刚";
+  if (minutes < 60) return `${minutes}分钟前`;
+  if (hours < 24) return `${hours}小时前`;
+  if (days < 7) return `${days}天前`;
+  return date.toLocaleDateString();
 }
 
 onMounted(() => {
-  fetchPosts(true)
-  fetchNotifications()
-})
+  fetchPosts(true);
+  fetchNotifications();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -369,8 +551,13 @@ onMounted(() => {
   color: var(--color-on-surface);
   cursor: pointer;
   transition: opacity 0.2s;
-  &:active { opacity: 0.7; }
-  em { font-style: italic; color: var(--color-primary); }
+  &:active {
+    opacity: 0.7;
+  }
+  em {
+    font-style: italic;
+    color: var(--color-primary);
+  }
 }
 
 .friends-entry {
@@ -388,7 +575,10 @@ onMounted(() => {
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   transition: all 0.2s;
-  &:active { background: var(--color-surface-container-low); transform: scale(0.95); }
+  &:active {
+    background: var(--color-surface-container-low);
+    transform: scale(0.95);
+  }
 }
 
 .header-actions {
@@ -409,7 +599,9 @@ onMounted(() => {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  &:active { background: var(--color-surface-container-low); }
+  &:active {
+    background: var(--color-surface-container-low);
+  }
 }
 
 .notify-btn {
@@ -467,18 +659,25 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  
+
   svg {
     opacity: 0.7;
   }
-  
+
   &.active {
-    background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+    background: linear-gradient(
+      135deg,
+      var(--color-primary-container),
+      var(--color-primary)
+    );
     border-color: transparent;
     color: white;
-    svg { opacity: 1; stroke: white; }
+    svg {
+      opacity: 1;
+      stroke: white;
+    }
   }
-  
+
   &:not(.active):active {
     background: var(--color-surface-container-low);
   }
@@ -501,8 +700,12 @@ onMounted(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  &:active { transform: scale(0.98); }
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 .card-photo {
@@ -589,7 +792,9 @@ onMounted(() => {
   font-size: 11px;
   color: var(--color-on-surface-variant);
   flex-shrink: 0;
-  svg { color: #ef4444; }
+  svg {
+    color: #ef4444;
+  }
 }
 
 /* Hot Rank */
@@ -610,7 +815,9 @@ onMounted(() => {
   margin-bottom: 8px;
   cursor: pointer;
   transition: transform 0.2s;
-  &:active { transform: scale(0.98); }
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 .rank-num {
@@ -625,7 +832,7 @@ onMounted(() => {
   font-weight: 700;
   color: var(--color-on-surface-variant);
   flex-shrink: 0;
-  
+
   &.top-3 {
     background: linear-gradient(135deg, #f59e0b, #ef4444);
     color: white;
@@ -638,7 +845,11 @@ onMounted(() => {
   border-radius: 12px;
   overflow: hidden;
   flex-shrink: 0;
-  img { width: 100%; height: 100%; object-fit: cover; }
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 
 .rank-content {
@@ -695,14 +906,20 @@ onMounted(() => {
   margin-bottom: 8px;
   cursor: pointer;
   transition: transform 0.2s;
-  &:active { transform: scale(0.98); }
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 .friend-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-container),
+    var(--color-primary)
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -713,7 +930,11 @@ onMounted(() => {
   font-weight: 400;
   flex-shrink: 0;
   overflow: hidden;
-  img { width: 100%; height: 100%; object-fit: cover; }
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 
 .friend-content {
@@ -755,7 +976,11 @@ onMounted(() => {
   border-radius: 12px;
   overflow: hidden;
   flex-shrink: 0;
-  img { width: 100%; height: 100%; object-fit: cover; }
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 
 /* Loading / Empty */
@@ -776,7 +1001,11 @@ onMounted(() => {
   animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 .empty-state {
   display: flex;
@@ -787,11 +1016,26 @@ onMounted(() => {
   position: relative;
 }
 
-.empty-icon { color: var(--color-on-surface-variant); opacity: 0.3; margin-bottom: 16px; }
-.empty-text { font-size: 15px; font-weight: 600; color: var(--color-on-surface-variant); margin-bottom: 6px; }
-.empty-hint { font-size: 12px; color: var(--color-on-surface-variant); opacity: 0.6; }
+.empty-icon {
+  color: var(--color-on-surface-variant);
+  opacity: 0.3;
+  margin-bottom: 16px;
+}
+.empty-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-on-surface-variant);
+  margin-bottom: 6px;
+}
+.empty-hint {
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+  opacity: 0.6;
+}
 
-.nav-spacer { height: 80px; }
+.nav-spacer {
+  height: 80px;
+}
 
 /* Filter */
 .filter-overlay {
@@ -836,7 +1080,8 @@ onMounted(() => {
   margin-bottom: 8px;
 }
 
-.filter-input, .filter-select {
+.filter-input,
+.filter-select {
   width: 100%;
   padding: 12px 16px;
   border: 1.5px solid var(--color-surface-container-low);
@@ -846,7 +1091,9 @@ onMounted(() => {
   font-size: 14px;
   color: var(--color-on-surface);
   outline: none;
-  &:focus { border-color: var(--color-primary); }
+  &:focus {
+    border-color: var(--color-primary);
+  }
 }
 
 .filter-select {
@@ -877,20 +1124,37 @@ onMounted(() => {
   padding: 12px;
   border: none;
   border-radius: 1rem;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-container),
+    var(--color-primary)
+  );
   color: white;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
 }
 
-.overlay-fade-enter-active { transition: opacity 0.25s ease; }
-.overlay-fade-leave-active { transition: opacity 0.2s ease; }
-.overlay-fade-enter-from, .overlay-fade-leave-to { opacity: 0; }
+.overlay-fade-enter-active {
+  transition: opacity 0.25s ease;
+}
+.overlay-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.overlay-fade-enter-from,
+.overlay-fade-leave-to {
+  opacity: 0;
+}
 
 @media (min-width: 640px) {
-  .feed-container { padding: 40px 20px 100px; }
-  .waterfall { column-gap: 14px; }
-  .feed-card { margin-bottom: 14px; }
+  .feed-container {
+    padding: 40px 20px 100px;
+  }
+  .waterfall {
+    column-gap: 14px;
+  }
+  .feed-card {
+    margin-bottom: 14px;
+  }
 }
 </style>

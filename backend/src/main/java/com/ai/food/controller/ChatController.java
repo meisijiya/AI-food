@@ -65,17 +65,32 @@ public class ChatController {
         String content = body.get("content").toString();
         String messageType = body.get("messageType") != null ? body.get("messageType").toString() : "text";
 
-        ChatMessage message = chatService.sendMessage(senderId, receiverId, content, messageType);
+        try {
+            ChatMessage message = chatService.sendMessage(senderId, receiverId, content, messageType);
 
+            Map<String, Object> result = new java.util.LinkedHashMap<>();
+            result.put("id", message.getId());
+            result.put("conversationId", message.getConversationId());
+            result.put("senderId", message.getSenderId());
+            result.put("receiverId", message.getReceiverId());
+            result.put("content", message.getContent());
+            result.put("messageType", message.getMessageType());
+            result.put("createdAt", message.getCreatedAt());
+            return ApiResponse.success("发送成功", result);
+        } catch (RuntimeException e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+
+    @GetMapping("/permission/{receiverId}")
+    public ApiResponse<Map<String, Object>> checkSendPermission(@PathVariable Long receiverId) {
+        Long senderId = getCurrentUserId();
+        String permission = chatService.checkSendPermission(senderId, receiverId);
+        int remaining = chatService.getRemainingMessages(senderId, receiverId);
         Map<String, Object> result = new java.util.LinkedHashMap<>();
-        result.put("id", message.getId());
-        result.put("conversationId", message.getConversationId());
-        result.put("senderId", message.getSenderId());
-        result.put("receiverId", message.getReceiverId());
-        result.put("content", message.getContent());
-        result.put("messageType", message.getMessageType());
-        result.put("createdAt", message.getCreatedAt());
-        return ApiResponse.success("发送成功", result);
+        result.put("permission", permission);
+        result.put("remaining", remaining);
+        return ApiResponse.success(result);
     }
 
     private Long getCurrentUserId() {
