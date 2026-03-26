@@ -2,10 +2,12 @@ package com.ai.food.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 
 @Data
 @Entity
+@Where(clause = "is_deleted = false")
 @Table(name = "chat_message", indexes = {
     @Index(name = "idx_conversation", columnList = "conversation_id, created_at"),
     @Index(name = "idx_receiver_read", columnList = "receiver_id, is_read"),

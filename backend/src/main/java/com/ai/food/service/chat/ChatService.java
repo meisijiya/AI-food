@@ -97,8 +97,8 @@ public class ChatService {
 
         ChatConversation conversation = getOrCreateConversation(senderId, receiverId);
 
-        // 重置接收方的 clearedAt — 新消息到来时，清除状态失效，会话重新出现在列表
-        resetClearedForReceiver(conversation, receiverId);
+        // 重置接收方的 hiddenAt — 会话重新出现在列表，但 clearedAt 不变（旧消息仍被过滤）
+        resetHiddenForReceiver(conversation, receiverId);
 
         ChatMessage message = new ChatMessage();
         message.setConversationId(conversation.getId());
@@ -131,15 +131,16 @@ public class ChatService {
     }
 
     /**
-     * 重置接收方的清除标记，使会话在收到新消息后重新出现在聊天列表
+     * 重置接收方的 hiddenAt，使会话在收到新消息后重新出现在聊天列表
+     * 注意：clearedAt 保持不变，确保旧消息继续被过滤不可见
      */
-    private void resetClearedForReceiver(ChatConversation conversation, Long receiverId) {
-        if (conversation.getUser1Id().equals(receiverId) && conversation.getClearedAtUser1() != null) {
-            conversationRepository.resetClearedAtUser1(conversation.getId());
-            conversation.setClearedAtUser1(null);
-        } else if (conversation.getUser2Id().equals(receiverId) && conversation.getClearedAtUser2() != null) {
-            conversationRepository.resetClearedAtUser2(conversation.getId());
-            conversation.setClearedAtUser2(null);
+    private void resetHiddenForReceiver(ChatConversation conversation, Long receiverId) {
+        if (conversation.getUser1Id().equals(receiverId) && conversation.getHiddenAtUser1() != null) {
+            conversationRepository.resetHiddenAtUser1(conversation.getId());
+            conversation.setHiddenAtUser1(null);
+        } else if (conversation.getUser2Id().equals(receiverId) && conversation.getHiddenAtUser2() != null) {
+            conversationRepository.resetHiddenAtUser2(conversation.getId());
+            conversation.setHiddenAtUser2(null);
         }
     }
 
@@ -195,9 +196,13 @@ public class ChatService {
         return result;
     }
 
+    /**
+     * 获取聊天历史
+     * - 使用 clearedAt 过滤消息（clearedAt 永不重置，确保旧消息永久对用户不可见）
+     * - @Where 注解自动排除 isDeleted=true 的消息
+     */
     @Transactional
     public Map<String, Object> getChatHistory(Long conversationId, Long userId, int page, int size) {
-        // 获取用户的清除时间点
         ChatConversation conv = conversationRepository.findById(conversationId).orElse(null);
         LocalDateTime clearedAt = getClearedAtForUser(conv, userId);
 
@@ -205,7 +210,7 @@ public class ChatService {
         Page<ChatMessage> messagePage;
 
         if (clearedAt != null) {
-            // 只返回清除时间点之后的消息
+            // 只返回清除时间点之后的消息（clearedAt 永不重置）
             messagePage = messageRepository.findByConversationIdAfterOrderByCreatedAtDesc(conversationId, clearedAt, pageable);
         } else {
             messagePage = messageRepository.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
@@ -281,12 +286,17 @@ public class ChatService {
     // ==================== 清除聊天 ====================
 
     /**
-     * 清除聊天记录（时间戳方案）
-     * - 记录清除时间点
-     * - 只软删除清除时间点之前的消息
-     * - 清理 Redis 未读计数
-     * - 更新 lastMessage 为最后一条未删除消息
-     * - 会话不隐藏，新消息仍可正常接收
+     * 清除聊天记录（clearedAt + hiddenAt 双时间戳方案）
+     *
+     * clearedAt: 消息过滤边界，永不重置 → 旧消息永久不可见
+     * hiddenAt:  列表可见性，新消息到达时重置 → 会话可重新出现
+     *
+     * 流程：
+     * 1. 同时设置 clearedAt 和 hiddenAt 为当前时间
+     * 2. 软删除 clearedAt 之前的消息
+     * 3. 清理 Redis 未读计数
+     * 4. 更新 lastMessage
+     * 5. 如果双方都已清除，硬删除软删除记录
      */
     @Transactional
     public void clearConversation(Long userId, Long conversationId) {
@@ -295,14 +305,14 @@ public class ChatService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        // 记录清除时间点
+        // 同时设置 clearedAt 和 hiddenAt
         if (conv.getUser1Id().equals(userId)) {
-            conversationRepository.setClearedAtUser1(conversationId, now);
+            conversationRepository.setClearedAndHiddenAtUser1(conversationId, now);
         } else {
-            conversationRepository.setClearedAtUser2(conversationId, now);
+            conversationRepository.setClearedAndHiddenAtUser2(conversationId, now);
         }
 
-        // 软删除清除时间点之前的消息
+        // 软删除清除时间点之前的消息（@Where 注解自动排除这些消息）
         messageRepository.softDeleteByConversationIdBefore(conversationId, now);
         chatPhotoRepository.softDeleteByConversationIdBefore(conversationId, now);
         chatFileRepository.softDeleteByConversationIdBefore(conversationId, now);
@@ -310,7 +320,7 @@ public class ChatService {
         // 清理 Redis 未读计数
         clearUnread(userId, conversationId);
 
-        // 更新 lastMessage 为最后一条未删除消息（清除后应为空）
+        // 更新 lastMessage（清除后应为空或仅显示新消息）
         List<ChatMessage> remaining = messageRepository.findLastMessageByConversationId(conversationId, PageRequest.of(0, 1));
         if (remaining.isEmpty()) {
             conversationRepository.updateLastMessage(conversationId, null, conv.getLastMessageAt());
@@ -320,7 +330,25 @@ public class ChatService {
             conversationRepository.updateLastMessage(conversationId, preview, last.getCreatedAt());
         }
 
+        // 检查双方是否都已清除 — 如果是，立即硬删除软删除记录
+        conv = conversationRepository.findById(conversationId).orElse(conv);
+        boolean bothCleared = conv.getClearedAtUser1() != null && conv.getClearedAtUser2() != null;
+        if (bothCleared) {
+            hardDeleteClearedMessages(conversationId);
+            log.info("Both users cleared, hard-deleted soft-deleted records for conversation {}", conversationId);
+        }
+
         log.info("Conversation {} cleared by user {} at {}", conversationId, userId, now);
+    }
+
+    /**
+     * 硬删除指定对话中所有已软删除的消息、照片和文件
+     */
+    @Transactional
+    public void hardDeleteClearedMessages(Long conversationId) {
+        messageRepository.hardDeleteByConversationId(conversationId);
+        chatPhotoRepository.hardDeleteByConversationId(conversationId);
+        chatFileRepository.hardDeleteByConversationId(conversationId);
     }
 
     // ==================== Redis 操作 ====================

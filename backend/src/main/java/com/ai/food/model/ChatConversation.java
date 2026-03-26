@@ -39,6 +39,12 @@ public class ChatConversation {
     @Column(name = "cleared_at_user2")
     private LocalDateTime clearedAtUser2;
 
+    @Column(name = "hidden_at_user1")
+    private LocalDateTime hiddenAtUser1;
+
+    @Column(name = "hidden_at_user2")
+    private LocalDateTime hiddenAtUser2;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

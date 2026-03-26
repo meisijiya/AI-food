@@ -166,18 +166,20 @@ CREATE TABLE IF NOT EXISTS chat_conversation (
     user2_id BIGINT NOT NULL COMMENT '用户2 ID（较大的ID）',
     last_message TEXT COMMENT '最后一条消息预览',
     last_message_at DATETIME COMMENT '最后消息时间',
-    cleared_at_user1 DATETIME DEFAULT NULL COMMENT 'user1清除聊天的时间点，NULL表示未清除',
-    cleared_at_user2 DATETIME DEFAULT NULL COMMENT 'user2清除聊天的时间点，NULL表示未清除',
+    cleared_at_user1 DATETIME DEFAULT NULL COMMENT 'user1清除聊天的时间点，NULL表示未清除（消息过滤边界，永不重置）',
+    cleared_at_user2 DATETIME DEFAULT NULL COMMENT 'user2清除聊天的时间点，NULL表示未清除（消息过滤边界，永不重置）',
+    hidden_at_user1 DATETIME DEFAULT NULL COMMENT 'user1隐藏会话的时间点，新消息到达时重置（列表可见性控制）',
+    hidden_at_user2 DATETIME DEFAULT NULL COMMENT 'user2隐藏会话的时间点，新消息到达时重置（列表可见性控制）',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uk_conversation_key (conversation_key),
     INDEX idx_user1 (user1_id, last_message_at DESC),
     INDEX idx_user2 (user2_id, last_message_at DESC)
 );
 
--- 迁移：将旧的布尔字段改为时间戳（如果表已存在）
--- ALTER TABLE chat_conversation DROP COLUMN cleared_by_user1, DROP COLUMN cleared_by_user2,
---   ADD COLUMN cleared_at_user1 DATETIME DEFAULT NULL COMMENT 'user1清除聊天的时间点',
---   ADD COLUMN cleared_at_user2 DATETIME DEFAULT NULL COMMENT 'user2清除聊天的时间点';
+-- 迁移：添加新列（如果表已存在且只有旧字段）
+-- ALTER TABLE chat_conversation
+--   ADD COLUMN hidden_at_user1 DATETIME DEFAULT NULL,
+--   ADD COLUMN hidden_at_user2 DATETIME DEFAULT NULL;
 
 -- 聊天消息表
 CREATE TABLE IF NOT EXISTS chat_message (

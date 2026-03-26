@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -31,19 +32,24 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     long countUnreadByConversationIdAndReceiverId(@Param("conversationId") Long conversationId, @Param("userId") Long userId);
 
     @Modifying
-    @Query("UPDATE ChatMessage m SET m.isDeleted = true WHERE m.conversationId = :conversationId")
-    void softDeleteByConversationId(@Param("conversationId") Long conversationId);
+    @Query("UPDATE ChatMessage m SET m.isDeleted = true WHERE m.conversationId = :conversationId AND m.createdAt < :before")
+    void softDeleteByConversationIdBefore(@Param("conversationId") Long conversationId, @Param("before") LocalDateTime before);
+
+    @Query("SELECT m FROM ChatMessage m WHERE m.conversationId = :conversationId AND m.createdAt > :after ORDER BY m.createdAt DESC")
+    Page<ChatMessage> findByConversationIdAfterOrderByCreatedAtDesc(@Param("conversationId") Long conversationId, @Param("after") LocalDateTime after, Pageable pageable);
+
+    @Query("SELECT m FROM ChatMessage m WHERE m.conversationId = :conversationId ORDER BY m.createdAt DESC")
+    List<ChatMessage> findLastMessageByConversationId(@Param("conversationId") Long conversationId, Pageable pageable);
+
+    /**
+     * 硬删除指定对话中所有已软删除的消息（@Where 注解会自动排除 isDeleted=true，
+     * 所以此处需要使用 native query 或在 @Where 之外操作）
+     */
+    @Modifying
+    @Query(value = "DELETE FROM chat_message WHERE conversation_id = :conversationId AND is_deleted = true", nativeQuery = true)
+    int hardDeleteByConversationId(@Param("conversationId") Long conversationId);
 
     @Modifying
-    @Query("UPDATE ChatMessage m SET m.isDeleted = true WHERE m.conversationId = :conversationId AND m.createdAt < :before")
-    void softDeleteByConversationIdBefore(@Param("conversationId") Long conversationId, @Param("before") java.time.LocalDateTime before);
-
-    @Query("SELECT m FROM ChatMessage m WHERE m.conversationId = :conversationId AND m.isDeleted = false AND m.createdAt > :after ORDER BY m.createdAt DESC")
-    Page<ChatMessage> findByConversationIdAfterOrderByCreatedAtDesc(@Param("conversationId") Long conversationId, @Param("after") java.time.LocalDateTime after, Pageable pageable);
-
-    @Query("SELECT COUNT(m) FROM ChatMessage m WHERE m.conversationId = :conversationId AND m.receiverId = :userId AND m.isRead = false AND m.isDeleted = false AND m.createdAt > :after")
-    long countUnreadAfter(@Param("conversationId") Long conversationId, @Param("userId") Long userId, @Param("after") java.time.LocalDateTime after);
-
-    @Query("SELECT m FROM ChatMessage m WHERE m.conversationId = :conversationId AND m.isDeleted = false ORDER BY m.createdAt DESC")
-    List<ChatMessage> findLastMessageByConversationId(@Param("conversationId") Long conversationId, Pageable pageable);
+    @Query(value = "DELETE FROM chat_message WHERE is_deleted = true AND created_at < :before", nativeQuery = true)
+    int hardDeleteOldSoftDeleted(@Param("before") LocalDateTime before);
 }

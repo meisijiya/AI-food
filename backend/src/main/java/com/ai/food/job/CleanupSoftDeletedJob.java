@@ -5,6 +5,7 @@ import com.ai.food.model.ChatPhoto;
 import com.ai.food.model.FeedPost;
 import com.ai.food.model.Photo;
 import com.ai.food.repository.*;
+import com.ai.food.service.chat.ChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobExecutionContext;
@@ -29,6 +30,9 @@ public class CleanupSoftDeletedJob extends QuartzJobBean {
     private final PhotoRepository photoRepository;
     private final ChatPhotoRepository chatPhotoRepository;
     private final ChatFileRepository chatFileRepository;
+    private final ChatMessageRepository chatMessageRepository;
+    private final ChatConversationRepository chatConversationRepository;
+    private final ChatService chatService;
     private final QaRecordRepository qaRecordRepository;
     private final CollectedParamRepository collectedParamRepository;
     private final RecommendationResultRepository recommendationResultRepository;
@@ -65,11 +69,19 @@ public class CleanupSoftDeletedJob extends QuartzJobBean {
         total += conversationSessionRepository.hardDeleteAllSoftDeleted();
         log.info("清理推荐相关子表");
 
-        // 5. 清理聊天照片（软删除 + 30天过期）
+        // 5. 清理聊天 — 双方都已清除的对话，硬删除软删除记录
+        total += cleanupBothClearedConversations();
+        log.info("清理双方已清除的聊天记录");
+
+        // 6. 清理过期的聊天软删除消息（30天前）
+        total += cleanupOldChatMessages();
+        log.info("清理过期的 chat_message");
+
+        // 7. 清理聊天照片（软删除 + 30天过期）
         total += cleanupChatPhotos();
         log.info("清理 chat_photo（含物理文件）");
 
-        // 6. 清理聊天文件（软删除 + 30天过期）
+        // 8. 清理聊天文件（软删除 + 30天过期）
         total += cleanupChatFiles();
         log.info("清理 chat_file（含物理文件）");
 
@@ -123,6 +135,27 @@ public class CleanupSoftDeletedJob extends QuartzJobBean {
             deletePhysicalFile(uploadRoot, file.getFilePath());
         }
         return chatFileRepository.hardDeleteAllSoftDeleted();
+    }
+
+    /**
+     * 清理双方都已清除的对话 — 硬删除所有软删除的聊天记录
+     */
+    private int cleanupBothClearedConversations() {
+        int total = 0;
+        var conversations = chatConversationRepository.findAllBothCleared();
+        for (var conv : conversations) {
+            chatService.hardDeleteClearedMessages(conv.getId());
+            total++;
+        }
+        return total;
+    }
+
+    /**
+     * 清理过期的聊天软删除消息（30天前创建的，兜底清理）
+     */
+    private int cleanupOldChatMessages() {
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(CHAT_MEDIA_TTL_DAYS);
+        return chatMessageRepository.hardDeleteOldSoftDeleted(cutoff);
     }
 
     private Path getUploadRoot() {
