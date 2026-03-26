@@ -12,6 +12,7 @@ import com.ai.food.repository.FeedPostRepository;
 import com.ai.food.repository.PhotoRepository;
 import com.ai.food.repository.QaRecordRepository;
 import com.ai.food.repository.RecommendationResultRepository;
+import com.ai.food.service.feed.FeedService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
@@ -43,6 +44,7 @@ public class RecordService {
     private final PhotoRepository photoRepository;
     private final FeedPostRepository feedPostRepository;
     private final FeedCommentRepository feedCommentRepository;
+    private final FeedService feedService;
     private final StringRedisTemplate redisTemplate;
 
     public Page<RecordListItem> getRecordList(Long userId, int page, int size, String sort) {
@@ -95,6 +97,7 @@ public class RecordService {
         feedPostRepository.findBySessionId(sessionId).ifPresent(post -> {
             feedCommentRepository.softDeleteByPostId(post.getId());
             feedPostRepository.softDeleteByPostId(post.getId());
+            feedService.cleanRedisForDeletedPost(post.getId(), post.getUserId());
             log.debug("Soft-deleted FeedPost and comments for session {}", sessionId);
         });
         // 删除硬盘上的照片文件
@@ -118,6 +121,7 @@ public class RecordService {
             feedPostRepository.findBySessionId(sessionId).ifPresent(post -> {
                 feedCommentRepository.softDeleteByPostId(post.getId());
                 feedPostRepository.softDeleteByPostId(post.getId());
+                feedService.cleanRedisForDeletedPost(post.getId(), post.getUserId());
             });
             photoRepository.findFirstByRelatedSessionIdOrderByCreatedAtDesc(sessionId).ifPresent(photo -> {
                 deletePhysicalFile(photo.getOriginalPath());

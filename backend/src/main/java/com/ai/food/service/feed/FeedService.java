@@ -501,18 +501,28 @@ public class FeedService {
         post.setIsDeleted(true);
         feedPostRepository.save(post);
 
-        // Clean up Redis like data
-        String likeKey = LIKE_SET_KEY + post.getId();
-        String countKey = LIKE_COUNT_KEY + post.getId();
-        stringRedisTemplate.delete(likeKey);
-        stringRedisTemplate.delete(countKey);
+        // Clean up Redis
+        cleanRedisForDeletedPost(post.getId(), userId);
 
-        // Clean up Redis hot rank
-        stringRedisTemplate.opsForZSet().remove(HOT_RANK_KEY, post.getId().toString());
-        stringRedisTemplate.opsForHash().delete(HOT_DETAILS_KEY, post.getId().toString());
+        // Clean up physical photo files
+        deletePhotoFiles(post.getThumbnailUrl());
+        deletePhotoFiles(post.getOriginalPhotoUrl());
 
-        // Clean up friend feed entries for all followers
+        log.debug("Feed post unpublished: postId={}, user={}", post.getId(), userId);
+    }
+
+    public void cleanRedisForDeletedPost(Long postId, Long userId) {
         try {
+            // Clean up like data
+            stringRedisTemplate.delete(LIKE_SET_KEY + postId);
+            stringRedisTemplate.delete(LIKE_COUNT_KEY + postId);
+
+            // Clean up hot rank
+            stringRedisTemplate.opsForZSet().remove(HOT_RANK_KEY, postId.toString());
+            // Invalidate hot rank cache
+            stringRedisTemplate.delete(HOT_DETAILS_KEY);
+
+            // Clean up friend feed entries for all followers
             List<Long> followerIds = followService.getFollowerIds(userId);
             for (Long followerId : followerIds) {
                 String friendKey = FRIEND_FEED_KEY + followerId;
@@ -521,7 +531,7 @@ public class FeedService {
                     for (String entry : entries) {
                         try {
                             Map<?, ?> map = objectMapper.readValue(entry, Map.class);
-                            if (post.getId().toString().equals(String.valueOf(map.get("postId")))) {
+                            if (postId.toString().equals(String.valueOf(map.get("postId")))) {
                                 stringRedisTemplate.opsForList().remove(friendKey, 1, entry);
                             }
                         } catch (Exception ignored) {}
@@ -529,14 +539,8 @@ public class FeedService {
                 }
             }
         } catch (Exception e) {
-            log.warn("Failed to clean friend feed entries for post {}", post.getId(), e);
+            log.warn("Failed to clean Redis for deleted post {}", postId, e);
         }
-
-        // Clean up physical photo files
-        deletePhotoFiles(post.getThumbnailUrl());
-        deletePhotoFiles(post.getOriginalPhotoUrl());
-
-        log.debug("Feed post unpublished: postId={}, user={}", post.getId(), userId);
     }
 
     private void deletePhotoFiles(String url) {

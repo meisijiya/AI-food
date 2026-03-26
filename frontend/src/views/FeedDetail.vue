@@ -274,8 +274,8 @@ async function fetchDetail() {
     isLiked.value = res.isLiked || false
     likeCount.value = res.likeCount || 0
     commentTotal.value = res.commentCount || 0
-  } catch (e: any) {
-    showError(e?.message || '动态不存在或已被删除')
+  } catch {
+    showError('该内容已被删除')
     router.back()
   } finally {
     loading.value = false
