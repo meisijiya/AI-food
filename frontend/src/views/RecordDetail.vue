@@ -186,7 +186,25 @@
       <div v-if="publishDialog" class="photo-modal" @click.self="publishDialog = false">
         <div class="publish-dialog">
           <div class="publish-dialog-glow"></div>
-          <div class="publish-dialog-title">发布到大厅</div>
+          <div class="publish-dialog-title">发布动态</div>
+          <div class="publish-visibility-row">
+            <button
+              class="visibility-option"
+              :class="{ active: publishVisibility === 'public' }"
+              @click="publishVisibility = 'public'"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              <span>发布到大厅</span>
+            </button>
+            <button
+              class="visibility-option"
+              :class="{ active: publishVisibility === 'friends' }"
+              @click="publishVisibility = 'friends'"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span>仅粉丝可见</span>
+            </button>
+          </div>
           <p class="publish-dialog-hint">编辑评论预览（展示在大厅卡片上，最多30字）</p>
           <textarea
             v-model="publishPreview"
@@ -253,6 +271,7 @@ const sharing = ref(false)
 const isPublished = ref(false)
 const publishDialog = ref(false)
 const publishPreview = ref('')
+const publishVisibility = ref<'public' | 'friends'>('public')
 const publishing = ref(false)
 const unpublishing = ref(false)
 
@@ -338,6 +357,7 @@ async function openPublishDialog() {
   const sid = sessionId.value
   if (!sid) return
   publishPreview.value = commentText.value || ''
+  publishVisibility.value = 'public'
   publishDialog.value = true
 }
 
@@ -346,7 +366,7 @@ async function handlePublish() {
   if (!sid) return
   publishing.value = true
   try {
-    await feedApi.publish({ sessionId: sid, commentPreview: publishPreview.value || undefined })
+    await feedApi.publish({ sessionId: sid, commentPreview: publishPreview.value || undefined, visibility: publishVisibility.value })
     isPublished.value = true
     publishDialog.value = false
     showSuccess('发布成功')
@@ -1213,6 +1233,51 @@ function openPhotoModal(url: string) {
   line-height: 1.6;
   position: relative;
   z-index: 1;
+}
+
+.publish-visibility-row {
+  display: flex;
+  gap: 10px;
+  margin: 16px 0 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.visibility-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border: 1.5px solid var(--color-surface-container-low);
+  border-radius: 1rem;
+  background: none;
+  color: var(--color-on-surface-variant);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  svg {
+    opacity: 0.5;
+    transition: all 0.2s;
+  }
+
+  &.active {
+    background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+    border-color: transparent;
+    color: white;
+    svg {
+      opacity: 1;
+      stroke: white;
+    }
+  }
+
+  &:not(.active):active {
+    background: var(--color-surface-container-low);
+  }
 }
 
 .publish-textarea {

@@ -8,7 +8,10 @@
 
     <template v-if="post">
       <!-- Header -->
-      <h1 class="page-title animate-fade-up"><em>{{ post.foodName }}</em></h1>
+      <h1 class="page-title animate-fade-up">
+        <em>{{ post.foodName }}</em>
+        <span v-if="post.visibility === 'friends'" class="detail-fans-badge">仅粉丝可见</span>
+      </h1>
 
       <!-- Photo -->
       <div v-if="post.originalPhotoUrl || post.thumbnailUrl" class="photo-section animate-fade-up delay-100 animate-start-hidden">
@@ -452,7 +455,16 @@ onMounted(async () => {
   font-family: var(--font-serif); font-style: italic;
   font-size: 32px; font-weight: 400; color: var(--color-on-surface);
   margin-bottom: 20px; text-align: center; z-index: 1; position: relative;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
   em { font-style: italic; color: var(--color-primary); }
+}
+
+.detail-fans-badge {
+  font-family: var(--font-sans); font-style: normal;
+  font-size: 11px; font-weight: 700;
+  padding: 4px 10px; border-radius: 6px;
+  background: rgba(0, 89, 182, 0.08);
+  color: var(--color-primary);
 }
 
 /* Photo */

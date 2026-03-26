@@ -41,13 +41,15 @@ public class FeedController {
             @RequestParam(required = false) String foodName,
             @RequestParam(required = false) String paramName,
             @RequestParam(required = false) String paramValue) {
-        Map<String, Object> result = feedService.getPublicFeedList(page, size, foodName, paramName, paramValue);
+        Long userId = getCurrentUserId();
+        Map<String, Object> result = feedService.getPublicFeedList(page, size, foodName, paramName, paramValue, userId);
         return ApiResponse.success(result);
     }
 
     @GetMapping("/hot-rank")
     public ApiResponse<Map<String, Object>> getHotRank() {
-        Map<String, Object> result = feedService.getHotRank();
+        Long userId = getCurrentUserId();
+        Map<String, Object> result = feedService.getHotRank(userId);
         return ApiResponse.success(result);
     }
 
@@ -98,8 +100,8 @@ public class FeedController {
     @GetMapping("/check/{sessionId}")
     public ApiResponse<Map<String, Object>> checkPublished(@PathVariable String sessionId) {
         Long userId = getCurrentUserId();
-        boolean published = feedService.checkPublished(sessionId, userId);
-        return ApiResponse.success(Map.of("published", published));
+        Map<String, Object> result = feedService.checkPublishedWithVisibility(sessionId, userId);
+        return ApiResponse.success(result);
     }
 
     @DeleteMapping("/unpublish/{sessionId}")

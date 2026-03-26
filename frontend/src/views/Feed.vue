@@ -130,7 +130,10 @@
           />
         </div>
         <div class="card-body">
-          <div class="card-food">{{ post.foodName }}</div>
+          <div class="card-food">
+            <span>{{ post.foodName }}</span>
+            <span v-if="post.visibility === 'friends'" class="fans-only-badge">仅粉丝可见</span>
+          </div>
           <div v-if="post.commentPreview" class="card-preview">
             {{ post.commentPreview }}
           </div>
@@ -200,8 +203,11 @@
             :lazy="true"
           />
         </div>
-        <div class="rank-content">
-          <div class="rank-food">{{ item.foodName }}</div>
+          <div class="rank-content">
+          <div class="rank-food">
+            <span>{{ item.foodName }}</span>
+            <span v-if="item.visibility === 'friends'" class="fans-only-badge">仅粉丝可见</span>
+          </div>
           <div class="rank-meta">
             <span class="rank-user">{{ item.nickname || "匿名" }}</span>
             <span class="rank-score">热度 {{ item.hotScore }}</span>
@@ -247,7 +253,10 @@
             <span class="friend-name">{{ item.nickname || "匿名" }}</span>
             <span class="friend-time">{{ formatTime(item.publishedAt) }}</span>
           </div>
-          <div class="friend-food">{{ item.foodName }}</div>
+          <div class="friend-food">
+            <span>{{ item.foodName }}</span>
+            <span v-if="item.visibility === 'friends'" class="fans-only-badge">仅粉丝可见</span>
+          </div>
         </div>
         <div v-if="item.thumbnailUrl" class="friend-photo">
           <CachedImage
@@ -733,6 +742,22 @@ onMounted(() => {
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fans-only-badge {
+  flex-shrink: 0;
+  font-family: var(--font-sans);
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 89, 182, 0.08);
+  color: var(--color-primary);
+  white-space: nowrap;
 }
 
 .card-preview {
@@ -866,9 +891,15 @@ onMounted(() => {
   font-weight: 500;
   color: var(--color-on-surface);
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .rank-meta {
@@ -967,9 +998,15 @@ onMounted(() => {
   font-style: italic;
   font-size: 14px;
   color: var(--color-on-surface);
+  display: flex;
+  align-items: center;
+  gap: 6px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .friend-photo {

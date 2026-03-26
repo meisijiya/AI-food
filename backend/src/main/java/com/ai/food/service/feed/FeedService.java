@@ -99,7 +99,8 @@ public class FeedService {
         return buildPostMap(saved);
     }
 
-    public Map<String, Object> getPublicFeedList(int page, int size, String foodName, String paramName, String paramValue) {
+    public Map<String, Object> getPublicFeedList(int page, int size, String foodName,
+                                                  String paramName, String paramValue, Long currentUserId) {
         Pageable pageable = PageRequest.of(page, size);
 
         String searchParamValue = null;
@@ -107,10 +108,22 @@ public class FeedService {
             searchParamValue = "\"" + paramName + "\":\"" + paramValue + "\"";
         }
 
-        Page<FeedPost> postPage = feedPostRepository.findPublicByFilters(
-                foodName != null && !foodName.isBlank() ? foodName : null,
-                searchParamValue,
-                pageable);
+        String searchFoodName = foodName != null && !foodName.isBlank() ? foodName : null;
+
+        Page<FeedPost> postPage;
+        if (currentUserId != null) {
+            List<Long> followingIds = followService.getFollowingIds(currentUserId);
+            if (!followingIds.isEmpty()) {
+                postPage = feedPostRepository.findPublicAndFansOnlyByFilters(
+                        followingIds, searchFoodName, searchParamValue, pageable);
+            } else {
+                postPage = feedPostRepository.findPublicByFilters(
+                        searchFoodName, searchParamValue, pageable);
+            }
+        } else {
+            postPage = feedPostRepository.findPublicByFilters(
+                    searchFoodName, searchParamValue, pageable);
+        }
 
         List<Map<String, Object>> items = new ArrayList<>();
         for (FeedPost post : postPage.getContent()) {
@@ -128,32 +141,35 @@ public class FeedService {
         return result;
     }
 
-    public Map<String, Object> getHotRank() {
-        // 优先从缓存获取
-        String cached = stringRedisTemplate.opsForValue().get(HOT_DETAILS_KEY);
-        if (cached != null && !cached.isEmpty()) {
-            try {
-                return objectMapper.readValue(cached, new TypeReference<Map<String, Object>>() {});
-            } catch (JsonProcessingException e) {
-                log.error("Failed to parse hot rank cache", e);
+    public Map<String, Object> getHotRank(Long currentUserId) {
+        // 优先从缓存获取（仅当未登录时使用缓存，已登录时需要过滤粉丝可见帖子）
+        if (currentUserId == null) {
+            String cached = stringRedisTemplate.opsForValue().get(HOT_DETAILS_KEY);
+            if (cached != null && !cached.isEmpty()) {
+                try {
+                    return objectMapper.readValue(cached, new TypeReference<Map<String, Object>>() {});
+                } catch (JsonProcessingException e) {
+                    log.error("Failed to parse hot rank cache", e);
+                }
             }
         }
 
-        // 缓存不存在，从数据库加载并缓存
-        return loadAndCacheHotRank();
+        // 缓存不存在或需要过滤，从数据库加载
+        return loadAndCacheHotRank(currentUserId);
     }
 
-    private Map<String, Object> loadAndCacheHotRank() {
+    private Map<String, Object> loadAndCacheHotRank(Long currentUserId) {
         Set<ZSetOperations.TypedTuple<String>> hotPosts = stringRedisTemplate.opsForZSet()
                 .reverseRangeWithScores(HOT_RANK_KEY, 0, 19);
 
         if (hotPosts == null || hotPosts.isEmpty()) {
             Map<String, Object> emptyResult = Map.of("items", new ArrayList<>());
-            // 缓存空结果，避免频繁查询
-            try {
-                stringRedisTemplate.opsForValue().set(HOT_DETAILS_KEY, objectMapper.writeValueAsString(emptyResult));
-            } catch (JsonProcessingException e) {
-                log.error("Failed to cache empty hot rank", e);
+            if (currentUserId == null) {
+                try {
+                    stringRedisTemplate.opsForValue().set(HOT_DETAILS_KEY, objectMapper.writeValueAsString(emptyResult));
+                } catch (JsonProcessingException e) {
+                    log.error("Failed to cache empty hot rank", e);
+                }
             }
             return emptyResult;
         }
@@ -170,10 +186,12 @@ public class FeedService {
 
         if (postIds.isEmpty()) {
             Map<String, Object> emptyResult = Map.of("items", new ArrayList<>());
-            try {
-                stringRedisTemplate.opsForValue().set(HOT_DETAILS_KEY, objectMapper.writeValueAsString(emptyResult));
-            } catch (JsonProcessingException e) {
-                log.error("Failed to cache empty hot rank", e);
+            if (currentUserId == null) {
+                try {
+                    stringRedisTemplate.opsForValue().set(HOT_DETAILS_KEY, objectMapper.writeValueAsString(emptyResult));
+                } catch (JsonProcessingException e) {
+                    log.error("Failed to cache empty hot rank", e);
+                }
             }
             return emptyResult;
         }
@@ -184,10 +202,22 @@ public class FeedService {
             postMap.put(post.getId(), post);
         }
 
+        // Build following set for visibility filtering
+        Set<Long> followingIds = new HashSet<>();
+        if (currentUserId != null) {
+            followingIds.addAll(followService.getFollowingIds(currentUserId));
+        }
+
         List<Map<String, Object>> items = new ArrayList<>();
         for (Long postId : postIds) {
             FeedPost post = postMap.get(postId);
             if (post != null && !post.getIsDeleted()) {
+                // Filter fans-only posts: only show to followers of the author
+                if ("friends".equals(post.getVisibility())) {
+                    if (currentUserId == null || !followingIds.contains(post.getUserId())) {
+                        continue;
+                    }
+                }
                 Map<String, Object> item = buildSimplifiedPostMap(post);
                 item.put("hotScore", scoreMap.getOrDefault(postId, 0.0).intValue());
                 enrichUserInfo(item, post.getUserId());
@@ -197,12 +227,14 @@ public class FeedService {
 
         Map<String, Object> result = Map.of("items", items);
 
-        // 缓存结果
-        try {
-            stringRedisTemplate.opsForValue().set(HOT_DETAILS_KEY, objectMapper.writeValueAsString(result));
-            log.info("Hot rank cache refreshed, {} items", items.size());
-        } catch (JsonProcessingException e) {
-            log.error("Failed to cache hot rank", e);
+        // 仅未登录时缓存结果
+        if (currentUserId == null) {
+            try {
+                stringRedisTemplate.opsForValue().set(HOT_DETAILS_KEY, objectMapper.writeValueAsString(result));
+                log.info("Hot rank cache refreshed, {} items", items.size());
+            } catch (JsonProcessingException e) {
+                log.error("Failed to cache hot rank", e);
+            }
         }
 
         return result;
@@ -216,6 +248,7 @@ public class FeedService {
         map.put("thumbnailUrl", post.getThumbnailUrl());
         map.put("likeCount", post.getLikeCount());
         map.put("commentCount", post.getCommentCount());
+        map.put("visibility", post.getVisibility());
         return map;
     }
 
@@ -240,14 +273,14 @@ public class FeedService {
         // 如果在 Top 20 中，刷新缓存
         if (isInTop20) {
             log.info("Post {} is in Top 20, refreshing hot rank cache", postId);
-            loadAndCacheHotRank();
+            loadAndCacheHotRank(null);
         }
     }
 
     @Scheduled(cron = "0 */10 * * * ?")  // 每10分钟执行
     public void refreshHotRankCacheScheduled() {
         log.info("Scheduled hot rank cache refresh started");
-        loadAndCacheHotRank();
+        loadAndCacheHotRank(null);
         log.info("Scheduled hot rank cache refresh completed");
     }
 
@@ -307,6 +340,7 @@ public class FeedService {
         summary.put("nickname", nickname);
         summary.put("avatar", avatar);
         summary.put("publishedAt", post.getPublishedAt().toString());
+        summary.put("visibility", post.getVisibility());
 
         try {
             String summaryJson = objectMapper.writeValueAsString(summary);
@@ -485,6 +519,19 @@ public class FeedService {
         return result;
     }
 
+    public Map<String, Object> checkPublishedWithVisibility(String sessionId, Long userId) {
+        Optional<FeedPost> opt = feedPostRepository.findBySessionIdAndUserId(sessionId, userId);
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (opt.isPresent()) {
+            result.put("published", true);
+            result.put("visibility", opt.get().getVisibility());
+        } else {
+            result.put("published", false);
+            result.put("visibility", null);
+        }
+        return result;
+    }
+
     public boolean checkPublished(String sessionId, Long userId) {
         return feedPostRepository.findBySessionIdAndUserId(sessionId, userId).isPresent();
     }
@@ -581,6 +628,7 @@ public class FeedService {
         map.put("collectedParams", post.getCollectedParams());
         map.put("likeCount", post.getLikeCount());
         map.put("commentCount", post.getCommentCount());
+        map.put("visibility", post.getVisibility());
         map.put("publishedAt", post.getPublishedAt());
         return map;
     }
