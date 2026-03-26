@@ -23,6 +23,10 @@ public interface ChatPhotoRepository extends JpaRepository<ChatPhoto, Long> {
     void softDeleteByConversationId(@Param("conversationId") Long conversationId);
 
     @Modifying
+    @Query("UPDATE ChatPhoto p SET p.isDeleted = true WHERE p.conversationId = :conversationId AND p.createdAt < :before")
+    void softDeleteByConversationIdBefore(@Param("conversationId") Long conversationId, @Param("before") LocalDateTime before);
+
+    @Modifying
     @Query("DELETE FROM ChatPhoto p WHERE p.isDeleted = true")
     int hardDeleteAllSoftDeleted();
 

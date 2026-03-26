@@ -194,7 +194,9 @@ export const chatApi = {
   sendMessage: (data: { receiverId: number; content: string; messageType?: string }) =>
     request('post', '/chat/send', data),
   checkPermission: (receiverId: number) => request('get', `/chat/permission/${receiverId}`),
-  clearConversation: (conversationId: number) => request('delete', `/chat/conversation/${conversationId}`)
+  clearConversation: (conversationId: number) => request('delete', `/chat/conversation/${conversationId}`),
+  getOrCreateConversationWith: (otherUserId: number) =>
+    request('get', `/chat/conversation/with/${otherUserId}`)
 }
 
 // 分享相关接口

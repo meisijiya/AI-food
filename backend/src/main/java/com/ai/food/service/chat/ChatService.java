@@ -47,7 +47,6 @@ public class ChatService {
      * @return "ok"=可以发送, "max_reached"=已达上限, "not_allowed"=不允许发送
      */
     public String checkSendPermission(Long senderId, Long receiverId) {
-        // 互关：无限制
         if (followService.isMutualFollow(senderId, receiverId)) {
             return "ok";
         }
@@ -55,7 +54,6 @@ public class ChatService {
         boolean senderFollowsReceiver = followService.isFollowing(senderId, receiverId);
         boolean receiverFollowsSender = followService.isFollowing(receiverId, senderId);
 
-        // sender 是 receiver 的粉丝（sender→receiver，但 receiver 没有回关）
         if (senderFollowsReceiver && !receiverFollowsSender) {
             String countKey = MSG_COUNT_KEY + senderId + ":" + receiverId;
             String countStr = stringRedisTemplate.opsForValue().get(countKey);
@@ -63,7 +61,6 @@ public class ChatService {
             return count >= MAX_NON_MUTUAL_MESSAGES ? "max_reached" : "ok";
         }
 
-        // receiver 是 sender 的粉丝，或无关系：不允许 sender 发送
         return "not_allowed";
     }
 
@@ -73,7 +70,7 @@ public class ChatService {
     public int getRemainingMessages(Long senderId, Long receiverId) {
         String perm = checkSendPermission(senderId, receiverId);
         if (perm.equals("ok") && followService.isMutualFollow(senderId, receiverId)) {
-            return -1; // 无限制
+            return -1;
         }
         if (perm.equals("not_allowed")) return 0;
 
@@ -85,7 +82,6 @@ public class ChatService {
 
     @Transactional
     public ChatMessage sendMessage(Long senderId, Long receiverId, String content, String messageType) {
-        // 检查发送权限
         String permission = checkSendPermission(senderId, receiverId);
         if (permission.equals("not_allowed")) {
             throw new RuntimeException("对方未关注你，无法发送消息");
@@ -94,16 +90,16 @@ public class ChatService {
             throw new RuntimeException("非互关最多发送" + MAX_NON_MUTUAL_MESSAGES + "条消息");
         }
 
-        // 增加非互关消息计数
         if (!followService.isMutualFollow(senderId, receiverId)) {
             String countKey = MSG_COUNT_KEY + senderId + ":" + receiverId;
             stringRedisTemplate.opsForValue().increment(countKey);
         }
 
-        // 获取或创建对话
         ChatConversation conversation = getOrCreateConversation(senderId, receiverId);
 
-        // 创建消息
+        // 重置接收方的 clearedAt — 新消息到来时，清除状态失效，会话重新出现在列表
+        resetClearedForReceiver(conversation, receiverId);
+
         ChatMessage message = new ChatMessage();
         message.setConversationId(conversation.getId());
         message.setSenderId(senderId);
@@ -113,15 +109,12 @@ public class ChatService {
         message.setIsRead(false);
         ChatMessage saved = messageRepository.save(message);
 
-        // 更新对话的最后消息
         conversation.setLastMessage(content.length() > 50 ? content.substring(0, 50) + "..." : content);
         conversation.setLastMessageAt(LocalDateTime.now());
         conversationRepository.save(conversation);
 
-        // 更新 Redis 未读计数
         incrementUnread(receiverId, conversation.getId());
 
-        // 更新通知中心的 chat 聚合通知
         String senderName = "匿名用户";
         String senderAvatar = null;
         Optional<SysUser> senderOpt = userRepository.findById(senderId);
@@ -137,6 +130,19 @@ public class ChatService {
         return saved;
     }
 
+    /**
+     * 重置接收方的清除标记，使会话在收到新消息后重新出现在聊天列表
+     */
+    private void resetClearedForReceiver(ChatConversation conversation, Long receiverId) {
+        if (conversation.getUser1Id().equals(receiverId) && conversation.getClearedAtUser1() != null) {
+            conversationRepository.resetClearedAtUser1(conversation.getId());
+            conversation.setClearedAtUser1(null);
+        } else if (conversation.getUser2Id().equals(receiverId) && conversation.getClearedAtUser2() != null) {
+            conversationRepository.resetClearedAtUser2(conversation.getId());
+            conversation.setClearedAtUser2(null);
+        }
+    }
+
     public ChatConversation getOrCreateConversation(Long userId1, Long userId2) {
         String key = ChatConversation.generateKey(userId1, userId2);
         return conversationRepository.findByConversationKey(key)
@@ -149,11 +155,26 @@ public class ChatService {
                 });
     }
 
+    /**
+     * 获取或创建与指定用户的对话，返回包含 conversationId 的 Map
+     */
+    public Map<String, Object> getOrCreateConversationWith(Long userId, Long otherUserId) {
+        ChatConversation conv = getOrCreateConversation(userId, otherUserId);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("conversationId", conv.getId());
+        result.put("userId", otherUserId);
+
+        userRepository.findById(otherUserId).ifPresent(user -> {
+            result.put("nickname", user.getNickname() != null ? user.getNickname() : user.getUsername());
+            result.put("avatar", user.getAvatar());
+        });
+
+        return result;
+    }
+
     public List<Map<String, Object>> getConversationList(Long userId) {
         List<ChatConversation> conversations = conversationRepository.findByUserIdOrderByLastMessageAtDesc(userId);
         List<Map<String, Object>> result = new ArrayList<>();
-
-        // 获取未读计数
         Map<Long, Integer> unreadMap = getUnreadMap(userId);
 
         for (ChatConversation conv : conversations) {
@@ -176,8 +197,19 @@ public class ChatService {
 
     @Transactional
     public Map<String, Object> getChatHistory(Long conversationId, Long userId, int page, int size) {
+        // 获取用户的清除时间点
+        ChatConversation conv = conversationRepository.findById(conversationId).orElse(null);
+        LocalDateTime clearedAt = getClearedAtForUser(conv, userId);
+
         Pageable pageable = PageRequest.of(page, size);
-        Page<ChatMessage> messagePage = messageRepository.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
+        Page<ChatMessage> messagePage;
+
+        if (clearedAt != null) {
+            // 只返回清除时间点之后的消息
+            messagePage = messageRepository.findByConversationIdAfterOrderByCreatedAtDesc(conversationId, clearedAt, pageable);
+        } else {
+            messagePage = messageRepository.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
+        }
 
         List<Map<String, Object>> items = new ArrayList<>();
         for (ChatMessage msg : messagePage.getContent()) {
@@ -193,7 +225,6 @@ public class ChatService {
             items.add(item);
         }
 
-        // 标记为已读
         markAsRead(userId, conversationId);
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -249,41 +280,47 @@ public class ChatService {
 
     // ==================== 清除聊天 ====================
 
+    /**
+     * 清除聊天记录（时间戳方案）
+     * - 记录清除时间点
+     * - 只软删除清除时间点之前的消息
+     * - 清理 Redis 未读计数
+     * - 更新 lastMessage 为最后一条未删除消息
+     * - 会话不隐藏，新消息仍可正常接收
+     */
     @Transactional
     public void clearConversation(Long userId, Long conversationId) {
         ChatConversation conv = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new RuntimeException("对话不存在"));
 
-        // 标记当前用户已清除
+        LocalDateTime now = LocalDateTime.now();
+
+        // 记录清除时间点
         if (conv.getUser1Id().equals(userId)) {
-            conversationRepository.setClearedByUser1(conversationId);
+            conversationRepository.setClearedAtUser1(conversationId, now);
         } else {
-            conversationRepository.setClearedByUser2(conversationId);
+            conversationRepository.setClearedAtUser2(conversationId, now);
         }
 
-        // 刷新实体以获取最新 cleared 状态
-        conv = conversationRepository.findById(conversationId).orElse(conv);
+        // 软删除清除时间点之前的消息
+        messageRepository.softDeleteByConversationIdBefore(conversationId, now);
+        chatPhotoRepository.softDeleteByConversationIdBefore(conversationId, now);
+        chatFileRepository.softDeleteByConversationIdBefore(conversationId, now);
 
-        // 检查是否满足软删除条件
-        boolean bothCleared = Boolean.TRUE.equals(conv.getClearedByUser1())
-                && Boolean.TRUE.equals(conv.getClearedByUser2());
-        boolean notMutual = !followService.isMutualFollow(conv.getUser1Id(), conv.getUser2Id());
+        // 清理 Redis 未读计数
+        clearUnread(userId, conversationId);
 
-        if (bothCleared || notMutual) {
-            softDeleteConversation(conv);
-            log.info("Conversation {} soft-deleted (bothCleared={}, notMutual={})",
-                    conversationId, bothCleared, notMutual);
+        // 更新 lastMessage 为最后一条未删除消息（清除后应为空）
+        List<ChatMessage> remaining = messageRepository.findLastMessageByConversationId(conversationId, PageRequest.of(0, 1));
+        if (remaining.isEmpty()) {
+            conversationRepository.updateLastMessage(conversationId, null, conv.getLastMessageAt());
         } else {
-            log.info("Conversation {} cleared by user {} (waiting for other user)",
-                    conversationId, userId);
+            ChatMessage last = remaining.get(0);
+            String preview = last.getContent().length() > 50 ? last.getContent().substring(0, 50) + "..." : last.getContent();
+            conversationRepository.updateLastMessage(conversationId, preview, last.getCreatedAt());
         }
-    }
 
-    private void softDeleteConversation(ChatConversation conv) {
-        Long conversationId = conv.getId();
-        messageRepository.softDeleteByConversationId(conversationId);
-        chatPhotoRepository.softDeleteByConversationId(conversationId);
-        chatFileRepository.softDeleteByConversationId(conversationId);
+        log.info("Conversation {} cleared by user {} at {}", conversationId, userId, now);
     }
 
     // ==================== Redis 操作 ====================
@@ -300,8 +337,7 @@ public class ChatService {
         if (count != null) {
             int countVal = Integer.parseInt(count.toString());
             stringRedisTemplate.opsForHash().delete(key, conversationId.toString());
-            
-            // 更新总未读数
+
             Long total = stringRedisTemplate.opsForValue().decrement(UNREAD_TOTAL_KEY + userId, countVal);
             if (total == null || total < 0) {
                 stringRedisTemplate.opsForValue().set(UNREAD_TOTAL_KEY + userId, "0");
@@ -331,10 +367,12 @@ public class ChatService {
         return Boolean.TRUE.equals(stringRedisTemplate.hasKey(ONLINE_KEY + userId));
     }
 
-    private void enrichUserInfo(Map<String, Object> target, Long userId) {
-        userRepository.findById(userId).ifPresent(user -> {
-            target.put("nickname", user.getNickname() != null ? user.getNickname() : user.getUsername());
-            target.put("avatar", user.getAvatar());
-        });
+    private LocalDateTime getClearedAtForUser(ChatConversation conv, Long userId) {
+        if (conv == null) return null;
+        if (conv.getUser1Id().equals(userId)) {
+            return conv.getClearedAtUser1();
+        } else {
+            return conv.getClearedAtUser2();
+        }
     }
 }

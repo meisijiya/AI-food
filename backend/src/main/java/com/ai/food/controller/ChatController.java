@@ -104,6 +104,13 @@ public class ChatController {
         }
     }
 
+    @GetMapping("/conversation/with/{otherUserId}")
+    public ApiResponse<Map<String, Object>> getOrCreateConversationWith(@PathVariable Long otherUserId) {
+        Long userId = getCurrentUserId();
+        Map<String, Object> result = chatService.getOrCreateConversationWith(userId, otherUserId);
+        return ApiResponse.success(result);
+    }
+
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return Long.parseLong(auth.getPrincipal().toString());

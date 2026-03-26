@@ -23,6 +23,10 @@ public interface ChatFileRepository extends JpaRepository<ChatFile, Long> {
     void softDeleteByConversationId(@Param("conversationId") Long conversationId);
 
     @Modifying
+    @Query("UPDATE ChatFile f SET f.isDeleted = true WHERE f.conversationId = :conversationId AND f.createdAt < :before")
+    void softDeleteByConversationIdBefore(@Param("conversationId") Long conversationId, @Param("before") LocalDateTime before);
+
+    @Modifying
     @Query("DELETE FROM ChatFile f WHERE f.isDeleted = true")
     int hardDeleteAllSoftDeleted();
 

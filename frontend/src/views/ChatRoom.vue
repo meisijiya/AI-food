@@ -147,7 +147,7 @@ const authStore = useAuthStore()
 
 const currentUserId = computed(() => authStore.userInfo?.userId)
 const targetUserId = computed(() => Number(route.query.userId))
-const conversationId = computed(() => Number(route.query.conversationId))
+const conversationId = ref<number>(Number(route.query.conversationId))
 const nickname = computed(() => {
   const q = route.query.nickname as string
   if (q) return q
@@ -464,7 +464,13 @@ async function handleClearChat() {
     await showConfirmDialog({ title: '清除聊天', message: '确定清除所有聊天记录吗？清除后将无法恢复。' })
     await chatApi.clearConversation(convId)
     showSuccess('聊天记录已清除')
-    router.back()
+
+    // 清除本地缓存并重新加载（服务端会根据 clearedAt 过滤，返回空或新消息）
+    localStorage.removeItem(getCacheKey(convId))
+    messages.value = []
+    currentPage.value = 0
+    hasMore.value = true
+    fetchMessages(false)
   } catch {
     // 用户取消
   }
@@ -473,11 +479,13 @@ async function handleClearChat() {
 // ==================== WebSocket 消息 ====================
 
 function handleNewMessage(data: any) {
-  if (data.conversationId === conversationId.value && data.senderId !== currentUserId.value) {
+  const convId = conversationId.value
+  if (!convId || isNaN(convId)) return
+  if (data.conversationId === convId && data.senderId !== currentUserId.value) {
     messages.value.push(data)
     scrollToBottom()
-    saveToCache(conversationId.value, messages.value)
-    chatWs.markRead(conversationId.value)
+    saveToCache(convId, messages.value)
+    chatWs.markRead(convId)
   }
 }
 
@@ -490,6 +498,23 @@ function handleError(data: any) {
 }
 
 function handleSentMessage(data: any) {
+  if (!data.conversationId) return
+
+  // 首条消息：conversationId 从 NaN 变为服务端真实 ID
+  if (isNaN(conversationId.value)) {
+    conversationId.value = data.conversationId
+    router.replace({
+      query: {
+        ...route.query,
+        conversationId: data.conversationId
+      }
+    })
+    // 更新本地消息的 conversationId
+    messages.value.forEach(m => { m.conversationId = data.conversationId })
+    saveToCache(data.conversationId, messages.value)
+    return
+  }
+
   if (data.conversationId === conversationId.value) {
     const lastIndex = messages.value.length - 1
     if (lastIndex >= 0 && messages.value[lastIndex].id > 1000000000000) {
@@ -517,11 +542,29 @@ function formatTime(dateStr: string): string {
 
 // ==================== 生命周期 ====================
 
-onMounted(() => {
-  const convId = conversationId.value
-
+onMounted(async () => {
   // 检查发送权限
   checkPermission()
+
+  // 如果没有 conversationId，先从服务端获取/创建
+  if (isNaN(conversationId.value) && targetUserId.value) {
+    try {
+      const res = await chatApi.getOrCreateConversationWith(targetUserId.value)
+      if (res?.conversationId) {
+        conversationId.value = res.conversationId
+        router.replace({
+          query: {
+            ...route.query,
+            conversationId: res.conversationId
+          }
+        })
+      }
+    } catch (e) {
+      console.error('Failed to get conversation', e)
+    }
+  }
+
+  const convId = conversationId.value
 
   // 尝试从缓存加载
   if (convId && !isNaN(convId)) {

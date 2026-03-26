@@ -16,30 +16,29 @@ public interface ChatConversationRepository extends JpaRepository<ChatConversati
     Optional<ChatConversation> findByConversationKey(String conversationKey);
 
     @Query("SELECT c FROM ChatConversation c WHERE (c.user1Id = :userId OR c.user2Id = :userId) " +
-           "AND NOT (c.user1Id = :userId AND c.clearedByUser1 = true) " +
-           "AND NOT (c.user2Id = :userId AND c.clearedByUser2 = true) " +
            "ORDER BY c.lastMessageAt DESC")
     List<ChatConversation> findByUserIdOrderByLastMessageAtDesc(@Param("userId") Long userId);
 
     @Query("SELECT c FROM ChatConversation c WHERE (c.user1Id = :userId OR c.user2Id = :userId) AND c.lastMessageAt > :since ORDER BY c.lastMessageAt DESC")
     List<ChatConversation> findRecentByUserId(@Param("userId") Long userId, @Param("since") LocalDateTime since);
 
-    @Query("SELECT c FROM ChatConversation c WHERE " +
-           "(c.clearedByUser1 = true AND c.clearedByUser2 = true) " +
-           "OR (c.lastMessageAt < :cutoff)")
-    List<ChatConversation> findClearedOrExpired(@Param("cutoff") LocalDateTime cutoff);
+    @Modifying
+    @Query("UPDATE ChatConversation c SET c.clearedAtUser1 = :clearedAt WHERE c.id = :id")
+    void setClearedAtUser1(@Param("id") Long id, @Param("clearedAt") LocalDateTime clearedAt);
 
     @Modifying
-    @Query("UPDATE ChatConversation c SET c.clearedByUser1 = true WHERE c.id = :id")
-    void setClearedByUser1(@Param("id") Long id);
+    @Query("UPDATE ChatConversation c SET c.clearedAtUser2 = :clearedAt WHERE c.id = :id")
+    void setClearedAtUser2(@Param("id") Long id, @Param("clearedAt") LocalDateTime clearedAt);
 
     @Modifying
-    @Query("UPDATE ChatConversation c SET c.clearedByUser2 = true WHERE c.id = :id")
-    void setClearedByUser2(@Param("id") Long id);
+    @Query("UPDATE ChatConversation c SET c.clearedAtUser1 = null WHERE c.id = :id")
+    void resetClearedAtUser1(@Param("id") Long id);
 
     @Modifying
-    @Query("UPDATE ChatConversation c SET c.clearedByUser1 = true, c.clearedByUser2 = true WHERE c.id = :id")
-    void setClearedByBoth(@Param("id") Long id);
+    @Query("UPDATE ChatConversation c SET c.clearedAtUser2 = null WHERE c.id = :id")
+    void resetClearedAtUser2(@Param("id") Long id);
 
-    List<ChatConversation> findByClearedByUser1FalseAndClearedByUser2False();
+    @Modifying
+    @Query("UPDATE ChatConversation c SET c.lastMessage = :lastMessage, c.lastMessageAt = :lastMessageAt WHERE c.id = :id")
+    void updateLastMessage(@Param("id") Long id, @Param("lastMessage") String lastMessage, @Param("lastMessageAt") LocalDateTime lastMessageAt);
 }
