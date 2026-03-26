@@ -15,7 +15,7 @@ public interface UserRepository extends JpaRepository<SysUser, Long> {
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
 
-    @Query("SELECT u FROM SysUser u WHERE (u.nickname LIKE %:keyword% OR u.username LIKE %:keyword%) AND u.id != :excludeId")
+    @Query("SELECT u FROM SysUser u WHERE u.nickname LIKE %:keyword% AND u.id != :excludeId")
     Page<SysUser> searchUsers(@Param("keyword") String keyword, @Param("excludeId") Long excludeId, Pageable pageable);
 
     @Query("SELECT u FROM SysUser u WHERE u.id IN :ids")

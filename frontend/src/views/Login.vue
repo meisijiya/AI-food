@@ -39,12 +39,12 @@
     <form v-if="isLogin" class="form-area animate-fade-up delay-400 animate-start-hidden" @submit.prevent="handleLogin">
       <div class="input-group">
         <div class="input-pill">
-          <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
           <input
-            v-model="loginForm.username"
-            type="text"
-            placeholder="用户名"
-            autocomplete="username"
+            v-model="loginForm.email"
+            type="email"
+            placeholder="邮箱地址"
+            autocomplete="email"
             required
           />
         </div>
@@ -69,18 +69,6 @@
 
     <!-- Register form -->
     <form v-else class="form-area animate-fade-up delay-400 animate-start-hidden" @submit.prevent="handleRegister">
-      <div class="input-group">
-        <div class="input-pill">
-          <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <input
-            v-model="registerForm.username"
-            type="text"
-            placeholder="用户名"
-            autocomplete="username"
-            required
-          />
-        </div>
-      </div>
       <div class="input-group">
         <div class="input-pill">
           <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
@@ -155,12 +143,11 @@ const countdown = ref(0)
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 
 const loginForm = reactive({
-  username: '',
+  email: '',
   password: ''
 })
 
 const registerForm = reactive({
-  username: '',
   email: '',
   code: '',
   password: ''
@@ -196,11 +183,11 @@ const handleSendCode = async () => {
 }
 
 const handleLogin = async () => {
-  if (!loginForm.username || !loginForm.password) return
+  if (!loginForm.email || !loginForm.password) return
   loading.value = true
   try {
     const res = await authApi.login({
-      username: loginForm.username,
+      email: loginForm.email,
       password: loginForm.password
     })
     // res 已被 api 拦截器解包为 LoginResponse: { token, userId, username, nickname, email, avatar }
@@ -215,20 +202,18 @@ const handleLogin = async () => {
     showSuccess('登录成功')
     router.push('/')
   } catch (error: any) {
-    showError(error?.response?.data?.message || '登录失败，请检查用户名和密码')
+    showError(error?.response?.data?.message || '登录失败，请检查邮箱和密码')
   } finally {
     loading.value = false
   }
 }
 
 const handleRegister = async () => {
-  if (!registerForm.username || !registerForm.email || !registerForm.code || !registerForm.password) return
+  if (!registerForm.email || !registerForm.code || !registerForm.password) return
   loading.value = true
   try {
     const res = await authApi.register({
-      username: registerForm.username,
       password: registerForm.password,
-      nickname: registerForm.username,
       email: registerForm.email,
       code: registerForm.code
     })

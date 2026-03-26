@@ -24,6 +24,20 @@
       <input ref="avatarInput" type="file" accept="image/*" style="display: none" @change="handleAvatarUpload" />
     </div>
 
+    <!-- Username section (read-only) -->
+    <div class="section-card animate-fade-up delay-150 animate-start-hidden">
+      <div class="section-title">用户ID</div>
+      <div class="field-row">
+        <input
+          :value="userInfo?.username"
+          class="field-input"
+          disabled
+          readonly
+        />
+        <span class="readonly-badge">不可修改</span>
+      </div>
+    </div>
+
     <!-- Nickname section -->
     <div class="section-card animate-fade-up delay-200 animate-start-hidden">
       <div class="section-title">昵称</div>
@@ -170,11 +184,15 @@ async function handleAvatarUpload(e: Event) {
 
   try {
     const compressed = await compressImage(file)
-    const url = await userApi.uploadAvatar(compressed)
-    currentAvatar.value = url
+    const updatedUser = await userApi.uploadAvatar(compressed)
+    const avatarUrl = updatedUser.avatar
+    currentAvatar.value = avatarUrl
     authStore.setUserInfo({
-      ...userInfo.value!,
-      avatar: url
+      userId: updatedUser.id,
+      username: updatedUser.username,
+      nickname: updatedUser.nickname || updatedUser.username,
+      email: updatedUser.email,
+      avatar: avatarUrl
     })
     showSuccess('头像更新成功')
   } catch (err: any) {
@@ -380,6 +398,13 @@ async function savePassword() {
 .avatar-hint {
   font-size: 12px;
   color: var(--color-on-surface-variant);
+}
+
+.readonly-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--color-on-surface-variant);
+  opacity: 0.5;
 }
 
 .field-row {

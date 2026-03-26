@@ -17,7 +17,7 @@
       <input
         v-model="keyword"
         class="search-input"
-        placeholder="搜索昵称或用户名..."
+        placeholder="搜索昵称..."
         @input="onSearchInput"
       />
       <button v-if="keyword" class="search-clear" @click="keyword = ''; onSearchInput()">

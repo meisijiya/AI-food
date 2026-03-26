@@ -18,7 +18,7 @@
         </div>
         <div class="user-info">
           <div class="nickname">{{ userInfo?.nickname || '未设置昵称' }}</div>
-          <div class="email">{{ userInfo?.email || '' }}</div>
+          <div class="username-id">ID: {{ userInfo?.username || '' }}</div>
         </div>
       </div>
 
@@ -294,6 +294,15 @@ onMounted(fetchData)
 .email {
   font-size: 12px;
   color: var(--color-on-surface-variant);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.username-id {
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+  opacity: 0.6;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

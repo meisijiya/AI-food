@@ -68,9 +68,9 @@ function request<T = any>(method: string, url: string, data?: any, config?: any)
 // 认证相关接口
 export const authApi = {
   sendCode: (email: string) => request('post', '/auth/send-code', { email }),
-  register: (data: { username: string; password: string; nickname: string; email: string; code: string }) =>
+  register: (data: { password: string; email: string; code: string }) =>
     request('post', '/auth/register', data),
-  login: (data: { username: string; password: string }) => request('post', '/auth/login', data),
+  login: (data: { email: string; password: string }) => request('post', '/auth/login', data),
   logout: () => request('post', '/auth/logout')
 }
 

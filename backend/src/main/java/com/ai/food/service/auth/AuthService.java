@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Service
@@ -30,12 +31,12 @@ public class AuthService {
     private final Cache<String, Boolean> emailLimitByIp;
 
     public void sendCode(SendCodeRequest req, String clientIp) {
-        String username = req.getUsername();
-        if (username != null && !username.isBlank()) {
-            if (Boolean.TRUE.equals(emailLimitByUsername.getIfPresent(username))) {
+        String email = req.getEmail();
+        if (email != null && !email.isBlank()) {
+            if (Boolean.TRUE.equals(emailLimitByUsername.getIfPresent(email))) {
                 throw new RuntimeException("请求过于频繁，请60秒后再试");
             }
-            emailLimitByUsername.put(username, true);
+            emailLimitByUsername.put(email, true);
         }
 
         if (clientIp != null && !clientIp.isBlank()) {
@@ -60,18 +61,19 @@ public class AuthService {
             throw new RuntimeException("验证码错误或已过期");
         }
 
-        if (userRepository.existsByUsername(req.getUsername())) {
-            throw new RuntimeException("用户名已存在");
-        }
         if (userRepository.existsByEmail(req.getEmail())) {
             throw new RuntimeException("邮箱已注册");
         }
 
+        // 自动生成唯一用户名
+        String username = generateUniqueUsername();
+
         SysUser user = new SysUser();
-        user.setUsername(req.getUsername());
+        user.setUsername(username);
         user.setPassword(passwordEncoder.encode(req.getPassword()));
         user.setEmail(req.getEmail());
-        user.setNickname(req.getNickname() != null ? req.getNickname() : req.getUsername());
+        user.setNickname(req.getNickname() != null && !req.getNickname().isBlank()
+                ? req.getNickname() : username);
         userRepository.save(user);
 
         redisTemplate.delete(redisKey);
@@ -86,12 +88,23 @@ public class AuthService {
                 user.getNickname(), user.getEmail(), user.getAvatar());
     }
 
+    private String generateUniqueUsername() {
+        for (int i = 0; i < 10; i++) {
+            String username = "user" + String.format("%08d",
+                    ThreadLocalRandom.current().nextInt(0, 100_000_000));
+            if (!userRepository.existsByUsername(username)) {
+                return username;
+            }
+        }
+        throw new RuntimeException("系统繁忙，请稍后重试");
+    }
+
     public LoginResponse login(LoginRequest req) {
-        SysUser user = userRepository.findByUsername(req.getUsername())
-                .orElseThrow(() -> new RuntimeException("用户名或密码错误"));
+        SysUser user = userRepository.findByEmail(req.getEmail())
+                .orElseThrow(() -> new RuntimeException("邮箱或密码错误"));
 
         if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
-            throw new RuntimeException("用户名或密码错误");
+            throw new RuntimeException("邮箱或密码错误");
         }
 
         String token = jwtService.generateToken(user.getId(), user.getUsername());
