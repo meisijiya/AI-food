@@ -246,6 +246,13 @@ public class ChatService {
         int updated = messageRepository.markAsRead(conversationId, userId);
         if (updated > 0) {
             clearUnread(userId, conversationId);
+
+            // 同步递减全局通知未读计数
+            notificationService.decrementUnread(userId, updated);
+
+            // 同步更新通知中心的聊天未读计数
+            notificationService.decrementChatNotificationUnread(userId, conversationId, updated);
+
             log.info("Marked {} messages as read: userId={}, conversationId={}", updated, userId, conversationId);
         }
     }

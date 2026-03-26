@@ -70,22 +70,25 @@ public class NotificationService {
 
             String hashKey = CHAT_KEY + receiverId;
             String field = conversationId.toString();
-            String json = OBJECT_MAPPER.writeValueAsString(notif);
 
-            // 未读计数：只有 Hash 中已有该 conversation 时才 +1（首次不算，已在 ChatService 的 unread 中计数）
-            boolean existed = redisTemplate.opsForHash().hasKey(hashKey, field);
-            redisTemplate.opsForHash().put(hashKey, field, json);
+            // 获取旧的 unreadCount
+            int unreadCount = 1;
+            Object oldVal = redisTemplate.opsForHash().get(hashKey, field);
+            if (oldVal != null) {
+                try {
+                    Map<String, Object> oldNotif = OBJECT_MAPPER.readValue(oldVal.toString(), new TypeReference<>() {});
+                    unreadCount = ((Number) oldNotif.getOrDefault("unreadCount", 0)).intValue() + 1;
+                } catch (JsonProcessingException e) {
+                    // parse error, use default 1
+                }
+            }
+            notif.put("unreadCount", unreadCount);
+
+            redisTemplate.opsForHash().put(hashKey, field, OBJECT_MAPPER.writeValueAsString(notif));
             redisTemplate.expire(hashKey, TTL);
 
-            if (existed) {
-                // 解析旧的 unreadCount 并 +1
-                String oldJson = redisTemplate.opsForHash().get(hashKey, field).toString();
-                Map<String, Object> oldNotif = OBJECT_MAPPER.readValue(oldJson, new TypeReference<>() {});
-                int count = ((Number) oldNotif.getOrDefault("unreadCount", 0)).intValue() + 1;
-                notif.put("unreadCount", count);
-                redisTemplate.opsForHash().put(hashKey, field, OBJECT_MAPPER.writeValueAsString(notif));
-            }
-            // 首次不增加通知未读数（ChatService 已有专门的 chat:unread 管理）
+            // 每条消息都给全局通知未读计数加一
+            incrementUnread(receiverId);
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize chat notification", e);
         }
@@ -167,6 +170,29 @@ public class NotificationService {
 
     // ==================== 删除通知 ====================
 
+    /**
+     * 递减聊天通知 Hash 中指定对话的 unreadCount
+     * 当用户打开聊天室标记已读时调用
+     */
+    public void decrementChatNotificationUnread(Long userId, Long conversationId, int amount) {
+        if (amount <= 0) return;
+        String hashKey = CHAT_KEY + userId;
+        String field = conversationId.toString();
+
+        Object val = redisTemplate.opsForHash().get(hashKey, field);
+        if (val == null) return;
+
+        try {
+            Map<String, Object> notif = OBJECT_MAPPER.readValue(val.toString(), new TypeReference<>() {});
+            int unreadCount = ((Number) notif.getOrDefault("unreadCount", 0)).intValue();
+            int newCount = Math.max(0, unreadCount - amount);
+            notif.put("unreadCount", newCount);
+            redisTemplate.opsForHash().put(hashKey, field, OBJECT_MAPPER.writeValueAsString(notif));
+        } catch (JsonProcessingException e) {
+            log.error("Failed to update chat notification unread count", e);
+        }
+    }
+
     public void deleteNotification(Long userId, String notificationId) {
         String listKey = LIST_KEY + userId;
 
@@ -192,13 +218,44 @@ public class NotificationService {
         if (notificationId.startsWith("chat_")) {
             String conversationId = notificationId.substring(5);
             String hashKey = CHAT_KEY + userId;
+
+            // 读取未读数，递减全局计数
+            Object val = redisTemplate.opsForHash().get(hashKey, conversationId);
+            if (val != null) {
+                try {
+                    Map<String, Object> chatNotif = OBJECT_MAPPER.readValue(val.toString(), new TypeReference<>() {});
+                    int unreadCount = ((Number) chatNotif.getOrDefault("unreadCount", 0)).intValue();
+                    if (unreadCount > 0) {
+                        decrementUnread(userId, unreadCount);
+                    }
+                } catch (JsonProcessingException e) {
+                    // parse error, still delete
+                }
+            }
+
             redisTemplate.opsForHash().delete(hashKey, conversationId);
         }
     }
 
     public void clearAllNotifications(Long userId) {
+        // 清空前累加聊天通知的未读数，递减全局计数
+        String chatKey = CHAT_KEY + userId;
+        Map<Object, Object> chatEntries = redisTemplate.opsForHash().entries(chatKey);
+        int chatUnreadSum = 0;
+        for (Object value : chatEntries.values()) {
+            try {
+                Map<String, Object> chatNotif = OBJECT_MAPPER.readValue(value.toString(), new TypeReference<>() {});
+                chatUnreadSum += ((Number) chatNotif.getOrDefault("unreadCount", 0)).intValue();
+            } catch (JsonProcessingException e) {
+                // skip
+            }
+        }
+        if (chatUnreadSum > 0) {
+            decrementUnread(userId, chatUnreadSum);
+        }
+
         redisTemplate.delete(LIST_KEY + userId);
-        redisTemplate.delete(CHAT_KEY + userId);
+        redisTemplate.delete(chatKey);
         redisTemplate.delete(UNREAD_KEY + userId);
         log.info("All notifications cleared for user {}", userId);
     }
@@ -211,7 +268,12 @@ public class NotificationService {
     }
 
     public void decrementUnread(Long userId) {
-        Long val = redisTemplate.opsForValue().decrement(UNREAD_KEY + userId);
+        decrementUnread(userId, 1);
+    }
+
+    public void decrementUnread(Long userId, int amount) {
+        if (amount <= 0) return;
+        Long val = redisTemplate.opsForValue().decrement(UNREAD_KEY + userId, amount);
         if (val == null || val < 0) {
             redisTemplate.opsForValue().set(UNREAD_KEY + userId, "0");
         }
