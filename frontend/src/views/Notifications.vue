@@ -6,10 +6,27 @@
     <!-- Header -->
     <div class="page-header animate-fade-up">
       <button class="back-btn" @click="router.back()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="m15 18-6-6 6-6" />
+        </svg>
       </button>
       <h1 class="page-title"><em>消息通知</em></h1>
-      <button v-if="notifications.length > 0" class="clear-btn" @click="handleClearAll">清空</button>
+      <button
+        v-if="notifications.length > 0"
+        class="clear-btn"
+        @click="handleClearAll"
+      >
+        清空
+      </button>
     </div>
 
     <!-- Notification List -->
@@ -25,13 +42,28 @@
         <template v-if="item.type === 'comment'">
           <div class="notif-avatar">
             <img v-if="item.avatar" :src="item.avatar" alt="" />
-            <span v-else>{{ item.nickname?.charAt(0) || '?' }}</span>
+            <span v-else>{{ item.nickname?.charAt(0) || "?" }}</span>
           </div>
           <div class="notif-body">
             <div class="notif-header">
-              <span class="notif-title">{{ item.nickname }} <span class="notif-action">评论了你的动态</span></span>
+              <span class="notif-title"
+                >{{ item.nickname }}
+                <span class="notif-action">评论了你的动态</span></span
+              >
               <button class="notif-delete" @click.stop="handleDelete(item.id)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             </div>
             <div class="notif-content">{{ item.content }}</div>
@@ -43,14 +75,34 @@
         <template v-else-if="item.type === 'chat'">
           <div class="notif-avatar">
             <img v-if="item.avatar" :src="item.avatar" alt="" />
-            <span v-else>{{ item.nickname?.charAt(0) || '?' }}</span>
-            <span v-if="item.unreadCount > 0" class="notif-badge">{{ item.unreadCount > 99 ? '99+' : item.unreadCount }}</span>
+            <span v-else>{{ item.nickname?.charAt(0) || "?" }}</span>
+            <span v-if="item.unreadCount > 0" class="notif-badge">{{
+              item.unreadCount > 99 ? "99+" : item.unreadCount
+            }}</span>
           </div>
           <div class="notif-body">
             <div class="notif-header">
-              <span class="notif-title">{{ item.nickname }} <span class="notif-action">发来消息</span></span>
-              <button class="notif-delete" @click.stop="handleDelete('chat_' + item.conversationId)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <span class="notif-title"
+                >{{ item.nickname }}
+                <span class="notif-action">发来消息</span></span
+              >
+              <button
+                class="notif-delete"
+                @click.stop="handleDelete('chat_' + item.conversationId)"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             </div>
             <div class="notif-content">{{ item.lastMessage }}</div>
@@ -65,7 +117,20 @@
 
     <!-- Empty -->
     <div v-if="!loading && notifications.length === 0" class="empty-state">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="empty-icon"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      <svg
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="empty-icon"
+      >
+        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+      </svg>
       <div class="empty-text">暂无通知</div>
     </div>
 
@@ -74,108 +139,110 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { notificationApi } from '@/api'
-import { showSuccess, showError } from '@/utils/toast'
-import { showConfirmDialog } from 'vant'
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { notificationApi } from "@/api";
+import { showSuccess, showError } from "@/utils/toast";
+import { showConfirmDialog } from "vant";
 
-const router = useRouter()
-const scrollContainer = ref<HTMLElement | null>(null)
+const router = useRouter();
+const scrollContainer = ref<HTMLElement | null>(null);
 
-const notifications = ref<any[]>([])
-const loading = ref(false)
-const page = ref(0)
-const hasMore = ref(true)
-const commentTotal = ref(0)
+const notifications = ref<any[]>([]);
+const loading = ref(false);
+const page = ref(0);
+const hasMore = ref(true);
+const commentTotal = ref(0);
 
 async function fetchNotifications(reset = false) {
-  if (loading.value) return
-  if (!reset && !hasMore.value) return
+  if (loading.value) return;
+  if (!reset && !hasMore.value) return;
 
-  loading.value = true
-  const p = reset ? 0 : page.value
+  loading.value = true;
+  const p = reset ? 0 : page.value;
 
   try {
-    const res = await notificationApi.getList({ page: p, size: 10 })
-    const items = res?.items || []
-    commentTotal.value = res?.commentTotal || 0
+    const res = await notificationApi.getList({ page: p, size: 10 });
+    const items = res?.items || [];
+    commentTotal.value = res?.commentTotal || 0;
 
     if (reset) {
-      notifications.value = items
+      notifications.value = items;
     } else {
-      notifications.value.push(...items)
+      notifications.value.push(...items);
     }
 
-    hasMore.value = items.length >= 10 || (p * 10 + items.length) < commentTotal.value
-    page.value = p + 1
+    hasMore.value =
+      items.length >= 10 || p * 10 + items.length < commentTotal.value;
+    page.value = p + 1;
   } catch {
     // ignore
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function onScroll() {
-  const el = scrollContainer.value
-  if (!el) return
+  const el = scrollContainer.value;
+  if (!el) return;
   if (el.scrollTop + el.clientHeight >= el.scrollHeight - 100) {
-    fetchNotifications(false)
+    fetchNotifications(false);
   }
 }
 
 function handleClick(item: any) {
-  if (item.type === 'comment' && item.postId) {
-    router.push(`/feed/${item.postId}`)
-  } else if (item.type === 'chat') {
+  if (item.type === "comment" && item.postId) {
+    router.push(`/feed/${item.postId}`);
+  } else if (item.type === "chat") {
     router.push({
-      path: '/chat-room',
+      path: "/chat-room",
       query: {
         userId: String(item.senderId),
         nickname: item.nickname,
-        avatar: item.avatar || ''
-      }
-    })
+        avatar: item.avatar || "",
+      },
+    });
   }
 }
 
 async function handleDelete(notificationId: string) {
   try {
-    await notificationApi.deleteOne(notificationId)
-    notifications.value = notifications.value.filter(n => {
-      if (n.type === 'chat') return 'chat_' + n.conversationId !== notificationId
-      return n.id !== notificationId
-    })
-    showSuccess('已删除')
+    await notificationApi.deleteOne(notificationId);
+    notifications.value = notifications.value.filter((n) => {
+      if (n.type === "chat")
+        return "chat_" + n.conversationId !== notificationId;
+      return n.id !== notificationId;
+    });
+    showSuccess("已删除");
   } catch {
-    showError('删除失败')
+    showError("删除失败");
   }
 }
 
 async function handleClearAll() {
   try {
-    await showConfirmDialog({ title: '确认', message: '确定清空所有通知吗？' })
-    await notificationApi.clearAll()
-    notifications.value = []
-    showSuccess('已清空')
+    await showConfirmDialog({ title: "确认", message: "确定清空所有通知吗？" });
+    await notificationApi.clearAll();
+    notifications.value = [];
+    showSuccess("已清空");
   } catch {
     // user cancelled
   }
 }
 
 function formatTime(timestamp: number) {
-  if (!timestamp) return ''
-  const diff = Date.now() - timestamp
-  if (diff < 60000) return '刚刚'
-  if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前'
-  if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前'
-  if (diff < 604800000) return Math.floor(diff / 86400000) + '天前'
-  return new Date(timestamp).toLocaleDateString()
+  if (!timestamp) return "";
+  const diff = Date.now() - timestamp;
+  if (diff < 60000) return "刚刚";
+  if (diff < 3600000) return Math.floor(diff / 60000) + "分钟前";
+  if (diff < 86400000) return Math.floor(diff / 3600000) + "小时前";
+  if (diff < 604800000) return Math.floor(diff / 86400000) + "天前";
+  return new Date(timestamp).toLocaleDateString();
 }
 
 onMounted(() => {
-  fetchNotifications(true)
-})
+  fetchNotifications(true);
+});
 </script>
 
 <style lang="scss" scoped>
@@ -236,7 +303,9 @@ onMounted(() => {
   justify-content: center;
   border-radius: 50%;
   transition: background 0.2s;
-  &:active { background: var(--color-surface-container-lowest); }
+  &:active {
+    background: var(--color-surface-container-lowest);
+  }
 }
 
 .page-title {
@@ -246,7 +315,10 @@ onMounted(() => {
   font-weight: 400;
   color: var(--color-on-surface);
   flex: 1;
-  em { font-style: italic; color: var(--color-primary); }
+  em {
+    font-style: italic;
+    color: var(--color-primary);
+  }
 }
 
 .clear-btn {
@@ -284,14 +356,20 @@ onMounted(() => {
   margin-bottom: 10px;
   cursor: pointer;
   transition: transform 0.15s;
-  &:active { transform: scale(0.98); }
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 .notif-avatar {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-container),
+    var(--color-primary)
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -302,13 +380,17 @@ onMounted(() => {
   flex-shrink: 0;
   overflow: hidden;
   position: relative;
-  img { width: 100%; height: 100%; object-fit: cover; }
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 
 .notif-badge {
   position: absolute;
-  top: -2px;
-  right: -2px;
+  top: 2px;
+  right: 2px;
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
@@ -354,7 +436,9 @@ onMounted(() => {
   padding: 2px;
   opacity: 0.5;
   transition: opacity 0.2s;
-  &:active { opacity: 1; }
+  &:active {
+    opacity: 1;
+  }
 }
 
 .notif-content {
@@ -392,7 +476,11 @@ onMounted(() => {
   animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 .empty-state {
   display: flex;
@@ -404,10 +492,20 @@ onMounted(() => {
   position: relative;
 }
 
-.empty-icon { color: var(--color-on-surface-variant); opacity: 0.3; margin-bottom: 16px; }
-.empty-text { font-size: 14px; color: var(--color-on-surface-variant); opacity: 0.6; }
+.empty-icon {
+  color: var(--color-on-surface-variant);
+  opacity: 0.3;
+  margin-bottom: 16px;
+}
+.empty-text {
+  font-size: 14px;
+  color: var(--color-on-surface-variant);
+  opacity: 0.6;
+}
 
-.nav-spacer { height: 80px; }
+.nav-spacer {
+  height: 80px;
+}
 
 @media (min-width: 1024px) {
   .notifications-container {
