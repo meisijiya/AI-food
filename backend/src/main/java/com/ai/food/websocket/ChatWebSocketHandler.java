@@ -124,6 +124,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         // 发送消息
         ChatMessage chatMessage = chatService.sendMessage(senderId, receiverId, content, messageType);
+        log.info("WS message sent: from={} to={}, conversationId={}, msgId={}",
+                senderId, receiverId, chatMessage.getConversationId(), chatMessage.getId());
 
         // 构建消息响应
         Map<String, Object> messageResponse = new ConcurrentHashMap<>();

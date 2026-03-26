@@ -55,10 +55,15 @@ public class ChatService {
         boolean receiverFollowsSender = followService.isFollowing(receiverId, senderId);
 
         if (senderFollowsReceiver && !receiverFollowsSender) {
-            String countKey = MSG_COUNT_KEY + senderId + ":" + receiverId;
-            String countStr = stringRedisTemplate.opsForValue().get(countKey);
-            int count = countStr != null ? Integer.parseInt(countStr) : 0;
-            return count >= MAX_NON_MUTUAL_MESSAGES ? "max_reached" : "ok";
+            try {
+                String countKey = MSG_COUNT_KEY + senderId + ":" + receiverId;
+                String countStr = stringRedisTemplate.opsForValue().get(countKey);
+                int count = countStr != null ? Integer.parseInt(countStr) : 0;
+                return count >= MAX_NON_MUTUAL_MESSAGES ? "max_reached" : "ok";
+            } catch (Exception e) {
+                log.warn("Redis read failed for msg count, defaulting to ok: {}", e.getMessage());
+                return "ok";
+            }
         }
 
         return "not_allowed";
@@ -74,10 +79,15 @@ public class ChatService {
         }
         if (perm.equals("not_allowed")) return 0;
 
-        String countKey = MSG_COUNT_KEY + senderId + ":" + receiverId;
-        String countStr = stringRedisTemplate.opsForValue().get(countKey);
-        int count = countStr != null ? Integer.parseInt(countStr) : 0;
-        return Math.max(0, MAX_NON_MUTUAL_MESSAGES - count);
+        try {
+            String countKey = MSG_COUNT_KEY + senderId + ":" + receiverId;
+            String countStr = stringRedisTemplate.opsForValue().get(countKey);
+            int count = countStr != null ? Integer.parseInt(countStr) : 0;
+            return Math.max(0, MAX_NON_MUTUAL_MESSAGES - count);
+        } catch (Exception e) {
+            log.warn("Redis read failed for remaining count: {}", e.getMessage());
+            return MAX_NON_MUTUAL_MESSAGES;
+        }
     }
 
     @Transactional
@@ -91,8 +101,12 @@ public class ChatService {
         }
 
         if (!followService.isMutualFollow(senderId, receiverId)) {
-            String countKey = MSG_COUNT_KEY + senderId + ":" + receiverId;
-            stringRedisTemplate.opsForValue().increment(countKey);
+            try {
+                String countKey = MSG_COUNT_KEY + senderId + ":" + receiverId;
+                stringRedisTemplate.opsForValue().increment(countKey);
+            } catch (Exception e) {
+                log.warn("Redis increment failed for msg count: {}", e.getMessage());
+            }
         }
 
         ChatConversation conversation = getOrCreateConversation(senderId, receiverId);
@@ -361,22 +375,30 @@ public class ChatService {
     // ==================== Redis 操作 ====================
 
     private void incrementUnread(Long userId, Long conversationId) {
-        String key = UNREAD_KEY + userId;
-        stringRedisTemplate.opsForHash().increment(key, conversationId.toString(), 1);
-        stringRedisTemplate.opsForValue().increment(UNREAD_TOTAL_KEY + userId, 1);
+        try {
+            String key = UNREAD_KEY + userId;
+            stringRedisTemplate.opsForHash().increment(key, conversationId.toString(), 1);
+            stringRedisTemplate.opsForValue().increment(UNREAD_TOTAL_KEY + userId, 1);
+        } catch (Exception e) {
+            log.warn("Redis increment unread failed: userId={}, convId={}: {}", userId, conversationId, e.getMessage());
+        }
     }
 
     private void clearUnread(Long userId, Long conversationId) {
-        String key = UNREAD_KEY + userId;
-        Object count = stringRedisTemplate.opsForHash().get(key, conversationId.toString());
-        if (count != null) {
-            int countVal = Integer.parseInt(count.toString());
-            stringRedisTemplate.opsForHash().delete(key, conversationId.toString());
+        try {
+            String key = UNREAD_KEY + userId;
+            Object count = stringRedisTemplate.opsForHash().get(key, conversationId.toString());
+            if (count != null) {
+                int countVal = Integer.parseInt(count.toString());
+                stringRedisTemplate.opsForHash().delete(key, conversationId.toString());
 
-            Long total = stringRedisTemplate.opsForValue().decrement(UNREAD_TOTAL_KEY + userId, countVal);
-            if (total == null || total < 0) {
-                stringRedisTemplate.opsForValue().set(UNREAD_TOTAL_KEY + userId, "0");
+                Long total = stringRedisTemplate.opsForValue().decrement(UNREAD_TOTAL_KEY + userId, countVal);
+                if (total == null || total < 0) {
+                    stringRedisTemplate.opsForValue().set(UNREAD_TOTAL_KEY + userId, "0");
+                }
             }
+        } catch (Exception e) {
+            log.warn("Redis clear unread failed: userId={}, convId={}: {}", userId, conversationId, e.getMessage());
         }
     }
 
