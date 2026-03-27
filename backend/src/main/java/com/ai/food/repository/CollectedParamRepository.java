@@ -24,6 +24,11 @@ public interface CollectedParamRepository extends JpaRepository<CollectedParam, 
     @Transactional
     @Query("UPDATE CollectedParam c SET c.isDeleted = true WHERE c.sessionId = :sessionId")
     void softDeleteBySessionId(String sessionId);
+    
+    @Modifying
+    @Transactional
+    @Query("UPDATE CollectedParam c SET c.isDeleted = true WHERE c.sessionId IN :sessionIds")
+    void softDeleteBySessionIdIn(List<String> sessionIds);
 
     @Modifying
     @Transactional

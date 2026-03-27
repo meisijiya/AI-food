@@ -16,6 +16,8 @@ public interface PhotoRepository extends JpaRepository<Photo, Long> {
     // 取该 session 最新一条照片（一个 session 可能上传多次）
     Optional<Photo> findFirstByRelatedSessionIdOrderByCreatedAtDesc(String sessionId);
 
+    List<Photo> findByRelatedSessionIdInOrderByCreatedAtDesc(List<String> sessionIds);
+
     List<Photo> findByUserIdAndRelatedSessionId(Long userId, String sessionId);
 
     Optional<Photo> findByUserIdAndOriginalPath(Long userId, String originalPath);

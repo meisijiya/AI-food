@@ -25,6 +25,9 @@ public interface UserFollowRepository extends JpaRepository<UserFollow, Long> {
     
     boolean existsByFollowerIdAndFollowingId(Long followerId, Long followingId);
     
+    @Query("SELECT COUNT(uf) = 2 FROM UserFollow uf WHERE (uf.followerId = :id1 AND uf.followingId = :id2) OR (uf.followerId = :id2 AND uf.followingId = :id1)")
+    boolean isMutualFollow(@Param("id1") Long userId1, @Param("id2") Long userId2);
+    
     @Query("SELECT uf.followingId FROM UserFollow uf WHERE uf.followerId = :userId")
     List<Long> findFollowingIdsByUserId(@Param("userId") Long userId);
     

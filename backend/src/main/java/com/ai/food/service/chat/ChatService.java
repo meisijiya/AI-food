@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -192,9 +193,20 @@ public class ChatService {
         List<Map<String, Object>> result = new ArrayList<>();
         Map<Long, Integer> unreadMap = getUnreadMap(userId);
 
+        // Collect all otherUserIds and batch fetch
+        List<Long> otherUserIds = new ArrayList<>();
+        for (ChatConversation conv : conversations) {
+            otherUserIds.add(conv.getUser1Id().equals(userId) ? conv.getUser2Id() : conv.getUser1Id());
+        }
+        Map<Long, SysUser> userMap = new LinkedHashMap<>();
+        for (SysUser user : userRepository.findByIdIn(otherUserIds)) {
+            userMap.put(user.getId(), user);
+        }
+
         for (ChatConversation conv : conversations) {
             Long otherUserId = conv.getUser1Id().equals(userId) ? conv.getUser2Id() : conv.getUser1Id();
-            userRepository.findById(otherUserId).ifPresent(user -> {
+            SysUser user = userMap.get(otherUserId);
+            if (user != null) {
                 Map<String, Object> item = new LinkedHashMap<>();
                 item.put("conversationId", conv.getId());
                 item.put("userId", user.getId());
@@ -204,7 +216,7 @@ public class ChatService {
                 item.put("lastMessageAt", conv.getLastMessageAt());
                 item.put("unreadCount", unreadMap.getOrDefault(conv.getId(), 0));
                 result.add(item);
-            });
+            }
         }
 
         return result;
@@ -290,15 +302,34 @@ public class ChatService {
         List<Long> mutualFriendIds = followService.getMutualFriendIds(userId);
         List<Map<String, Object>> result = new ArrayList<>();
 
-        for (Long friendId : mutualFriendIds) {
-            userRepository.findById(friendId).ifPresent(user -> {
+        if (mutualFriendIds.isEmpty()) return result;
+
+        // Batch fetch users
+        Map<Long, SysUser> userMap = new LinkedHashMap<>();
+        for (SysUser user : userRepository.findByIdIn(mutualFriendIds)) {
+            userMap.put(user.getId(), user);
+        }
+
+        // Pipeline online status checks
+        final List<Long> friendIds = mutualFriendIds;
+        List<Object> onlineResults = stringRedisTemplate.executePipelined((RedisConnection connection) -> {
+            for (Long friendId : friendIds) {
+                connection.keyCommands().exists((ONLINE_KEY + friendId).getBytes());
+            }
+            return null;
+        });
+
+        for (int i = 0; i < friendIds.size(); i++) {
+            Long friendId = friendIds.get(i);
+            SysUser user = userMap.get(friendId);
+            if (user != null) {
                 Map<String, Object> item = new LinkedHashMap<>();
                 item.put("userId", user.getId());
                 item.put("nickname", user.getNickname() != null ? user.getNickname() : user.getUsername());
                 item.put("avatar", user.getAvatar());
-                item.put("isOnline", isOnline(friendId));
+                item.put("isOnline", i < onlineResults.size() && onlineResults.get(i) instanceof Boolean && (Boolean) onlineResults.get(i));
                 result.add(item);
-            });
+            }
         }
 
         return result;

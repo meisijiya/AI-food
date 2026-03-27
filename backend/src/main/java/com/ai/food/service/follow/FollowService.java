@@ -54,10 +54,15 @@ public class FollowService {
         List<Map<String, Object>> items = new ArrayList<>();
         if (start < followingIds.size()) {
             List<Long> pageIds = followingIds.subList(start, end);
+            Map<Long, SysUser> userMap = new LinkedHashMap<>();
+            for (SysUser user : userRepository.findByIdIn(pageIds)) {
+                userMap.put(user.getId(), user);
+            }
             for (Long followingId : pageIds) {
-                userRepository.findById(followingId).ifPresent(user -> {
+                SysUser user = userMap.get(followingId);
+                if (user != null) {
                     items.add(buildUserMap(user, true));
-                });
+                }
             }
         }
 
@@ -80,11 +85,16 @@ public class FollowService {
         List<Map<String, Object>> items = new ArrayList<>();
         if (start < followerIds.size()) {
             List<Long> pageIds = followerIds.subList(start, end);
+            Map<Long, SysUser> userMap = new LinkedHashMap<>();
+            for (SysUser user : userRepository.findByIdIn(pageIds)) {
+                userMap.put(user.getId(), user);
+            }
             for (Long followerId : pageIds) {
-                userRepository.findById(followerId).ifPresent(user -> {
+                SysUser user = userMap.get(followerId);
+                if (user != null) {
                     boolean isFollowing = myFollowingIds.contains(followerId);
                     items.add(buildUserMap(user, isFollowing));
-                });
+                }
             }
         }
 
@@ -128,8 +138,7 @@ public class FollowService {
     }
 
     public boolean isMutualFollow(Long userId1, Long userId2) {
-        return userFollowRepository.existsByFollowerIdAndFollowingId(userId1, userId2)
-                && userFollowRepository.existsByFollowerIdAndFollowingId(userId2, userId1);
+        return userFollowRepository.isMutualFollow(userId1, userId2);
     }
 
     public Map<String, Object> getMutualFriendsList(Long userId, int page, int size) {
@@ -141,10 +150,15 @@ public class FollowService {
         List<Map<String, Object>> items = new ArrayList<>();
         if (start < mutualIds.size()) {
             List<Long> pageIds = mutualIds.subList(start, end);
+            Map<Long, SysUser> userMap = new LinkedHashMap<>();
+            for (SysUser user : userRepository.findByIdIn(pageIds)) {
+                userMap.put(user.getId(), user);
+            }
             for (Long friendId : pageIds) {
-                userRepository.findById(friendId).ifPresent(user -> {
+                SysUser user = userMap.get(friendId);
+                if (user != null) {
                     items.add(buildUserMap(user, true));
-                });
+                }
             }
         }
 

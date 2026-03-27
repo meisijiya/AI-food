@@ -131,19 +131,31 @@ public class NotificationService {
 
         // 组装评论通知
         List<Map<String, Object>> commentNotifs = new ArrayList<>();
+        List<Long> commenterIds = new ArrayList<>();
         if (commentJsons != null) {
             for (String json : commentJsons) {
                 try {
                     @SuppressWarnings("unchecked")
                     Map<String, Object> item = OBJECT_MAPPER.readValue(json, Map.class);
-                    // 补充评论者头像
                     Long commenterId = ((Number) item.get("userId")).longValue();
-                    userRepository.findById(commenterId).ifPresent(user -> {
-                        item.put("avatar", user.getAvatar());
-                    });
+                    commenterIds.add(commenterId);
                     commentNotifs.add(item);
                 } catch (JsonProcessingException e) {
                     log.error("Failed to parse comment notification", e);
+                }
+            }
+        }
+        // Batch fetch user avatars
+        if (!commenterIds.isEmpty()) {
+            Map<Long, String> avatarMap = new LinkedHashMap<>();
+            for (SysUser user : userRepository.findByIdIn(commenterIds)) {
+                avatarMap.put(user.getId(), user.getAvatar());
+            }
+            for (Map<String, Object> item : commentNotifs) {
+                Long commenterId = ((Number) item.get("userId")).longValue();
+                String avatar = avatarMap.get(commenterId);
+                if (avatar != null) {
+                    item.put("avatar", avatar);
                 }
             }
         }

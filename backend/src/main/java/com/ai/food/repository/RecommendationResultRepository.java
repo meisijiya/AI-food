@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -13,10 +14,17 @@ public interface RecommendationResultRepository extends JpaRepository<Recommenda
     
     Optional<RecommendationResult> findBySessionId(String sessionId);
     
+    List<RecommendationResult> findBySessionIdIn(List<String> sessionIds);
+    
     @Modifying
     @Transactional
     @Query("UPDATE RecommendationResult r SET r.isDeleted = true WHERE r.sessionId = :sessionId")
     void softDeleteBySessionId(String sessionId);
+    
+    @Modifying
+    @Transactional
+    @Query("UPDATE RecommendationResult r SET r.isDeleted = true WHERE r.sessionId IN :sessionIds")
+    void softDeleteBySessionIdIn(List<String> sessionIds);
 
     @Modifying
     @Transactional

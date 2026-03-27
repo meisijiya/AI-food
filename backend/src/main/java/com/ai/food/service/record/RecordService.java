@@ -26,6 +26,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,6 +58,25 @@ public class RecordService {
             sessions = conversationSessionRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
         }
 
+        // Collect all sessionIds for batch fetching
+        List<String> sessionIds = new ArrayList<>();
+        for (ConversationSession s : sessions.getContent()) {
+            sessionIds.add(s.getSessionId());
+        }
+
+        // Batch fetch recommendation results
+        Map<String, RecommendationResult> resultMap = new LinkedHashMap<>();
+        for (RecommendationResult r : recommendationResultRepository.findBySessionIdIn(sessionIds)) {
+            resultMap.put(r.getSessionId(), r);
+        }
+
+        // Batch fetch latest photos (all photos for these sessions, pick latest per session)
+        Map<String, Photo> photoMap = new LinkedHashMap<>();
+        List<Photo> allPhotos = photoRepository.findByRelatedSessionIdInOrderByCreatedAtDesc(sessionIds);
+        for (Photo p : allPhotos) {
+            photoMap.putIfAbsent(p.getRelatedSessionId(), p);
+        }
+
         return sessions.map(session -> {
             RecordListItem item = new RecordListItem();
             item.setSessionId(session.getSessionId());
@@ -66,18 +87,19 @@ public class RecordService {
             item.setCreatedAt(session.getCreatedAt());
             item.setCompletedAt(session.getCompletedAt());
 
-            Optional<RecommendationResult> optResult =
-                    recommendationResultRepository.findBySessionId(session.getSessionId());
-            optResult.ifPresent(r -> {
-                item.setFoodName(r.getFoodName());
-                item.setReason(r.getReason());
-                item.setPhotoUrl(r.getPhotoUrl());
-                item.setComment(r.getComment());
-                item.setSimilarityScore(r.getSimilarityScore());
-            });
+            RecommendationResult result = resultMap.get(session.getSessionId());
+            if (result != null) {
+                item.setFoodName(result.getFoodName());
+                item.setReason(result.getReason());
+                item.setPhotoUrl(result.getPhotoUrl());
+                item.setComment(result.getComment());
+                item.setSimilarityScore(result.getSimilarityScore());
+            }
 
-            photoRepository.findFirstByRelatedSessionIdOrderByCreatedAtDesc(session.getSessionId())
-                    .ifPresent(p -> item.setThumbnailUrl(p.getThumbnailPath()));
+            Photo photo = photoMap.get(session.getSessionId());
+            if (photo != null) {
+                item.setThumbnailUrl(photo.getThumbnailPath());
+            }
 
             if (item.getFoodName() == null || item.getFoodName().isBlank()) {
                 item.setFoodName("暂无推荐结果");
@@ -116,24 +138,38 @@ public class RecordService {
     @Transactional
     public void batchDeleteRecords(List<String> sessionIds) {
         log.info("Batch soft deleting {} records", sessionIds.size());
-        for (String sessionId : sessionIds) {
-            // 删除关联的 FeedPost + 评论
-            feedPostRepository.findBySessionId(sessionId).ifPresent(post -> {
-                feedCommentRepository.softDeleteByPostId(post.getId());
-                feedPostRepository.softDeleteByPostId(post.getId());
-                feedService.cleanRedisForDeletedPost(post.getId(), post.getUserId());
-            });
-            photoRepository.findFirstByRelatedSessionIdOrderByCreatedAtDesc(sessionId).ifPresent(photo -> {
-                deletePhysicalFile(photo.getOriginalPath());
-                deletePhysicalFile(photo.getThumbnailPath());
-                photo.setIsDeleted(true);
-                photoRepository.save(photo);
-            });
-            qaRecordRepository.softDeleteBySessionId(sessionId);
-            collectedParamRepository.softDeleteBySessionId(sessionId);
-            recommendationResultRepository.softDeleteBySessionId(sessionId);
-            conversationSessionRepository.softDeleteBySessionId(sessionId);
+
+        // 1. Batch fetch all associated feed posts
+        List<com.ai.food.model.FeedPost> posts = feedPostRepository.findBySessionIdIn(sessionIds);
+        List<Long> postIds = posts.stream().map(com.ai.food.model.FeedPost::getId).toList();
+
+        // 2. Batch delete comments
+        if (!postIds.isEmpty()) {
+            feedCommentRepository.softDeleteByPostIdIn(postIds);
         }
+
+        // 3. Batch delete feed posts
+        feedPostRepository.softDeleteBySessionIdIn(sessionIds);
+
+        // 4. Clean Redis for each post (per-post, but already pipelined internally)
+        for (com.ai.food.model.FeedPost post : posts) {
+            feedService.cleanRedisForDeletedPost(post.getId(), post.getUserId());
+        }
+
+        // 5. Batch delete photos (soft delete + file cleanup)
+        List<Photo> photos = photoRepository.findByRelatedSessionIdInOrderByCreatedAtDesc(sessionIds);
+        for (Photo photo : photos) {
+            deletePhysicalFile(photo.getOriginalPath());
+            deletePhysicalFile(photo.getThumbnailPath());
+            photo.setIsDeleted(true);
+            photoRepository.save(photo);
+        }
+
+        // 6. Batch delete remaining entities
+        qaRecordRepository.softDeleteBySessionIdIn(sessionIds);
+        collectedParamRepository.softDeleteBySessionIdIn(sessionIds);
+        recommendationResultRepository.softDeleteBySessionIdIn(sessionIds);
+        conversationSessionRepository.softDeleteBySessionIdIn(sessionIds);
     }
 
     @Transactional

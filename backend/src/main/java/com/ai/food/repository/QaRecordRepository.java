@@ -21,6 +21,11 @@ public interface QaRecordRepository extends JpaRepository<QaRecord, Long> {
     @Transactional
     @Query("UPDATE QaRecord q SET q.isDeleted = true WHERE q.sessionId = :sessionId")
     void softDeleteBySessionId(String sessionId);
+    
+    @Modifying
+    @Transactional
+    @Query("UPDATE QaRecord q SET q.isDeleted = true WHERE q.sessionId IN :sessionIds")
+    void softDeleteBySessionIdIn(List<String> sessionIds);
 
     @Modifying
     @Transactional

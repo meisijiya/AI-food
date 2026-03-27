@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -25,6 +26,11 @@ public interface ConversationSessionRepository extends JpaRepository<Conversatio
     @Transactional
     @Query("UPDATE ConversationSession c SET c.isDeleted = true, c.deletedAt = CURRENT_TIMESTAMP WHERE c.sessionId = :sessionId")
     void softDeleteBySessionId(String sessionId);
+    
+    @Modifying
+    @Transactional
+    @Query("UPDATE ConversationSession c SET c.isDeleted = true, c.deletedAt = CURRENT_TIMESTAMP WHERE c.sessionId IN :sessionIds")
+    void softDeleteBySessionIdIn(List<String> sessionIds);
 
     @Modifying
     @Transactional

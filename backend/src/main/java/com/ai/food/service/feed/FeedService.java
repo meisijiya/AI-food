@@ -14,6 +14,7 @@ import org.redisson.api.RedissonClient;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -128,9 +129,9 @@ public class FeedService {
         List<Map<String, Object>> items = new ArrayList<>();
         for (FeedPost post : postPage.getContent()) {
             Map<String, Object> item = buildPostMap(post);
-            enrichUserInfo(item, post.getUserId());
             items.add(item);
         }
+        batchEnrichUserInfo(items);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("items", items);
@@ -220,10 +221,10 @@ public class FeedService {
                 }
                 Map<String, Object> item = buildSimplifiedPostMap(post);
                 item.put("hotScore", scoreMap.getOrDefault(postId, 0.0).intValue());
-                enrichUserInfo(item, post.getUserId());
                 items.add(item);
             }
         }
+        batchEnrichUserInfo(items);
 
         Map<String, Object> result = Map.of("items", items);
 
@@ -345,13 +346,15 @@ public class FeedService {
         try {
             String summaryJson = objectMapper.writeValueAsString(summary);
 
-            for (Long followerId : followerIds) {
-                String key = FRIEND_FEED_KEY + followerId;
-                // Push from left (newest first)
-                stringRedisTemplate.opsForList().leftPush(key, summaryJson);
-                // Keep max 100 items
-                stringRedisTemplate.opsForList().trim(key, 0, 99);
-            }
+            final List<Long> followerIdsFinal = followerIds;
+            stringRedisTemplate.executePipelined((RedisConnection connection) -> {
+                for (Long followerId : followerIdsFinal) {
+                    String key = FRIEND_FEED_KEY + followerId;
+                    connection.listCommands().lPush(key.getBytes(), summaryJson.getBytes());
+                    connection.listCommands().lTrim(key.getBytes(), 0, 99);
+                }
+                return null;
+            });
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize feed summary", e);
         }
@@ -408,6 +411,9 @@ public class FeedService {
             String countKey = LIKE_COUNT_KEY + postId;
             String userIdStr = userId.toString();
 
+            FeedPost post = feedPostRepository.findById(postId)
+                    .orElseThrow(() -> new RuntimeException("动态不存在"));
+
             Boolean isMember = stringRedisTemplate.opsForSet().isMember(key, userIdStr);
             boolean liked;
 
@@ -429,8 +435,7 @@ public class FeedService {
                 liked = true;
 
                 // Add to unread likes notification for post owner
-                FeedPost post = feedPostRepository.findById(postId).orElse(null);
-                if (post != null && !post.getUserId().equals(userId)) {
+                if (!post.getUserId().equals(userId)) {
                     stringRedisTemplate.opsForValue().increment(UNREAD_LIKES_KEY + post.getUserId());
                 }
 
@@ -439,9 +444,6 @@ public class FeedService {
                 // 检查是否需要刷新热榜缓存
                 checkAndRefreshHotRank(postId);
             }
-
-            FeedPost post = feedPostRepository.findById(postId)
-                    .orElseThrow(() -> new RuntimeException("动态不存在"));
 
             Map<String, Object> result = new LinkedHashMap<>();
             result.put("liked", liked);
@@ -506,9 +508,9 @@ public class FeedService {
             item.put("content", comment.getContent());
             item.put("imageUrl", comment.getImageUrl());
             item.put("createdAt", comment.getCreatedAt());
-            enrichUserInfo(item, comment.getUserId());
             items.add(item);
         }
+        batchEnrichUserInfo(items);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("items", items);
@@ -569,20 +571,39 @@ public class FeedService {
             // Invalidate hot rank cache
             stringRedisTemplate.delete(HOT_DETAILS_KEY);
 
-            // Clean up friend feed entries for all followers
+            // Clean up friend feed entries for all followers using pipelining
             List<Long> followerIds = followService.getFollowerIds(userId);
-            for (Long followerId : followerIds) {
-                String friendKey = FRIEND_FEED_KEY + followerId;
-                List<String> entries = stringRedisTemplate.opsForList().range(friendKey, 0, -1);
-                if (entries != null) {
-                    for (String entry : entries) {
-                        try {
-                            Map<?, ?> map = objectMapper.readValue(entry, Map.class);
-                            if (postId.toString().equals(String.valueOf(map.get("postId")))) {
-                                stringRedisTemplate.opsForList().remove(friendKey, 1, entry);
-                            }
-                        } catch (Exception ignored) {}
+            if (!followerIds.isEmpty()) {
+                final String postIdStr = postId.toString();
+                // Step 1: Pipeline LRANGE for all follower lists
+                List<Object> rangeResults = stringRedisTemplate.executePipelined((RedisConnection connection) -> {
+                    for (Long fid : followerIds) {
+                        String friendKey = FRIEND_FEED_KEY + fid;
+                        connection.listCommands().lRange(friendKey.getBytes(), 0, -1);
                     }
+                    return null;
+                });
+                // Step 2: Pipeline LREM for matching entries
+                if (rangeResults != null) {
+                    final List<Long> followerIdsFinal = followerIds;
+                    stringRedisTemplate.executePipelined((RedisConnection connection) -> {
+                        for (int i = 0; i < rangeResults.size() && i < followerIdsFinal.size(); i++) {
+                            @SuppressWarnings("unchecked")
+                            List<String> entries = (List<String>) rangeResults.get(i);
+                            if (entries != null) {
+                                String friendKey = FRIEND_FEED_KEY + followerIdsFinal.get(i);
+                                for (String entry : entries) {
+                                    try {
+                                        Map<?, ?> map = objectMapper.readValue(entry, Map.class);
+                                        if (postIdStr.equals(String.valueOf(map.get("postId")))) {
+                                            connection.listCommands().lRem(friendKey.getBytes(), 1, entry.getBytes());
+                                        }
+                                    } catch (Exception ignored) {}
+                                }
+                            }
+                        }
+                        return null;
+                    });
                 }
             }
         } catch (Exception e) {
@@ -614,6 +635,29 @@ public class FeedService {
             target.put("nickname", user.getNickname() != null ? user.getNickname() : "匿名用户");
             target.put("avatar", user.getAvatar());
         });
+    }
+
+    private void batchEnrichUserInfo(List<Map<String, Object>> items) {
+        if (items == null || items.isEmpty()) return;
+        Set<Long> userIds = new LinkedHashSet<>();
+        for (Map<String, Object> item : items) {
+            Number uid = (Number) item.get("userId");
+            if (uid != null) userIds.add(uid.longValue());
+        }
+        if (userIds.isEmpty()) return;
+        Map<Long, SysUser> userMap = new LinkedHashMap<>();
+        for (SysUser user : userRepository.findByIdIn(new ArrayList<>(userIds))) {
+            userMap.put(user.getId(), user);
+        }
+        for (Map<String, Object> item : items) {
+            Number uid = (Number) item.get("userId");
+            if (uid == null) continue;
+            SysUser user = userMap.get(uid.longValue());
+            if (user != null) {
+                item.put("nickname", user.getNickname() != null ? user.getNickname() : "匿名用户");
+                item.put("avatar", user.getAvatar());
+            }
+        }
     }
 
     private Map<String, Object> buildPostMap(FeedPost post) {
