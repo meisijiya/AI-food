@@ -1,5 +1,6 @@
 package com.ai.food.config;
 
+import com.ai.food.job.BloomSyncJob;
 import com.ai.food.job.CleanupSoftDeletedJob;
 import org.quartz.*;
 import org.springframework.context.annotation.Bean;
@@ -19,7 +20,6 @@ public class QuartzConfig {
 
     @Bean
     public Trigger cleanupJobTrigger() {
-        // 每天凌晨 3:00 执行
         CronScheduleBuilder schedule = CronScheduleBuilder
                 .cronSchedule("0 0 3 * * ?")
                 .withMisfireHandlingInstructionFireAndProceed();
@@ -27,6 +27,28 @@ public class QuartzConfig {
         return TriggerBuilder.newTrigger()
                 .forJob(cleanupJobDetail())
                 .withIdentity("cleanupSoftDeletedTrigger")
+                .withSchedule(schedule)
+                .build();
+    }
+
+    @Bean
+    public JobDetail bloomSyncJobDetail() {
+        return JobBuilder.newJob(BloomSyncJob.class)
+                .withIdentity("bloomSyncJob")
+                .withDescription("每小时同步布隆过滤器到MySQL")
+                .storeDurably()
+                .build();
+    }
+
+    @Bean
+    public Trigger bloomSyncJobTrigger() {
+        CronScheduleBuilder schedule = CronScheduleBuilder
+                .cronSchedule("0 0 * * * ?")
+                .withMisfireHandlingInstructionFireAndProceed();
+
+        return TriggerBuilder.newTrigger()
+                .forJob(bloomSyncJobDetail())
+                .withIdentity("bloomSyncTrigger")
                 .withSchedule(schedule)
                 .build();
     }

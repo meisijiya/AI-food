@@ -11,6 +11,7 @@ import com.ai.food.repository.ConversationSessionRepository;
 import com.ai.food.repository.QaRecordRepository;
 import com.ai.food.repository.RecommendationResultRepository;
 import com.ai.food.service.ai.AiService;
+import com.ai.food.service.bloom.BloomFilterService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ai.food.validator.MessageValidator;
@@ -40,6 +41,7 @@ public class ConversationService {
     private final CollectedParamRepository collectedParamRepository;
     private final RecommendationResultRepository recommendationResultRepository;
     private final StringRedisTemplate redisTemplate;
+    private final BloomFilterService bloomFilterService;
 
     @Value("${ai.conversation.min-questions:7}")
     private int minQuestions;
@@ -330,6 +332,22 @@ public class ConversationService {
             result.setReason(payload.getOrDefault("reason", "该会话暂无可展示的推荐说明"));
             RecommendationResult saved = recommendationResultRepository.saveAndFlush(result);
             log.debug("Saved recommendation result: foodName={}", saved.getFoodName());
+
+            conversationSessionRepository.findBySessionId(sessionId).ifPresent(session -> {
+                Long userId = session.getUserId();
+                if (userId != null) {
+                    try {
+                        List<CollectedParam> params = collectedParamRepository.findBySessionId(sessionId);
+                        String paramValue = params.stream()
+                                .map(p -> p.getParamName() + "=" + p.getParamValue())
+                                .reduce((a, b) -> a + "|" + b)
+                                .orElse("");
+                        bloomFilterService.addRecommendation(userId, saved.getId().toString(), paramValue);
+                    } catch (Exception bloomEx) {
+                        log.warn("Failed to update bloom filter for user {}: {}", userId, bloomEx.getMessage());
+                    }
+                }
+            });
         } catch (Exception e) {
             log.error("Failed to save recommendation result", e);
         }

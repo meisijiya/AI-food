@@ -239,3 +239,27 @@ CREATE TABLE IF NOT EXISTS chat_file (
     INDEX idx_created (created_at),
     INDEX idx_deleted (is_deleted)
 );
+
+-- 用户布隆过滤器表
+CREATE TABLE IF NOT EXISTS user_bloom_filter (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL UNIQUE,
+    bit_array VARBINARY(32) NOT NULL COMMENT '256 bits = 32 bytes',
+    record_count INT DEFAULT 0 COMMENT '当前记录数',
+    last_record_id VARCHAR(64) COMMENT '最新一条推荐记录ID',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_id (user_id)
+) COMMENT='用户布隆过滤器持久化';
+
+-- 布隆过滤器同步日志表
+CREATE TABLE IF NOT EXISTS bloom_sync_log (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    sync_type VARCHAR(20) COMMENT 'redis_to_mysql/mysql_to_redis',
+    status VARCHAR(20) COMMENT 'success/failed',
+    error_msg TEXT,
+    synced_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_id (user_id),
+    INDEX idx_synced_at (synced_at)
+) COMMENT='布隆过滤器同步日志';
