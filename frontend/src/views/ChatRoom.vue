@@ -44,7 +44,7 @@
           <div v-if="msg.messageType === 'text'" class="message-content">{{ msg.content }}</div>
           <!-- 图片消息 -->
           <div v-else-if="msg.messageType === 'image'" class="message-image" @click.stop="previewImage(msg)">
-            <img :src="parseMediaUrl(msg.content, 'thumbnail')" alt="图片" />
+            <CachedImage :src="parseMediaUrl(msg.content, 'thumbnail')" alt="图片" :lazy="true" />
           </div>
           <!-- 文件消息 -->
           <div v-else-if="msg.messageType === 'file'" class="message-file">
@@ -161,6 +161,7 @@ import { getCachedUser } from '@/utils/userCache'
 import { showImagePreview, showConfirmDialog } from 'vant'
 import chatWs from '@/websocket/chat'
 import EmojiPicker from '@/components/EmojiPicker.vue'
+import CachedImage from '@/components/CachedImage.vue'
 
 const router = useRouter()
 const route = useRoute()

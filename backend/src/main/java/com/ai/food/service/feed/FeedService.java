@@ -3,6 +3,7 @@ package com.ai.food.service.feed;
 import com.ai.food.model.*;
 import com.ai.food.repository.*;
 import com.ai.food.service.follow.FollowService;
+import com.ai.food.service.like.LikeService;
 import com.ai.food.service.notification.NotificationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -38,6 +39,7 @@ public class FeedService {
     private final UserRepository userRepository;
     private final FollowService followService;
     private final NotificationService notificationService;
+    private final LikeService likeService;
     private final StringRedisTemplate stringRedisTemplate;
     private final RedissonClient redissonClient;
 
@@ -403,55 +405,7 @@ public class FeedService {
 
     @Transactional
     public Map<String, Object> toggleLike(Long postId, Long userId) {
-        RLock lock = redissonClient.getLock(LIKE_LOCK_KEY + postId + ":" + userId);
-        lock.lock();
-
-        try {
-            String key = LIKE_SET_KEY + postId;
-            String countKey = LIKE_COUNT_KEY + postId;
-            String userIdStr = userId.toString();
-
-            FeedPost post = feedPostRepository.findById(postId)
-                    .orElseThrow(() -> new RuntimeException("动态不存在"));
-
-            Boolean isMember = stringRedisTemplate.opsForSet().isMember(key, userIdStr);
-            boolean liked;
-
-            if (Boolean.TRUE.equals(isMember)) {
-                // Unlike
-                stringRedisTemplate.opsForSet().remove(key, userIdStr);
-                Long newCount = stringRedisTemplate.opsForValue().decrement(countKey);
-                if (newCount == null || newCount < 0) {
-                    newCount = 0L;
-                    stringRedisTemplate.opsForValue().set(countKey, "0");
-                }
-                updateDbLikeCount(postId, newCount.intValue());
-                liked = false;
-            } else {
-                // Like
-                stringRedisTemplate.opsForSet().add(key, userIdStr);
-                Long newCount = stringRedisTemplate.opsForValue().increment(countKey);
-                updateDbLikeCount(postId, newCount.intValue());
-                liked = true;
-
-                // Add to unread likes notification for post owner
-                if (!post.getUserId().equals(userId)) {
-                    stringRedisTemplate.opsForValue().increment(UNREAD_LIKES_KEY + post.getUserId());
-                }
-
-                // Increment hot score for like (+3)
-                stringRedisTemplate.opsForZSet().incrementScore(HOT_RANK_KEY, postId.toString(), 3);
-                // 检查是否需要刷新热榜缓存
-                checkAndRefreshHotRank(postId);
-            }
-
-            Map<String, Object> result = new LinkedHashMap<>();
-            result.put("liked", liked);
-            result.put("likeCount", post.getLikeCount());
-            return result;
-        } finally {
-            lock.unlock();
-        }
+        return likeService.toggleLike(postId, userId);
     }
 
     @Transactional

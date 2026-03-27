@@ -25,4 +25,20 @@ public class CaffeineConfig {
                 .maximumSize(50000)
                 .build();
     }
+
+    @Bean("hotPostLikeCache")
+    public Cache<Long, Long> hotPostLikeCache() {
+        return Caffeine.newBuilder()
+                .expireAfterWrite(30, TimeUnit.SECONDS)
+                .maximumSize(10000)
+                .build();
+    }
+
+    @Bean("hotPostLikeStatusCache")
+    public Cache<String, Boolean> hotPostLikeStatusCache() {
+        return Caffeine.newBuilder()
+                .expireAfterWrite(60, TimeUnit.SECONDS)
+                .maximumSize(50000)
+                .build();
+    }
 }
