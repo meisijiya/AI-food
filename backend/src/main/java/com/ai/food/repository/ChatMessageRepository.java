@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
@@ -17,6 +18,10 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     Page<ChatMessage> findByConversationIdOrderByCreatedAtDesc(Long conversationId, Pageable pageable);
 
     List<ChatMessage> findByConversationIdOrderByCreatedAtAsc(Long conversationId);
+
+    Optional<ChatMessage> findByPhotoId(Long photoId);
+
+    Optional<ChatMessage> findByFileId(Long fileId);
 
     @Query("SELECT COUNT(m) FROM ChatMessage m WHERE m.receiverId = :userId AND m.isRead = false")
     long countUnreadByReceiverId(@Param("userId") Long userId);

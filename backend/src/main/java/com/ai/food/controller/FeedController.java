@@ -97,6 +97,13 @@ public class FeedController {
         return ApiResponse.success(result);
     }
 
+    @DeleteMapping("/comment/{commentId}")
+    public ApiResponse<Void> deleteComment(@PathVariable Long commentId) {
+        Long userId = getCurrentUserId();
+        feedService.deleteComment(commentId, userId);
+        return ApiResponse.success("评论已删除", null);
+    }
+
     @GetMapping("/check/{sessionId}")
     public ApiResponse<Map<String, Object>> checkPublished(@PathVariable String sessionId) {
         Long userId = getCurrentUserId();

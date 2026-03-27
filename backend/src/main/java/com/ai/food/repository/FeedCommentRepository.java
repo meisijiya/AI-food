@@ -15,7 +15,15 @@ public interface FeedCommentRepository extends JpaRepository<FeedComment, Long> 
 
     Page<FeedComment> findByPostIdOrderByCreatedAtDesc(Long postId, Pageable pageable);
 
+    java.util.Optional<FeedComment> findByIdAndUserId(Long id, Long userId);
+
+    List<FeedComment> findAllByIsDeletedTrue();
+
     long countByPostId(Long postId);
+
+    @Modifying
+    @Query("UPDATE FeedComment c SET c.isDeleted = true WHERE c.id = :commentId AND c.userId = :userId")
+    int softDeleteByIdAndUserId(@Param("commentId") Long commentId, @Param("userId") Long userId);
 
     @Modifying
     @Query("UPDATE FeedComment c SET c.isDeleted = true WHERE c.postId = :postId")

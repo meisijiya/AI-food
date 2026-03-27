@@ -34,6 +34,7 @@ public class FeedService {
     private final FeedCommentRepository feedCommentRepository;
     private final RecommendationResultRepository recommendationResultRepository;
     private final PhotoRepository photoRepository;
+    private final ChatPhotoRepository chatPhotoRepository;
     private final CollectedParamRepository collectedParamRepository;
     private final ConversationSessionRepository conversationSessionRepository;
     private final UserRepository userRepository;
@@ -473,6 +474,41 @@ public class FeedService {
         result.put("totalElements", commentPage.getTotalElements());
         result.put("totalPages", commentPage.getTotalPages());
         return result;
+    }
+
+    @Transactional
+    public void deleteComment(Long commentId, Long userId) {
+        FeedComment comment = feedCommentRepository.findByIdAndUserId(commentId, userId)
+                .orElseThrow(() -> new RuntimeException("评论不存在或无权限删除"));
+        if (Boolean.TRUE.equals(comment.getIsDeleted())) {
+            return;
+        }
+
+        int updated = feedCommentRepository.softDeleteByIdAndUserId(commentId, userId);
+        if (updated <= 0) {
+            return;
+        }
+
+        if (comment.getImageUrl() != null && !comment.getImageUrl().isBlank()) {
+            chatPhotoRepository.findByOriginalPath(comment.getImageUrl())
+                    .or(() -> chatPhotoRepository.findByThumbnailPath(comment.getImageUrl()))
+                    .ifPresent(photo -> {
+                        photo.setIsDeleted(true);
+                        chatPhotoRepository.save(photo);
+                    });
+        }
+
+        feedPostRepository.findById(comment.getPostId())
+                .ifPresent(post -> notificationService.removeCommentNotification(post.getUserId(), commentId));
+
+        feedPostRepository.findById(comment.getPostId()).ifPresent(post -> {
+            int currentCount = post.getCommentCount() == null ? 0 : post.getCommentCount();
+            post.setCommentCount(Math.max(0, currentCount - 1));
+            feedPostRepository.save(post);
+        });
+
+        stringRedisTemplate.opsForZSet().incrementScore(HOT_RANK_KEY, comment.getPostId().toString(), -5);
+        checkAndRefreshHotRank(comment.getPostId());
     }
 
     public Map<String, Object> checkPublishedWithVisibility(String sessionId, Long userId) {

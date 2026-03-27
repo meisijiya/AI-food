@@ -83,7 +83,10 @@
           <div class="comment-body">
             <div class="comment-header">
               <span class="comment-nickname">{{ c.nickname || '匿名' }}</span>
-              <span class="comment-time">{{ formatTime(c.createdAt) }}</span>
+              <div class="comment-meta">
+                <span class="comment-time">{{ formatTime(c.createdAt) }}</span>
+                <button v-if="isOwnComment(c)" class="comment-delete-btn" @click.stop="deleteComment(c)">删除</button>
+              </div>
             </div>
             <div class="comment-content">{{ c.content }}</div>
             <div v-if="c.imageUrl" class="comment-image" @click.stop="openPhotoModal(c.imageUrl)">
@@ -179,6 +182,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { feedApi, followApi, uploadApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
 import { showSuccess, showError } from '@/utils/toast'
+import { showConfirmDialog } from 'vant'
 import CachedImage from '@/components/CachedImage.vue'
 import EmojiPicker from '@/components/EmojiPicker.vue'
 
@@ -232,6 +236,11 @@ const isOwnPost = computed(() => {
   if (!postUserId || !authStore.userInfo?.userId) return false
   return String(postUserId) === String(authStore.userInfo.userId)
 })
+
+function isOwnComment(comment: any) {
+  if (!comment?.userId || !authStore.userInfo?.userId) return false
+  return String(comment.userId) === String(authStore.userInfo.userId)
+}
 
 const paramLabels: Record<string, string> = {
   time: '用餐时间', location: '用餐地点', weather: '天气情况',
@@ -362,6 +371,23 @@ async function submitComment() {
     showError('评论失败')
   } finally {
     sending.value = false
+  }
+}
+
+async function deleteComment(comment: any) {
+  if (!comment?.id) return
+  try {
+    await showConfirmDialog({ title: '删除评论', message: '确定删除这条评论吗？删除后将无法恢复。' })
+    await feedApi.deleteComment(comment.id)
+    comments.value = comments.value.filter(c => c.id !== comment.id)
+    commentTotal.value = Math.max(0, commentTotal.value - 1)
+    if (post.value) {
+      post.value.commentCount = Math.max(0, Number(post.value.commentCount || 0) - 1)
+    }
+    showSuccess('评论已删除')
+  } catch (err: any) {
+    if (err === 'cancel' || err?.name === 'Cancel') return
+    showError(err?.message || '删除评论失败')
   }
 }
 
@@ -628,7 +654,16 @@ onMounted(async () => {
 }
 
 .comment-nickname { font-size: 13px; font-weight: 600; color: var(--color-on-surface); }
+.comment-meta { display: flex; align-items: center; gap: 10px; }
 .comment-time { font-size: 11px; color: var(--color-on-surface-variant); }
+.comment-delete-btn {
+  border: none;
+  background: transparent;
+  color: var(--color-danger, #ef4444);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
 .comment-content { font-size: 14px; line-height: 1.5; color: var(--color-on-surface); }
 
 .comment-image {

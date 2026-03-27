@@ -15,6 +15,10 @@ public interface ChatPhotoRepository extends JpaRepository<ChatPhoto, Long> {
 
     List<ChatPhoto> findByConversationId(Long conversationId);
 
+    Optional<ChatPhoto> findByOriginalPath(String originalPath);
+
+    Optional<ChatPhoto> findByThumbnailPath(String thumbnailPath);
+
     List<ChatPhoto> findAllByIsDeletedTrue();
 
     List<ChatPhoto> findByCreatedAtBefore(LocalDateTime cutoff);
@@ -50,6 +54,10 @@ public interface ChatPhotoRepository extends JpaRepository<ChatPhoto, Long> {
     @Modifying
     @Query("UPDATE ChatPhoto p SET p.isSenderDelete = true WHERE p.id = :photoId")
     void markSenderDeleted(@Param("photoId") Long photoId);
+
+    @Modifying
+    @Query("UPDATE ChatPhoto p SET p.isDeleted = true WHERE p.id = :photoId")
+    void markSoftDeleted(@Param("photoId") Long photoId);
 
     @Query("SELECT p FROM ChatPhoto p WHERE p.id = :photoId AND p.isReceiverDelete = true AND p.isSenderDelete = true")
     Optional<ChatPhoto> findByIdAndBothDeleted(@Param("photoId") Long photoId);

@@ -268,6 +268,9 @@ public class ChatService {
 
         List<Map<String, Object>> items = new ArrayList<>();
         for (ChatMessage msg : messagePage.getContent()) {
+            if (!shouldShowMessage(msg, userId)) {
+                continue;
+            }
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("id", msg.getId());
             item.put("conversationId", msg.getConversationId());
@@ -275,6 +278,8 @@ public class ChatService {
             item.put("receiverId", msg.getReceiverId());
             item.put("content", msg.getContent());
             item.put("messageType", msg.getMessageType());
+            item.put("photoId", msg.getPhotoId());
+            item.put("fileId", msg.getFileId());
             item.put("isRead", msg.getIsRead());
             item.put("createdAt", msg.getCreatedAt());
             items.add(item);
@@ -289,6 +294,36 @@ public class ChatService {
         result.put("totalElements", messagePage.getTotalElements());
         result.put("totalPages", messagePage.getTotalPages());
         return result;
+    }
+
+    private boolean shouldShowMessage(ChatMessage msg, Long userId) {
+        if ("image".equals(msg.getMessageType()) && msg.getPhotoId() != null) {
+            ChatPhoto photo = chatPhotoRepository.findById(msg.getPhotoId()).orElse(null);
+            if (photo == null) {
+                return false;
+            }
+            if (msg.getSenderId().equals(userId)) {
+                return !Boolean.TRUE.equals(photo.getIsSenderDelete());
+            }
+            if (msg.getReceiverId() != null && msg.getReceiverId().equals(userId)) {
+                return !Boolean.TRUE.equals(photo.getIsReceiverDelete());
+            }
+        }
+
+        if ("file".equals(msg.getMessageType()) && msg.getFileId() != null) {
+            ChatFile file = chatFileRepository.findById(msg.getFileId()).orElse(null);
+            if (file == null) {
+                return false;
+            }
+            if (msg.getSenderId().equals(userId)) {
+                return !Boolean.TRUE.equals(file.getIsSenderDelete());
+            }
+            if (msg.getReceiverId() != null && msg.getReceiverId().equals(userId)) {
+                return !Boolean.TRUE.equals(file.getIsReceiverDelete());
+            }
+        }
+
+        return true;
     }
 
     @Transactional
@@ -494,7 +529,7 @@ public class ChatService {
      * 删除聊天文件
      * - 如果是发送者删除，设置 isSenderDelete
      * - 如果是接收者删除，设置 isReceiverDelete
-     * - 双方都删除后，异步删除物理文件和数据库记录
+     * - 双方都删除后，标记 soft delete，等待定时任务清理
      */
     @Transactional
     public void deleteChatFile(Long fileId, Long userId) {
@@ -504,7 +539,19 @@ public class ChatService {
             return;
         }
 
-        if (file.getSenderId().equals(userId)) {
+        ChatMessage message = messageRepository.findByFileId(fileId).orElse(null);
+        if (message == null) {
+            log.warn("ChatMessage not found for file: id={}", fileId);
+            return;
+        }
+
+        boolean isSender = file.getSenderId().equals(userId);
+        boolean isReceiver = message.getReceiverId() != null && message.getReceiverId().equals(userId);
+        if (!isSender && !isReceiver) {
+            throw new RuntimeException("无权限删除该文件");
+        }
+
+        if (isSender) {
             chatFileRepository.markSenderDeleted(fileId);
             log.info("User {} marked sender_delete for file {}", userId, fileId);
         } else {
@@ -512,10 +559,11 @@ public class ChatService {
             log.info("User {} marked receiver_delete for file {}", userId, fileId);
         }
 
-        if (file.getSenderId().equals(userId) && Boolean.TRUE.equals(file.getIsReceiverDelete())) {
-            asyncDeleteFileAndRecord(fileId, file.getFilePath());
-        } else if (!file.getSenderId().equals(userId) && Boolean.TRUE.equals(file.getIsSenderDelete())) {
-            asyncDeleteFileAndRecord(fileId, file.getFilePath());
+        boolean senderDeleted = isSender || Boolean.TRUE.equals(file.getIsSenderDelete());
+        boolean receiverDeleted = isReceiver || Boolean.TRUE.equals(file.getIsReceiverDelete());
+        if (senderDeleted && receiverDeleted) {
+            chatFileRepository.markSoftDeleted(fileId);
+            log.info("File {} marked soft deleted after both parties deleted", fileId);
         }
     }
 
@@ -533,7 +581,19 @@ public class ChatService {
             return;
         }
 
-        if (photo.getSenderId().equals(userId)) {
+        ChatMessage message = messageRepository.findByPhotoId(photoId).orElse(null);
+        if (message == null) {
+            log.warn("ChatMessage not found for photo: id={}", photoId);
+            return;
+        }
+
+        boolean isSender = photo.getSenderId().equals(userId);
+        boolean isReceiver = message.getReceiverId() != null && message.getReceiverId().equals(userId);
+        if (!isSender && !isReceiver) {
+            throw new RuntimeException("无权限删除该照片");
+        }
+
+        if (isSender) {
             chatPhotoRepository.markSenderDeleted(photoId);
             log.info("User {} marked sender_delete for photo {}", userId, photoId);
         } else {
@@ -541,10 +601,11 @@ public class ChatService {
             log.info("User {} marked receiver_delete for photo {}", userId, photoId);
         }
 
-        if (photo.getSenderId().equals(userId) && Boolean.TRUE.equals(photo.getIsReceiverDelete())) {
-            asyncDeletePhotoAndRecord(photoId, photo.getOriginalPath(), photo.getThumbnailPath());
-        } else if (!photo.getSenderId().equals(userId) && Boolean.TRUE.equals(photo.getIsSenderDelete())) {
-            asyncDeletePhotoAndRecord(photoId, photo.getOriginalPath(), photo.getThumbnailPath());
+        boolean senderDeleted = isSender || Boolean.TRUE.equals(photo.getIsSenderDelete());
+        boolean receiverDeleted = isReceiver || Boolean.TRUE.equals(photo.getIsReceiverDelete());
+        if (senderDeleted && receiverDeleted) {
+            chatPhotoRepository.markSoftDeleted(photoId);
+            log.info("Photo {} marked soft deleted after both parties deleted", photoId);
         }
     }
 

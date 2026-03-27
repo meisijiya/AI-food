@@ -54,6 +54,30 @@ public class NotificationService {
         }
     }
 
+    public void removeCommentNotification(Long postOwnerId, Long commentId) {
+        String listKey = LIST_KEY + postOwnerId;
+        Set<String> allJsons = redisTemplate.opsForZSet().range(listKey, 0, -1);
+        if (allJsons == null || allJsons.isEmpty()) {
+            return;
+        }
+
+        String targetId = "comment_" + commentId;
+        for (String json : allJsons) {
+            try {
+                Map<String, Object> item = OBJECT_MAPPER.readValue(json, new TypeReference<>() {});
+                if (targetId.equals(item.get("id"))) {
+                    Long removed = redisTemplate.opsForZSet().remove(listKey, json);
+                    if (removed != null && removed > 0) {
+                        decrementUnread(postOwnerId);
+                    }
+                    return;
+                }
+            } catch (JsonProcessingException e) {
+                log.error("Failed to parse comment notification during removal", e);
+            }
+        }
+    }
+
     // ==================== 聊天通知（聚合） ====================
 
     public void updateChatNotification(Long receiverId, Long conversationId,

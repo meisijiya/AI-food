@@ -44,7 +44,7 @@
           <div v-if="msg.messageType === 'text'" class="message-content">{{ msg.content }}</div>
           <!-- 图片消息 -->
           <div v-else-if="msg.messageType === 'image'" class="message-image" @click.stop="previewImage(msg)">
-            <CachedImage :src="parseMediaUrl(msg.content, 'thumbnail')" alt="图片" :lazy="true" />
+            <CachedImage :src="parseMediaUrl(msg.content, 'thumbnailUrl')" alt="图片" :lazy="true" />
           </div>
           <!-- 文件消息 -->
           <div v-else-if="msg.messageType === 'file'" class="message-file">
@@ -447,10 +447,11 @@ async function handleFileUpload(e: Event) {
   }
 }
 
-function parseMediaUrl(content: string, field: string): string {
+function parseMediaUrl(content: string | object, field: string): string {
   try {
-    const data = JSON.parse(content)
-    return data[field] || ''
+    if (!content) return ''
+    const data = typeof content === 'string' ? JSON.parse(content) : content
+    return data?.[field] || ''
   } catch {
     return ''
   }
@@ -458,17 +459,19 @@ function parseMediaUrl(content: string, field: string): string {
 
 function previewImage(msg: any) {
   try {
-    const data = JSON.parse(msg.content)
-    showImagePreview([data.originalUrl || data.thumbnailUrl])
+    const content = msg.content
+    const data = typeof content === 'string' ? JSON.parse(content) : content
+    showImagePreview([data?.originalUrl || data?.thumbnailUrl])
   } catch { /* ignore */ }
 }
 
 function downloadFile(msg: any) {
   try {
-    const data = JSON.parse(msg.content)
+    const content = msg.content
+    const data = typeof content === 'string' ? JSON.parse(content) : content
     const link = document.createElement('a')
-    link.href = data.fileUrl
-    link.download = data.fileName || 'file'
+    link.href = data?.fileUrl || data?.originalUrl || ''
+    link.download = data?.fileName || 'file'
     link.click()
   } catch { /* ignore */ }
 }
@@ -516,11 +519,13 @@ async function handleDeleteFile(msg: any) {
   activeMessageId.value = null
   if (!msg.fileId) return
   try {
+    await showConfirmDialog({ title: '删除文件', message: '确定删除这个文件吗？删除后将无法恢复。' })
     await chatApi.deleteChatFile(msg.fileId)
     showSuccess('已删除')
     messages.value = messages.value.filter(m => m.id !== msg.id)
     saveToCache(conversationId.value, messages.value)
   } catch (err: any) {
+    if (err === 'cancel' || err?.name === 'Cancel') return
     showError(err?.message || '删除失败')
   }
 }
@@ -528,11 +533,13 @@ async function handleDeleteFile(msg: any) {
 async function handleDeletePhoto(msg: any) {
   if (!msg.photoId) return
   try {
+    await showConfirmDialog({ title: '删除图片', message: '确定删除这张图片吗？删除后将无法恢复。' })
     await chatApi.deleteChatPhoto(msg.photoId)
     showSuccess('已删除')
     messages.value = messages.value.filter(m => m.id !== msg.id)
     saveToCache(conversationId.value, messages.value)
   } catch (err: any) {
+    if (err === 'cancel' || err?.name === 'Cancel') return
     showError(err?.message || '删除失败')
   }
 }

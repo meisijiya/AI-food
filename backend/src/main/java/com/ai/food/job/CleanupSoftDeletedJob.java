@@ -3,9 +3,11 @@ package com.ai.food.job;
 import com.ai.food.model.ChatFile;
 import com.ai.food.model.ChatPhoto;
 import com.ai.food.model.FeedPost;
+import com.ai.food.model.FeedComment;
 import com.ai.food.model.Photo;
 import com.ai.food.repository.*;
 import com.ai.food.service.chat.ChatService;
+import com.ai.food.service.upload.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobExecutionContext;
@@ -37,6 +39,7 @@ public class CleanupSoftDeletedJob extends QuartzJobBean {
     private final CollectedParamRepository collectedParamRepository;
     private final RecommendationResultRepository recommendationResultRepository;
     private final ConversationSessionRepository conversationSessionRepository;
+    private final FileUploadService fileUploadService;
 
     private static final int CHAT_MEDIA_TTL_DAYS = 30;
 
@@ -47,6 +50,8 @@ public class CleanupSoftDeletedJob extends QuartzJobBean {
         int total = 0;
 
         // 1. 先清理评论（依赖 feed_post 的外键）
+        total += cleanupCommentImages();
+        log.info("清理 feed_comment 图片文件");
         total += feedCommentRepository.hardDeleteAllSoftDeleted();
         log.info("清理 feed_comment");
 
@@ -96,6 +101,14 @@ public class CleanupSoftDeletedJob extends QuartzJobBean {
             deletePhysicalFile(uploadRoot, photo.getThumbnailPath());
         }
         return photoRepository.hardDeleteAllSoftDeleted();
+    }
+
+    private int cleanupCommentImages() {
+        List<FeedComment> comments = feedCommentRepository.findAllByIsDeletedTrue();
+        for (FeedComment comment : comments) {
+            fileUploadService.deletePhysicalFile(comment.getImageUrl());
+        }
+        return comments.size();
     }
 
     private int cleanupFeedPostPhotos() {

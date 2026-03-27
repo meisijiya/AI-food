@@ -150,6 +150,7 @@ export const feedApi = {
   getDetail: (postId: number) => request('get', `/feed/detail/${postId}`),
   toggleLike: (postId: number) => request('post', `/feed/like/${postId}`),
   addComment: (postId: number, content: string, imageUrl?: string) => request('post', `/feed/comment/${postId}`, { content, imageUrl }),
+  deleteComment: (commentId: number) => request('delete', `/feed/comment/${commentId}`),
   getComments: (postId: number, params?: { page?: number; size?: number }) =>
     request('get', `/feed/comments/${postId}`, undefined, { params }),
   checkPublished: (sessionId: string) => request('get', `/feed/check/${sessionId}`),

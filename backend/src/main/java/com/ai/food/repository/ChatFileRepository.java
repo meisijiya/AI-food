@@ -51,6 +51,10 @@ public interface ChatFileRepository extends JpaRepository<ChatFile, Long> {
     @Query("UPDATE ChatFile f SET f.isSenderDelete = true WHERE f.id = :fileId")
     void markSenderDeleted(@Param("fileId") Long fileId);
 
+    @Modifying
+    @Query("UPDATE ChatFile f SET f.isDeleted = true WHERE f.id = :fileId")
+    void markSoftDeleted(@Param("fileId") Long fileId);
+
     @Query("SELECT f FROM ChatFile f WHERE f.id = :fileId AND f.isReceiverDelete = true AND f.isSenderDelete = true")
     Optional<ChatFile> findByIdAndBothDeleted(@Param("fileId") Long fileId);
 
