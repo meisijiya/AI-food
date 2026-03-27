@@ -107,12 +107,14 @@ class ChatWebSocketClient {
     }
   }
 
-  sendMessage(receiverId: number, content: string, messageType: string = 'text') {
+  sendMessage(receiverId: number, content: string, messageType: string = 'text', photoId?: number, fileId?: number) {
     this.send({
       action: 'send',
       receiverId,
       content,
-      messageType
+      messageType,
+      photoId,
+      fileId
     })
   }
 

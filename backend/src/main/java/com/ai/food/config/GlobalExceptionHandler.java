@@ -14,19 +14,20 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException e) {
         String msg = e.getMessage();
-        if (msg == null) msg = "服务器内部错误";
+        log.warn("Business error: {}", msg);
 
-        // Known "not found" patterns → 404
-        if (msg.contains("不存在") || msg.contains("not found") || msg.contains("已被删除")) {
-            log.warn("Resource not found: {}", msg);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.error(msg));
+        if (msg == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("服务器内部错误"));
         }
 
-        // Validation / business logic errors → 400
-        log.warn("Business error: {}", msg);
+        if (msg.contains("不存在") || msg.contains("not found") || msg.contains("已被删除")) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("请求的资源不存在"));
+        }
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(msg));
+                .body(ApiResponse.error("操作失败，请稍后重试"));
     }
 
     @ExceptionHandler(Exception.class)

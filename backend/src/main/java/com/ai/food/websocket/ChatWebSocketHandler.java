@@ -49,7 +49,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             }
         } catch (Exception e) {
             log.error("Error handling chat message", e);
-            sendError(session, "Error: " + e.getMessage());
+            sendError(session, "消息处理失败");
         }
     }
 
@@ -91,7 +91,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             log.info("Chat user authenticated: userId={}", userId);
         } catch (Exception e) {
             log.error("Auth failed", e);
-            sendError(session, "Auth failed: " + e.getMessage());
+            sendError(session, "认证失败");
         }
     }
 
@@ -105,6 +105,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         Long receiverId = Long.parseLong(msg.get("receiverId").toString());
         String content = (String) msg.get("content");
         String messageType = (String) msg.getOrDefault("messageType", "text");
+        Long photoId = msg.get("photoId") != null ? Long.parseLong(msg.get("photoId").toString()) : null;
+        Long fileId = msg.get("fileId") != null ? Long.parseLong(msg.get("fileId").toString()) : null;
 
         if (content == null || content.isBlank()) {
             sendError(session, "Content required");
@@ -123,7 +125,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }
 
         // 发送消息
-        ChatMessage chatMessage = chatService.sendMessage(senderId, receiverId, content, messageType);
+        ChatMessage chatMessage = chatService.sendMessage(senderId, receiverId, content, messageType, photoId, fileId);
         log.info("WS message sent: from={} to={}, conversationId={}, msgId={}",
                 senderId, receiverId, chatMessage.getConversationId(), chatMessage.getId());
 

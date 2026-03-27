@@ -30,7 +30,7 @@ public class UploadController {
             return ApiResponse.success("上传成功", result);
         } catch (Exception e) {
             log.error("Photo upload failed", e);
-            return ApiResponse.error("上传失败: " + e.getMessage());
+            return ApiResponse.error("图片上传失败");
         }
     }
 
@@ -41,7 +41,7 @@ public class UploadController {
             return ApiResponse.success("上传成功", result);
         } catch (Exception e) {
             log.error("Chat photo upload failed", e);
-            return ApiResponse.error("上传失败: " + e.getMessage());
+            return ApiResponse.error("聊天图片上传失败");
         }
     }
 
@@ -52,7 +52,7 @@ public class UploadController {
             return ApiResponse.success("上传成功", result);
         } catch (Exception e) {
             log.error("Chat file upload failed", e);
-            return ApiResponse.error("上传失败: " + e.getMessage());
+            return ApiResponse.error("文件上传失败");
         }
     }
 

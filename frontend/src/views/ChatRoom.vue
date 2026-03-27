@@ -31,15 +31,23 @@
           <img v-if="partnerAvatar" :src="partnerAvatar" alt="" />
           <span v-else>{{ nickname?.charAt(0) || '?' }}</span>
         </div>
-        <div class="message-bubble">
+
+        <!-- 图片消息左侧删除按钮 -->
+        <div v-if="msg.messageType === 'image'" class="delete-btn-wrapper">
+          <button class="delete-btn delete-btn-image" @click.stop="handleDeletePhoto(msg)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <div class="message-bubble" :class="{ 'bubble-clickable': msg.messageType === 'text' || msg.messageType === 'file' }" @click.stop="handleMessageClick(msg)">
           <!-- 文本消息 -->
           <div v-if="msg.messageType === 'text'" class="message-content">{{ msg.content }}</div>
           <!-- 图片消息 -->
-          <div v-else-if="msg.messageType === 'image'" class="message-image" @click="previewImage(msg)">
+          <div v-else-if="msg.messageType === 'image'" class="message-image" @click.stop="previewImage(msg)">
             <img :src="parseMediaUrl(msg.content, 'thumbnail')" alt="图片" />
           </div>
           <!-- 文件消息 -->
-          <div v-else-if="msg.messageType === 'file'" class="message-file" @click="downloadFile(msg)">
+          <div v-else-if="msg.messageType === 'file'" class="message-file">
             <div class="file-icon">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             </div>
@@ -52,6 +60,19 @@
           <div v-else class="message-content">{{ msg.content }}</div>
           <div class="message-time">{{ formatTime(msg.createdAt) }}</div>
         </div>
+
+        <!-- 消息操作面板 -->
+        <div v-if="activeMessageId === msg.id" class="message-actions-panel" :class="{ 'panel-self': msg.senderId === currentUserId }">
+          <template v-if="msg.messageType === 'text'">
+            <button class="action-btn" @click.stop="handleCopyContent(msg)">复制内容</button>
+            <button class="action-btn action-btn-delete" @click.stop="handleDeleteMessage(msg)">删除</button>
+          </template>
+          <template v-else-if="msg.messageType === 'file'">
+            <button class="action-btn" @click.stop="handleDownloadFile(msg)">下载</button>
+            <button class="action-btn action-btn-delete" @click.stop="handleDeleteFile(msg)">删除</button>
+          </template>
+        </div>
+
         <div v-if="msg.senderId === currentUserId" class="msg-avatar msg-avatar-self">
           <img v-if="myAvatar" :src="myAvatar" alt="" />
           <span v-else>{{ authStore.userInfo?.nickname?.charAt(0) || '?' }}</span>
@@ -174,6 +195,7 @@ const showAttach = ref(false)
 const photoInput = ref<HTMLInputElement>()
 const fileInput = ref<HTMLInputElement>()
 const uploading = ref(false)
+const activeMessageId = ref<number | null>(null)
 
 // 发送权限
 const sendPermission = ref<'ok' | 'max_reached' | 'not_allowed'>('ok')
@@ -297,6 +319,7 @@ function toggleAttach() {
 function closePanels() {
   showEmoji.value = false
   showAttach.value = false
+  activeMessageId.value = null
 }
 
 function sendMessage() {
@@ -357,7 +380,7 @@ async function handlePhotoUpload(e: Event) {
       originalUrl: res.originalUrl,
       fileName: res.fileName
     })
-    chatWs.sendMessage(targetUserId.value, content, 'image')
+    chatWs.sendMessage(targetUserId.value, content, 'image', res.photoId)
 
     const localMsg = {
       id: Date.now(),
@@ -366,6 +389,7 @@ async function handlePhotoUpload(e: Event) {
       receiverId: targetUserId.value,
       content,
       messageType: 'image',
+      photoId: res.photoId,
       isRead: false,
       createdAt: new Date().toISOString()
     }
@@ -385,7 +409,7 @@ async function handleFileUpload(e: Event) {
   if (!file || uploading.value) return
 
   if (file.size > 50 * 1024 * 1024) {
-    showError('文件大小不能超过50MB')
+    showError('文件过大，无法发送！请选择小于 50MB 的文件')
     return
   }
 
@@ -398,7 +422,7 @@ async function handleFileUpload(e: Event) {
       fileName: res.fileName,
       fileSize: res.fileSize
     })
-    chatWs.sendMessage(targetUserId.value, content, 'file')
+    chatWs.sendMessage(targetUserId.value, content, 'file', undefined, res.fileId)
 
     const localMsg = {
       id: Date.now(),
@@ -407,6 +431,7 @@ async function handleFileUpload(e: Event) {
       receiverId: targetUserId.value,
       content,
       messageType: 'file',
+      fileId: res.fileId,
       isRead: false,
       createdAt: new Date().toISOString()
     }
@@ -452,6 +477,63 @@ function formatFileSize(size: string | number): string {
   if (bytes < 1024) return bytes + ' B'
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
+// ==================== 消息操作 ====================
+
+function handleMessageClick(msg: any) {
+  if (msg.messageType === 'image') {
+    previewImage(msg)
+    return
+  }
+  if (activeMessageId.value === msg.id) {
+    activeMessageId.value = null
+  } else {
+    activeMessageId.value = msg.id
+  }
+}
+
+function handleCopyContent(msg: any) {
+  navigator.clipboard.writeText(msg.content).then(() => {
+    showSuccess('已复制')
+    activeMessageId.value = null
+  }).catch(() => {
+    showError('复制失败')
+  })
+}
+
+function handleDeleteMessage(_msg: any) {
+  activeMessageId.value = null
+}
+
+function handleDownloadFile(msg: any) {
+  activeMessageId.value = null
+  downloadFile(msg)
+}
+
+async function handleDeleteFile(msg: any) {
+  activeMessageId.value = null
+  if (!msg.fileId) return
+  try {
+    await chatApi.deleteChatFile(msg.fileId)
+    showSuccess('已删除')
+    messages.value = messages.value.filter(m => m.id !== msg.id)
+    saveToCache(conversationId.value, messages.value)
+  } catch (err: any) {
+    showError(err?.message || '删除失败')
+  }
+}
+
+async function handleDeletePhoto(msg: any) {
+  if (!msg.photoId) return
+  try {
+    await chatApi.deleteChatPhoto(msg.photoId)
+    showSuccess('已删除')
+    messages.value = messages.value.filter(m => m.id !== msg.id)
+    saveToCache(conversationId.value, messages.value)
+  } catch (err: any) {
+    showError(err?.message || '删除失败')
+  }
 }
 
 // ==================== 清除聊天 ====================
@@ -1011,6 +1093,105 @@ onUnmounted(() => {
 
 .emoji-panel-wrapper {
   flex-shrink: 0;
+}
+
+/* 消息操作面板 */
+.delete-btn-wrapper {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.delete-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  flex-shrink: 0;
+
+  &:active {
+    background: rgba(239, 68, 68, 0.2);
+    transform: scale(0.9);
+  }
+
+  &.delete-btn-image {
+    position: absolute;
+    top: -8px;
+    left: -4px;
+    width: 22px;
+    height: 22px;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+}
+
+.message-item {
+  position: relative;
+
+  &:hover .delete-btn-image {
+    opacity: 1;
+  }
+}
+
+.message-bubble {
+  position: relative;
+
+  &.bubble-clickable {
+    cursor: pointer;
+  }
+}
+
+.message-actions-panel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  display: flex;
+  gap: 6px;
+  background: var(--color-surface-container-lowest);
+  border-radius: 8px;
+  padding: 6px 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  white-space: nowrap;
+
+  &.panel-self {
+    left: auto;
+    right: 0;
+  }
+}
+
+.action-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  background: var(--color-surface-container-low);
+  color: var(--color-on-surface);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:active {
+    background: var(--color-surface-container-high);
+  }
+
+  &.action-btn-delete {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+
+    &:active {
+      background: rgba(239, 68, 68, 0.2);
+    }
+  }
 }
 
 /* Panel slide transition */

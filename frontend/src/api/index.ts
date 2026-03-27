@@ -196,7 +196,9 @@ export const chatApi = {
   checkPermission: (receiverId: number) => request('get', `/chat/permission/${receiverId}`),
   clearConversation: (conversationId: number) => request('delete', `/chat/conversation/${conversationId}`),
   getOrCreateConversationWith: (otherUserId: number) =>
-    request('get', `/chat/conversation/with/${otherUserId}`)
+    request('get', `/chat/conversation/with/${otherUserId}`),
+  deleteChatFile: (fileId: number) => request('delete', `/chat/file/${fileId}`),
+  deleteChatPhoto: (photoId: number) => request('delete', `/chat/photo/${photoId}`)
 }
 
 // 分享相关接口

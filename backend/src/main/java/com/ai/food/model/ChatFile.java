@@ -19,7 +19,7 @@ public class ChatFile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "conversation_id", nullable = false)
+    @Column(name = "conversation_id")
     private Long conversationId;
 
     @Column(name = "sender_id", nullable = false)
@@ -39,6 +39,12 @@ public class ChatFile {
 
     @Column(name = "is_deleted")
     private Boolean isDeleted = false;
+
+    @Column(name = "is_receiver_delete")
+    private Boolean isReceiverDelete = false;
+
+    @Column(name = "is_sender_delete")
+    private Boolean isSenderDelete = false;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

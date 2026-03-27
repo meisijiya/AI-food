@@ -3,6 +3,8 @@ package com.ai.food.service.chat;
 import com.ai.food.model.ChatConversation;
 import com.ai.food.model.ChatMessage;
 import com.ai.food.model.SysUser;
+import com.ai.food.model.ChatFile;
+import com.ai.food.model.ChatPhoto;
 import com.ai.food.repository.ChatConversationRepository;
 import com.ai.food.repository.ChatFileRepository;
 import com.ai.food.repository.ChatMessageRepository;
@@ -10,6 +12,7 @@ import com.ai.food.repository.ChatPhotoRepository;
 import com.ai.food.repository.UserRepository;
 import com.ai.food.service.follow.FollowService;
 import com.ai.food.service.notification.NotificationService;
+import com.ai.food.service.upload.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -17,6 +20,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +40,7 @@ public class ChatService {
     private final FollowService followService;
     private final NotificationService notificationService;
     private final StringRedisTemplate stringRedisTemplate;
+    private final FileUploadService fileUploadService;
 
     private static final String UNREAD_KEY = "chat:unread:";
     private static final String UNREAD_TOTAL_KEY = "chat:unread:total:";
@@ -92,7 +97,7 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatMessage sendMessage(Long senderId, Long receiverId, String content, String messageType) {
+    public ChatMessage sendMessage(Long senderId, Long receiverId, String content, String messageType, Long photoId, Long fileId) {
         String permission = checkSendPermission(senderId, receiverId);
         if (permission.equals("not_allowed")) {
             throw new RuntimeException("对方未关注你，无法发送消息");
@@ -121,10 +126,29 @@ public class ChatService {
         message.setReceiverId(receiverId);
         message.setContent(content);
         message.setMessageType(messageType != null ? messageType : "text");
+        message.setPhotoId(photoId);
+        message.setFileId(fileId);
         message.setIsRead(false);
         ChatMessage saved = messageRepository.save(message);
 
-        conversation.setLastMessage(content.length() > 50 ? content.substring(0, 50) + "..." : content);
+        // 更新 chat_photo 和 chat_file 的 conversationId
+        if (photoId != null) {
+            chatPhotoRepository.updateConversationId(photoId, conversation.getId());
+        }
+        if (fileId != null) {
+            chatFileRepository.updateConversationId(fileId, conversation.getId());
+        }
+
+        // 根据消息类型设置 lastMessage
+        String lastMessagePreview;
+        if ("image".equals(messageType)) {
+            lastMessagePreview = "【照片】";
+        } else if ("file".equals(messageType)) {
+            lastMessagePreview = "【文件】";
+        } else {
+            lastMessagePreview = content.length() > 50 ? content.substring(0, 50) + "..." : content;
+        }
+        conversation.setLastMessage(lastMessagePreview);
         conversation.setLastMessageAt(LocalDateTime.now());
         conversationRepository.save(conversation);
 
@@ -461,6 +485,89 @@ public class ChatService {
             return conv.getClearedAtUser1();
         } else {
             return conv.getClearedAtUser2();
+        }
+    }
+
+    // ==================== 删除聊天文件/照片（双字段方案） ====================
+
+    /**
+     * 删除聊天文件
+     * - 如果是发送者删除，设置 isSenderDelete
+     * - 如果是接收者删除，设置 isReceiverDelete
+     * - 双方都删除后，异步删除物理文件和数据库记录
+     */
+    @Transactional
+    public void deleteChatFile(Long fileId, Long userId) {
+        ChatFile file = chatFileRepository.findById(fileId).orElse(null);
+        if (file == null) {
+            log.warn("ChatFile not found: id={}", fileId);
+            return;
+        }
+
+        if (file.getSenderId().equals(userId)) {
+            chatFileRepository.markSenderDeleted(fileId);
+            log.info("User {} marked sender_delete for file {}", userId, fileId);
+        } else {
+            chatFileRepository.markReceiverDeleted(fileId);
+            log.info("User {} marked receiver_delete for file {}", userId, fileId);
+        }
+
+        if (file.getSenderId().equals(userId) && Boolean.TRUE.equals(file.getIsReceiverDelete())) {
+            asyncDeleteFileAndRecord(fileId, file.getFilePath());
+        } else if (!file.getSenderId().equals(userId) && Boolean.TRUE.equals(file.getIsSenderDelete())) {
+            asyncDeleteFileAndRecord(fileId, file.getFilePath());
+        }
+    }
+
+    /**
+     * 删除聊天照片
+     * - 如果是发送者删除，设置 isSenderDelete
+     * - 如果是接收者删除，设置 isReceiverDelete
+     * - 双方都删除后，异步删除物理文件和数据库记录
+     */
+    @Transactional
+    public void deleteChatPhoto(Long photoId, Long userId) {
+        ChatPhoto photo = chatPhotoRepository.findById(photoId).orElse(null);
+        if (photo == null) {
+            log.warn("ChatPhoto not found: id={}", photoId);
+            return;
+        }
+
+        if (photo.getSenderId().equals(userId)) {
+            chatPhotoRepository.markSenderDeleted(photoId);
+            log.info("User {} marked sender_delete for photo {}", userId, photoId);
+        } else {
+            chatPhotoRepository.markReceiverDeleted(photoId);
+            log.info("User {} marked receiver_delete for photo {}", userId, photoId);
+        }
+
+        if (photo.getSenderId().equals(userId) && Boolean.TRUE.equals(photo.getIsReceiverDelete())) {
+            asyncDeletePhotoAndRecord(photoId, photo.getOriginalPath(), photo.getThumbnailPath());
+        } else if (!photo.getSenderId().equals(userId) && Boolean.TRUE.equals(photo.getIsSenderDelete())) {
+            asyncDeletePhotoAndRecord(photoId, photo.getOriginalPath(), photo.getThumbnailPath());
+        }
+    }
+
+    @Async
+    public void asyncDeleteFileAndRecord(Long fileId, String filePath) {
+        try {
+            fileUploadService.deletePhysicalFile(filePath);
+            chatFileRepository.hardDeleteById(fileId);
+            log.info("Async deleted file record and physical file: id={}, path={}", fileId, filePath);
+        } catch (Exception e) {
+            log.error("Failed to async delete file: id={}", fileId, e);
+        }
+    }
+
+    @Async
+    public void asyncDeletePhotoAndRecord(Long photoId, String originalPath, String thumbnailPath) {
+        try {
+            fileUploadService.deletePhysicalFile(originalPath);
+            fileUploadService.deletePhysicalFile(thumbnailPath);
+            chatPhotoRepository.hardDeleteById(photoId);
+            log.info("Async deleted photo record and physical files: id={}, original={}, thumb={}", photoId, originalPath, thumbnailPath);
+        } catch (Exception e) {
+            log.error("Failed to async delete photo: id={}", photoId, e);
         }
     }
 }

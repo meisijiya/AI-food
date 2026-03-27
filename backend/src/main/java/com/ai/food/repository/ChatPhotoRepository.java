@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ChatPhotoRepository extends JpaRepository<ChatPhoto, Long> {
@@ -37,4 +38,23 @@ public interface ChatPhotoRepository extends JpaRepository<ChatPhoto, Long> {
     @Modifying
     @Query("UPDATE ChatPhoto p SET p.isDeleted = true WHERE p.createdAt < :cutoff")
     void softDeleteExpired(@Param("cutoff") LocalDateTime cutoff);
+
+    @Modifying
+    @Query("UPDATE ChatPhoto p SET p.conversationId = :conversationId WHERE p.id = :id")
+    void updateConversationId(@Param("id") Long id, @Param("conversationId") Long conversationId);
+
+    @Modifying
+    @Query("UPDATE ChatPhoto p SET p.isReceiverDelete = true WHERE p.id = :photoId")
+    void markReceiverDeleted(@Param("photoId") Long photoId);
+
+    @Modifying
+    @Query("UPDATE ChatPhoto p SET p.isSenderDelete = true WHERE p.id = :photoId")
+    void markSenderDeleted(@Param("photoId") Long photoId);
+
+    @Query("SELECT p FROM ChatPhoto p WHERE p.id = :photoId AND p.isReceiverDelete = true AND p.isSenderDelete = true")
+    Optional<ChatPhoto> findByIdAndBothDeleted(@Param("photoId") Long photoId);
+
+    @Modifying
+    @Query("DELETE FROM ChatPhoto p WHERE p.id = :photoId")
+    void hardDeleteById(@Param("photoId") Long photoId);
 }

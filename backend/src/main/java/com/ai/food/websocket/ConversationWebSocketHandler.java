@@ -79,7 +79,7 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
             }
         } catch (Exception e) {
             log.error("Error handling message", e);
-            sendError(session, "Error: " + e.getMessage());
+            sendError(session, "处理失败，请重试");
         }
     }
 

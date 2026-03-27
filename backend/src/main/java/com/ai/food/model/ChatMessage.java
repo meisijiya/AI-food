@@ -34,6 +34,12 @@ public class ChatMessage {
     @Column(name = "message_type", length = 20)
     private String messageType = "text";
 
+    @Column(name = "photo_id")
+    private Long photoId;
+
+    @Column(name = "file_id")
+    private Long fileId;
+
     @Column(name = "is_read")
     private Boolean isRead = false;
 

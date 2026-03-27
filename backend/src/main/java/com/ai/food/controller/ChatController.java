@@ -64,9 +64,11 @@ public class ChatController {
         Long receiverId = Long.parseLong(body.get("receiverId").toString());
         String content = body.get("content").toString();
         String messageType = body.get("messageType") != null ? body.get("messageType").toString() : "text";
+        Long photoId = body.get("photoId") != null ? Long.parseLong(body.get("photoId").toString()) : null;
+        Long fileId = body.get("fileId") != null ? Long.parseLong(body.get("fileId").toString()) : null;
 
         try {
-            ChatMessage message = chatService.sendMessage(senderId, receiverId, content, messageType);
+            ChatMessage message = chatService.sendMessage(senderId, receiverId, content, messageType, photoId, fileId);
 
             Map<String, Object> result = new java.util.LinkedHashMap<>();
             result.put("id", message.getId());
@@ -78,7 +80,8 @@ public class ChatController {
             result.put("createdAt", message.getCreatedAt());
             return ApiResponse.success("发送成功", result);
         } catch (RuntimeException e) {
-            return ApiResponse.error(e.getMessage());
+            log.warn("Send message failed: {}", e.getMessage());
+            return ApiResponse.error("消息发送失败");
         }
     }
 
@@ -100,8 +103,23 @@ public class ChatController {
             chatService.clearConversation(userId, conversationId);
             return ApiResponse.success("已清除聊天记录", null);
         } catch (RuntimeException e) {
-            return ApiResponse.error(e.getMessage());
+            log.warn("Clear conversation failed: {}", e.getMessage());
+            return ApiResponse.error("清除聊天记录失败");
         }
+    }
+
+    @DeleteMapping("/file/{fileId}")
+    public ApiResponse<Void> deleteChatFile(@PathVariable Long fileId) {
+        Long userId = getCurrentUserId();
+        chatService.deleteChatFile(fileId, userId);
+        return ApiResponse.success("已删除文件", null);
+    }
+
+    @DeleteMapping("/photo/{photoId}")
+    public ApiResponse<Void> deleteChatPhoto(@PathVariable Long photoId) {
+        Long userId = getCurrentUserId();
+        chatService.deleteChatPhoto(photoId, userId);
+        return ApiResponse.success("已删除照片", null);
     }
 
     @GetMapping("/conversation/with/{otherUserId}")

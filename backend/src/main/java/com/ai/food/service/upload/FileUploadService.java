@@ -1,11 +1,17 @@
 package com.ai.food.service.upload;
 
+import com.ai.food.model.ChatFile;
+import com.ai.food.model.ChatPhoto;
 import com.ai.food.model.Photo;
+import com.ai.food.repository.ChatFileRepository;
+import com.ai.food.repository.ChatPhotoRepository;
 import com.ai.food.repository.PhotoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,11 +31,18 @@ import java.util.UUID;
 public class FileUploadService {
 
     private final PhotoRepository photoRepository;
+    private final ChatPhotoRepository chatPhotoRepository;
+    private final ChatFileRepository chatFileRepository;
 
     @Value("${app.upload.base-url:/uploads}")
     private String baseUrl;
 
     private static final long MAX_CHAT_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+    private Long getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return Long.parseLong(auth.getPrincipal().toString());
+    }
 
     private Path getUploadRoot() {
         return Paths.get(System.getProperty("user.dir"), "uploads").toAbsolutePath();
@@ -291,9 +304,20 @@ public class FileUploadService {
 
         long thumbSize = Files.size(thumbPath);
 
-        log.info("Chat photo uploaded: original={}B, thumb={}B", originalBytes.length, thumbSize);
+        ChatPhoto chatPhoto = new ChatPhoto();
+        chatPhoto.setSenderId(getCurrentUserId());
+        chatPhoto.setOriginalPath("/uploads/chat-photos/" + dateDir + "/" + fileName);
+        chatPhoto.setThumbnailPath("/uploads/chat-photos/" + dateDir + "/" + thumbName);
+        chatPhoto.setFileName(originalName != null ? originalName : fileName);
+        chatPhoto.setOriginalSize((long) originalBytes.length);
+        chatPhoto.setThumbnailSize(thumbSize);
+        chatPhoto.setMimeType(contentType);
+        ChatPhoto saved = chatPhotoRepository.save(chatPhoto);
+
+        log.info("Chat photo uploaded: id={}, original={}B, thumb={}B", saved.getId(), originalBytes.length, thumbSize);
 
         return Map.of(
+                "photoId", saved.getId(),
                 "originalUrl", "/uploads/chat-photos/" + dateDir + "/" + fileName,
                 "thumbnailUrl", "/uploads/chat-photos/" + dateDir + "/" + thumbName,
                 "fileName", originalName != null ? originalName : fileName,
@@ -329,9 +353,18 @@ public class FileUploadService {
         Path filePath = dirPath.resolve(fileName);
         Files.write(filePath, fileBytes);
 
-        log.info("Chat file uploaded: name={}, size={}B", originalName, fileBytes.length);
+        ChatFile chatFile = new ChatFile();
+        chatFile.setSenderId(getCurrentUserId());
+        chatFile.setFilePath("/uploads/chat-files/" + dateDir + "/" + fileName);
+        chatFile.setOriginalName(originalName != null ? originalName : fileName);
+        chatFile.setFileSize((long) fileBytes.length);
+        chatFile.setMimeType(file.getContentType() != null ? file.getContentType() : "application/octet-stream");
+        ChatFile saved = chatFileRepository.save(chatFile);
+
+        log.info("Chat file uploaded: id={}, name={}, size={}B", saved.getId(), originalName, fileBytes.length);
 
         return Map.of(
+                "fileId", saved.getId(),
                 "fileUrl", "/uploads/chat-files/" + dateDir + "/" + fileName,
                 "fileName", originalName != null ? originalName : fileName,
                 "fileSize", (long) fileBytes.length,
