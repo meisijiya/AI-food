@@ -7,6 +7,7 @@ import com.ai.food.repository.ConversationSessionRepository;
 import com.ai.food.repository.QaRecordRepository;
 import com.ai.food.repository.RecommendationResultRepository;
 import com.ai.food.service.ai.AiService;
+import com.ai.food.service.bloom.BloomFilterService;
 import com.ai.food.validator.MessageValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -49,6 +50,9 @@ class ConversationServiceTest {
     @Mock
     private StringRedisTemplate redisTemplate;
 
+    @Mock
+    private BloomFilterService bloomFilterService;
+
     private ConversationService conversationService;
 
     @BeforeEach
@@ -58,7 +62,7 @@ class ConversationServiceTest {
         conversationService = new ConversationService(
                 aiService, messageValidator, messageTagParser,
                 conversationSessionRepository, qaRecordRepository, collectedParamRepository,
-                recommendationResultRepository, redisTemplate
+                recommendationResultRepository, redisTemplate, bloomFilterService
         );
         ReflectionTestUtils.setField(conversationService, "minQuestions", 7);
         ReflectionTestUtils.setField(conversationService, "maxQuestions", 10);

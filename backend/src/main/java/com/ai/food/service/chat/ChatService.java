@@ -407,7 +407,7 @@ public class ChatService {
      * 2. 软删除 clearedAt 之前的消息
      * 3. 清理 Redis 未读计数
      * 4. 更新 lastMessage
-     * 5. 如果双方都已清除，硬删除软删除记录
+     * 5. 双方都已清除时，不在请求链路中硬删除；交给定时清理任务统一处理
      */
     @Transactional
     public void clearConversation(Long userId, Long conversationId) {
@@ -441,19 +441,11 @@ public class ChatService {
             conversationRepository.updateLastMessage(conversationId, preview, last.getCreatedAt());
         }
 
-        // 检查双方是否都已清除 — 如果是，立即硬删除软删除记录
-        conv = conversationRepository.findById(conversationId).orElse(conv);
-        boolean bothCleared = conv.getClearedAtUser1() != null && conv.getClearedAtUser2() != null;
-        if (bothCleared) {
-            hardDeleteClearedMessages(conversationId);
-            log.info("Both users cleared, hard-deleted soft-deleted records for conversation {}", conversationId);
-        }
-
         log.info("Conversation {} cleared by user {} at {}", conversationId, userId, now);
     }
 
     /**
-     * 硬删除指定对话中所有已软删除的消息、照片和文件
+     * 定时清理任务使用：硬删除指定对话中所有已软删除的消息、照片和文件
      */
     @Transactional
     public void hardDeleteClearedMessages(Long conversationId) {
