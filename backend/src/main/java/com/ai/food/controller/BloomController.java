@@ -1,6 +1,7 @@
 package com.ai.food.controller;
 
 import com.ai.food.dto.ApiResponse;
+import com.ai.food.dto.MatchUserDetailDTO;
 import com.ai.food.dto.UserSimilarityDTO;
 import com.ai.food.service.bloom.BloomFilterService;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @RestController
@@ -76,6 +78,18 @@ public class BloomController {
                 "recentRecords", recentRecords,
                 "maxRecords", 10
         ));
+    }
+
+    @GetMapping("/random-match")
+    public ApiResponse<MatchUserDetailDTO> getRandomMatch(
+            @RequestParam(required = false) List<Long> excludeIds) {
+        Long userId = getCurrentUserId();
+        if (userId == null) {
+            return ApiResponse.error("用户未登录");
+        }
+        Set<Long> excludeSet = excludeIds != null ? Set.copyOf(excludeIds) : Set.of();
+        MatchUserDetailDTO result = bloomFilterService.getRandomSimilarUser(userId, excludeSet);
+        return ApiResponse.success(result);
     }
 
     private Long getCurrentUserId() {

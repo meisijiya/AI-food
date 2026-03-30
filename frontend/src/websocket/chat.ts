@@ -25,9 +25,6 @@ class ChatWebSocketClient {
 
     this.ws = new WebSocket(url)
 
-    // 设置 cookie 以支持基于 cookie 的认证
-    this.ws.withCredentials = true
-
     this.ws.onopen = () => {
       console.log('Chat WebSocket connected')
       this.isConnected = true

@@ -210,4 +210,12 @@ export const shareApi = {
   checkShare: (sessionId: string) => request('get', `/share/check/${sessionId}`)
 }
 
+// 匹配相关接口
+export const matchApi = {
+  getRandomMatch: (excludeIds?: number[]) =>
+    request('get', '/bloom/random-match', undefined, {
+      params: excludeIds?.length ? { excludeIds: excludeIds.join(',') } : {}
+    })
+}
+
 export default api

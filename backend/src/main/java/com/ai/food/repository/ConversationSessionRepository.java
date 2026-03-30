@@ -36,4 +36,6 @@ public interface ConversationSessionRepository extends JpaRepository<Conversatio
     @Transactional
     @Query("DELETE FROM ConversationSession c WHERE c.isDeleted = true")
     int hardDeleteAllSoftDeleted();
+
+    List<ConversationSession> findTop10ByUserIdOrderByCreatedAtDesc(Long userId);
 }

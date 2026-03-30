@@ -2,12 +2,15 @@ package com.ai.food.service.conversation;
 
 import com.ai.food.dto.ConversationState;
 import com.ai.food.dto.WebSocketMessage;
+import com.ai.food.model.ConversationSession;
+import com.ai.food.model.RecommendationResult;
 import com.ai.food.repository.CollectedParamRepository;
 import com.ai.food.repository.ConversationSessionRepository;
 import com.ai.food.repository.QaRecordRepository;
 import com.ai.food.repository.RecommendationResultRepository;
 import com.ai.food.service.ai.AiService;
 import com.ai.food.service.bloom.BloomFilterService;
+import com.ai.food.service.match.ParamNormalizationService;
 import com.ai.food.validator.MessageValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,6 +28,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,6 +57,9 @@ class ConversationServiceTest {
     @Mock
     private BloomFilterService bloomFilterService;
 
+    @Mock
+    private ParamNormalizationService paramNormalizationService;
+
     private ConversationService conversationService;
 
     @BeforeEach
@@ -62,7 +69,7 @@ class ConversationServiceTest {
         conversationService = new ConversationService(
                 aiService, messageValidator, messageTagParser,
                 conversationSessionRepository, qaRecordRepository, collectedParamRepository,
-                recommendationResultRepository, redisTemplate, bloomFilterService
+                recommendationResultRepository, redisTemplate, bloomFilterService, paramNormalizationService
         );
         ReflectionTestUtils.setField(conversationService, "minQuestions", 7);
         ReflectionTestUtils.setField(conversationService, "maxQuestions", 10);
@@ -75,6 +82,9 @@ class ConversationServiceTest {
         when(collectedParamRepository.findBySessionIdAndParamName(anyString(), anyString()))
                 .thenReturn(java.util.Optional.empty());
         when(collectedParamRepository.save(any())).thenReturn(null);
+        lenient().when(recommendationResultRepository.saveAndFlush(any(RecommendationResult.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        lenient().when(paramNormalizationService.normalizeCollectedParams(anyList())).thenReturn(List.of("time=night"));
         // AI mock
         when(aiService.chat(anyString(), anyString())).thenReturn("好的，记下了！");
     }
@@ -269,6 +279,11 @@ class ConversationServiceTest {
             ConversationState state = new ConversationState("session-1", 7, "inertia");
             state.saveParamValue("time", "晚上");
             state.incrementQuestionCount();
+            ConversationSession session = new ConversationSession();
+            session.setSessionId("session-1");
+            session.setUserId(1L);
+            when(conversationSessionRepository.findBySessionId("session-1"))
+                    .thenReturn(java.util.Optional.of(session));
             when(aiService.generateRecommendation(anyString()))
                     .thenReturn("{\"foodName\":\"火锅\",\"reason\":\"适合晚上\"}");
 
@@ -284,6 +299,11 @@ class ConversationServiceTest {
             ConversationState state = new ConversationState("session-1", 7, "inertia");
             state.setCurrentParam("taste");
             state.incrementQuestionCount();
+            ConversationSession session = new ConversationSession();
+            session.setSessionId("session-1");
+            session.setUserId(1L);
+            when(conversationSessionRepository.findBySessionId("session-1"))
+                    .thenReturn(java.util.Optional.of(session));
             for (String p : new String[]{"time", "location", "weather", "mood", "companion", "budget"}) {
                 state.saveParamValue(p, "test");
             }
@@ -330,6 +350,34 @@ class ConversationServiceTest {
                 state.saveParamValue(p, "test");
             }
             assertTrue(conversationService.isAllRequiredParamsCollected(state));
+        }
+    }
+
+    @Nested
+    @DisplayName("取消会话测试")
+    class CancelSessionTests {
+
+        @Test
+        @DisplayName("取消会话时同步移除匹配画像")
+        void cancelSession_removesBloomRecommendation() {
+            ConversationSession session = new ConversationSession();
+            session.setSessionId("session-1");
+            session.setUserId(12L);
+            RecommendationResult result = new RecommendationResult();
+            result.setId(34L);
+
+            when(conversationSessionRepository.findBySessionId("session-1"))
+                    .thenReturn(java.util.Optional.of(session));
+            when(recommendationResultRepository.findBySessionId("session-1"))
+                    .thenReturn(java.util.Optional.of(result));
+
+            conversationService.cancelSession("session-1");
+
+            verify(bloomFilterService).removeRecommendation(12L, "34", null);
+            verify(qaRecordRepository).softDeleteBySessionId("session-1");
+            verify(collectedParamRepository).softDeleteBySessionId("session-1");
+            verify(recommendationResultRepository).softDeleteBySessionId("session-1");
+            verify(conversationSessionRepository).softDeleteBySessionId("session-1");
         }
     }
 }

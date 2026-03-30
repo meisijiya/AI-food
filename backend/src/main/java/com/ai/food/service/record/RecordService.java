@@ -12,6 +12,7 @@ import com.ai.food.repository.FeedPostRepository;
 import com.ai.food.repository.PhotoRepository;
 import com.ai.food.repository.QaRecordRepository;
 import com.ai.food.repository.RecommendationResultRepository;
+import com.ai.food.service.bloom.BloomFilterService;
 import com.ai.food.service.feed.FeedService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,6 +49,7 @@ public class RecordService {
     private final FeedCommentRepository feedCommentRepository;
     private final FeedService feedService;
     private final StringRedisTemplate redisTemplate;
+    private final BloomFilterService bloomFilterService;
 
     public Page<RecordListItem> getRecordList(Long userId, int page, int size, String sort) {
         Pageable pageable = PageRequest.of(page, size);
@@ -115,6 +117,7 @@ public class RecordService {
     @Transactional
     public void deleteRecord(String sessionId) {
         log.debug("Soft deleting record: {}", sessionId);
+        removeBloomRecommendation(sessionId);
         // 删除关联的 FeedPost + 评论（通过 sessionId 查找）
         feedPostRepository.findBySessionId(sessionId).ifPresent(post -> {
             feedCommentRepository.softDeleteByPostId(post.getId());
@@ -138,6 +141,9 @@ public class RecordService {
     @Transactional
     public void batchDeleteRecords(List<String> sessionIds) {
         log.info("Batch soft deleting {} records", sessionIds.size());
+        for (String sessionId : sessionIds) {
+            removeBloomRecommendation(sessionId);
+        }
 
         // 1. Batch fetch all associated feed posts
         List<com.ai.food.model.FeedPost> posts = feedPostRepository.findBySessionIdIn(sessionIds);
@@ -239,6 +245,24 @@ public class RecordService {
         } catch (Exception e) {
             log.warn("Failed to delete physical file: {}", relativePath, e);
         }
+    }
+
+    /**
+     * 在软删除记录前同步移除该记录对应的 Bloom 画像条目。
+     */
+    private void removeBloomRecommendation(String sessionId) {
+        conversationSessionRepository.findBySessionId(sessionId).ifPresent(session -> {
+            Long userId = session.getUserId();
+            if (userId == null) {
+                return;
+            }
+
+            recommendationResultRepository.findBySessionId(sessionId).ifPresent(result -> {
+                if (result.getId() != null) {
+                    bloomFilterService.removeRecommendation(userId, result.getId().toString(), null);
+                }
+            });
+        });
     }
 
     public RecordDetail getRecordDetail(String sessionId) {

@@ -12,6 +12,7 @@ import com.ai.food.repository.QaRecordRepository;
 import com.ai.food.repository.RecommendationResultRepository;
 import com.ai.food.service.ai.AiService;
 import com.ai.food.service.bloom.BloomFilterService;
+import com.ai.food.service.match.ParamNormalizationService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ai.food.validator.MessageValidator;
@@ -42,6 +43,7 @@ public class ConversationService {
     private final RecommendationResultRepository recommendationResultRepository;
     private final StringRedisTemplate redisTemplate;
     private final BloomFilterService bloomFilterService;
+    private final ParamNormalizationService paramNormalizationService;
 
     @Value("${ai.conversation.min-questions:7}")
     private int minQuestions;
@@ -338,10 +340,9 @@ public class ConversationService {
                 if (userId != null) {
                     try {
                         List<CollectedParam> params = collectedParamRepository.findBySessionId(sessionId);
-                        String paramValue = params.stream()
-                                .map(p -> p.getParamName() + "=" + p.getParamValue())
-                                .reduce((a, b) -> a + "|" + b)
-                                .orElse("");
+                        List<String> normalizedTokens = paramNormalizationService.normalizeCollectedParams(params);
+                        log.debug("[{}] normalized match tokens: {}", sessionId, normalizedTokens);
+                        String paramValue = String.join("|", normalizedTokens);
                         bloomFilterService.addRecommendation(userId, saved.getId().toString(), paramValue);
                     } catch (Exception bloomEx) {
                         log.warn("Failed to update bloom filter for user {}: {}", userId, bloomEx.getMessage());
@@ -491,6 +492,16 @@ public class ConversationService {
     public void cancelSession(String sessionId) {
         log.info("[{}] canceling session - soft deleting all related data", sessionId);
         try {
+            conversationSessionRepository.findBySessionId(sessionId).ifPresent(session -> {
+                if (session.getUserId() == null) {
+                    return;
+                }
+                recommendationResultRepository.findBySessionId(sessionId).ifPresent(result -> {
+                    if (result.getId() != null) {
+                        bloomFilterService.removeRecommendation(session.getUserId(), result.getId().toString(), null);
+                    }
+                });
+            });
             qaRecordRepository.softDeleteBySessionId(sessionId);
             collectedParamRepository.softDeleteBySessionId(sessionId);
             recommendationResultRepository.softDeleteBySessionId(sessionId);

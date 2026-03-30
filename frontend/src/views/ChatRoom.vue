@@ -162,7 +162,7 @@ import { showImagePreview, showConfirmDialog } from 'vant'
 import chatWs from '@/websocket/chat'
 import EmojiPicker from '@/components/EmojiPicker.vue'
 import CachedImage from '@/components/CachedImage.vue'
-import type { ChatMessage, ImageContent, FileContent } from '@/types/chat'
+import type { ChatMessage } from '@/types/chat'
 
 const router = useRouter()
 const route = useRoute()
@@ -324,16 +324,30 @@ function closePanels() {
   activeMessageId.value = null
 }
 
+/**
+ * 获取当前登录用户 ID；缺失时中断发送链路，避免构造非法消息对象。
+ */
+function getRequiredCurrentUserId(): number | null {
+  const userId = currentUserId.value
+  if (typeof userId !== 'number' || Number.isNaN(userId)) {
+    showError('当前登录状态无效，请重新进入聊天页面')
+    return null
+  }
+  return userId
+}
+
 function sendMessage() {
   const content = inputMessage.value.trim()
   if (!content || sendPermission.value !== 'ok') return
+  const senderId = getRequiredCurrentUserId()
+  if (senderId === null) return
 
   chatWs.sendMessage(targetUserId.value, content)
 
   const localMsg: ChatMessage = {
     id: Date.now(),
     conversationId: conversationId.value,
-    senderId: currentUserId.value,
+    senderId,
     receiverId: targetUserId.value,
     content,
     messageType: 'text',
@@ -373,6 +387,8 @@ function triggerFile() {
 async function handlePhotoUpload(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file || uploading.value) return
+  const senderId = getRequiredCurrentUserId()
+  if (senderId === null) return
   uploading.value = true
 
   try {
@@ -387,7 +403,7 @@ async function handlePhotoUpload(e: Event) {
     const localMsg: ChatMessage = {
       id: Date.now(),
       conversationId: conversationId.value,
-      senderId: currentUserId.value,
+      senderId,
       receiverId: targetUserId.value,
       content,
       messageType: 'image',
@@ -409,6 +425,8 @@ async function handlePhotoUpload(e: Event) {
 async function handleFileUpload(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file || uploading.value) return
+  const senderId = getRequiredCurrentUserId()
+  if (senderId === null) return
 
   if (file.size > 50 * 1024 * 1024) {
     showError('文件过大，无法发送！请选择小于 50MB 的文件')
@@ -429,7 +447,7 @@ async function handleFileUpload(e: Event) {
     const localMsg: ChatMessage = {
       id: Date.now(),
       conversationId: conversationId.value,
-      senderId: currentUserId.value,
+      senderId,
       receiverId: targetUserId.value,
       content,
       messageType: 'file',

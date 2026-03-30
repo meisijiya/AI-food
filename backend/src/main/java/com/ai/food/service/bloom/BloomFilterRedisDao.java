@@ -1,38 +1,71 @@
 package com.ai.food.service.bloom;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Set;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class BloomFilterRedisDao {
 
     private final StringRedisTemplate redisTemplate;
 
     private static final String BIT_ARRAY_KEY_PREFIX = "bloom:user:";
     private static final String QUEUE_KEY_PREFIX = "bloom:queue:";
+    private static final String RECORD_VALUE_KEY_PREFIX = "bloom:record:value:";
     private static final String PENDING_SYNC_KEY = "bloom:pending:sync";
+    private static final String USERS_WITH_BITS_KEY = "bloom:users:with_bits";
     private static final int BIT_SIZE = 256;
     private static final int BYTE_SIZE = 32;
+
+    /**
+     * 显式构造器用于稳定测试和运行时注入。
+     */
+    public BloomFilterRedisDao(StringRedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
+
+    /**
+     * 保存单条推荐记录的参数串，供窗口淘汰和删除时重建位图使用。
+     */
+    public void saveRecordValue(Long userId, String recordId, String paramValue) {
+        redisTemplate.opsForHash().put(RECORD_VALUE_KEY_PREFIX + userId, recordId, paramValue);
+    }
+
+    /**
+     * 读取单条推荐记录的参数串。
+     */
+    public String getRecordValue(Long userId, String recordId) {
+        Object value = redisTemplate.opsForHash().get(RECORD_VALUE_KEY_PREFIX + userId, recordId);
+        return value != null ? value.toString() : null;
+    }
+
+    /**
+     * 删除单条推荐记录缓存的参数串。
+     */
+    public void removeRecordValue(Long userId, String recordId) {
+        redisTemplate.opsForHash().delete(RECORD_VALUE_KEY_PREFIX + userId, recordId);
+    }
 
     public byte[] getBitArray(Long userId) {
         String key = BIT_ARRAY_KEY_PREFIX + userId;
         String value = redisTemplate.opsForValue().get(key);
         if (value == null || value.isEmpty()) {
+            log.debug("Bloom Redis miss: userId={}, key={}", userId, key);
             return new byte[BYTE_SIZE];
         }
+        log.debug("Bloom Redis hit: userId={}, key={}, hexLength={}", userId, key, value.length());
         return hexToBytes(value);
     }
 
     public void setBitArray(Long userId, byte[] bitArray) {
         String key = BIT_ARRAY_KEY_PREFIX + userId;
         redisTemplate.opsForValue().set(key, bytesToHex(bitArray));
+        log.debug("Bloom Redis write: userId={}, key={}, bitCount={}", userId, key, bitCount(bitArray));
     }
 
     public void setBit(Long userId, int position) {
@@ -109,13 +142,19 @@ public class BloomFilterRedisDao {
     public double calculateSimilarity(byte[] arrayA, byte[] arrayB) {
         if (arrayA == null) arrayA = new byte[BYTE_SIZE];
         if (arrayB == null) arrayB = new byte[BYTE_SIZE];
-        
+
         int commonBits = 0;
+        int unionBits = 0;
         for (int i = 0; i < BYTE_SIZE; i++) {
             int intersection = (arrayA[i] & 0xFF) & (arrayB[i] & 0xFF);
+            int union = (arrayA[i] & 0xFF) | (arrayB[i] & 0xFF);
             commonBits += Integer.bitCount(intersection);
+            unionBits += Integer.bitCount(union);
         }
-        return (double) commonBits / BIT_SIZE;
+        if (unionBits == 0) {
+            return 0.0;
+        }
+        return (double) commonBits / unionBits;
     }
 
     private byte[] hexToBytes(String hex) {
@@ -135,5 +174,66 @@ public class BloomFilterRedisDao {
             sb.append(String.format("%02x", b & 0xFF));
         }
         return sb.toString();
+    }
+
+    public void addUserToWithBitsSet(Long userId) {
+        redisTemplate.opsForSet().add(USERS_WITH_BITS_KEY, userId.toString());
+    }
+
+    public void removeUserFromWithBitsSet(Long userId) {
+        redisTemplate.opsForSet().remove(USERS_WITH_BITS_KEY, userId.toString());
+    }
+
+    public Long getWithBitsSetSize() {
+        return redisTemplate.opsForSet().size(USERS_WITH_BITS_KEY);
+    }
+
+    public Long getRandomUserIdFromWithBitsSet(Set<Long> excludeIds) {
+        Long size = getWithBitsSetSize();
+        log.debug("Bloom candidate pool: size={}, excludeIds={}", size, excludeIds);
+        if (size == null || size == 0) {
+            log.warn("Bloom candidate pool empty");
+            return null;
+        }
+        if (size <= 32) {
+            Set<String> members = redisTemplate.opsForSet().members(USERS_WITH_BITS_KEY);
+            if (members == null || members.isEmpty()) {
+                log.warn("Bloom candidate pool members empty");
+                return null;
+            }
+            List<Long> candidates = new ArrayList<>();
+            for (String member : members) {
+                Long userId = Long.parseLong(member);
+                if (excludeIds != null && excludeIds.contains(userId)) {
+                    continue;
+                }
+                candidates.add(userId);
+            }
+            if (candidates.isEmpty()) {
+                log.warn("Bloom candidate pool exhausted after filtering: excludeIds={}", excludeIds);
+                return null;
+            }
+            Long selected = candidates.get((int) (Math.random() * candidates.size()));
+            log.debug("Bloom candidate selected from filtered members: candidateId={}", selected);
+            return selected;
+        }
+        int maxRetries = 10;
+        for (int i = 0; i < maxRetries; i++) {
+            String userIdStr = redisTemplate.opsForSet().randomMember(USERS_WITH_BITS_KEY);
+            log.debug("Bloom random member attempt {}: rawCandidate={}", i + 1, userIdStr);
+            if (userIdStr == null) {
+                log.warn("Bloom random member returned null on attempt {}", i + 1);
+                return null;
+            }
+            Long userId = Long.parseLong(userIdStr);
+            if (excludeIds != null && excludeIds.contains(userId)) {
+                log.debug("Bloom candidate skipped by exclude list: candidateId={}", userId);
+                continue;
+            }
+            log.debug("Bloom candidate selected: candidateId={}", userId);
+            return userId;
+        }
+        log.warn("Bloom candidate selection exhausted retries: excludeIds={}", excludeIds);
+        return null;
     }
 }

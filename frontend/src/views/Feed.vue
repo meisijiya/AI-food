@@ -24,6 +24,21 @@
           </svg>
           好友
         </button>
+        <button class="match-entry" @click="router.push('/match')">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          </svg>
+          匹配
+        </button>
       </div>
       <div class="header-actions">
         <button
@@ -111,6 +126,7 @@
         </svg>
         关注榜
       </button>
+
     </div>
 
     <!-- Feed Tab Content -->
@@ -1183,6 +1199,28 @@ onMounted(() => {
 .overlay-fade-enter-from,
 .overlay-fade-leave-to {
   opacity: 0;
+}
+
+.match-entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--color-surface-container-low);
+  border: none;
+  border-radius: 1rem;
+  color: var(--color-on-surface-variant);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  svg {
+    color: #ef4444;
+  }
+  &:active {
+    transform: scale(0.96);
+    background: var(--color-surface-container-lowest);
+  }
 }
 
 @media (min-width: 640px) {
