@@ -138,8 +138,12 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         messageResponse.put("receiverId", chatMessage.getReceiverId());
         messageResponse.put("content", chatMessage.getContent());
         messageResponse.put("messageType", chatMessage.getMessageType());
-        messageResponse.put("photoId", chatMessage.getPhotoId());
-        messageResponse.put("fileId", chatMessage.getFileId());
+        if (chatMessage.getPhotoId() != null) {
+            messageResponse.put("photoId", chatMessage.getPhotoId());
+        }
+        if (chatMessage.getFileId() != null) {
+            messageResponse.put("fileId", chatMessage.getFileId());
+        }
         messageResponse.put("createdAt", chatMessage.getCreatedAt().toString());
 
         // 发送给发送者（确认）

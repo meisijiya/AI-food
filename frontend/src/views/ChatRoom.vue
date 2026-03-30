@@ -162,6 +162,7 @@ import { showImagePreview, showConfirmDialog } from 'vant'
 import chatWs from '@/websocket/chat'
 import EmojiPicker from '@/components/EmojiPicker.vue'
 import CachedImage from '@/components/CachedImage.vue'
+import type { ChatMessage, ImageContent, FileContent } from '@/types/chat'
 
 const router = useRouter()
 const route = useRoute()
@@ -184,7 +185,7 @@ const partnerAvatar = computed(() => {
 })
 const myAvatar = computed(() => authStore.userInfo?.avatar || '')
 
-const messages = ref<any[]>([])
+const messages = ref<ChatMessage[]>([])
 const inputMessage = ref('')
 const messagesContainer = ref<HTMLElement>()
 const currentPage = ref(0)
@@ -213,7 +214,7 @@ async function checkPermission() {
   }
 }
 
-const CACHE_PREFIX = 'chat:cache:'
+const CACHE_PREFIX = 'aifood:chat:cache:'
 const CACHE_EXPIRE_MS = 5 * 60 * 1000 // 5 分钟
 const PAGE_SIZE = 20
 
@@ -223,7 +224,7 @@ function getCacheKey(convId: number) {
   return `${CACHE_PREFIX}${convId}`
 }
 
-function loadFromCache(convId: number): any[] | null {
+function loadFromCache(convId: number): ChatMessage[] | null {
   try {
     const raw = localStorage.getItem(getCacheKey(convId))
     if (!raw) return null
@@ -329,7 +330,7 @@ function sendMessage() {
 
   chatWs.sendMessage(targetUserId.value, content)
 
-  const localMsg = {
+  const localMsg: ChatMessage = {
     id: Date.now(),
     conversationId: conversationId.value,
     senderId: currentUserId.value,
@@ -383,7 +384,7 @@ async function handlePhotoUpload(e: Event) {
     })
     chatWs.sendMessage(targetUserId.value, content, 'image', res.photoId)
 
-    const localMsg = {
+    const localMsg: ChatMessage = {
       id: Date.now(),
       conversationId: conversationId.value,
       senderId: currentUserId.value,
@@ -425,7 +426,7 @@ async function handleFileUpload(e: Event) {
     })
     chatWs.sendMessage(targetUserId.value, content, 'file', undefined, res.fileId)
 
-    const localMsg = {
+    const localMsg: ChatMessage = {
       id: Date.now(),
       conversationId: conversationId.value,
       senderId: currentUserId.value,
@@ -457,7 +458,7 @@ function parseMediaUrl(content: string | object, field: string): string {
   }
 }
 
-function previewImage(msg: any) {
+function previewImage(msg: ChatMessage) {
   try {
     const content = msg.content
     const data = typeof content === 'string' ? JSON.parse(content) : content
@@ -465,7 +466,7 @@ function previewImage(msg: any) {
   } catch { /* ignore */ }
 }
 
-function downloadFile(msg: any) {
+function downloadFile(msg: ChatMessage) {
   try {
     const content = msg.content
     const data = typeof content === 'string' ? JSON.parse(content) : content
@@ -485,7 +486,7 @@ function formatFileSize(size: string | number): string {
 
 // ==================== 消息操作 ====================
 
-function handleMessageClick(msg: any) {
+function handleMessageClick(msg: ChatMessage) {
   if (msg.messageType === 'image') {
     previewImage(msg)
     return
@@ -497,7 +498,7 @@ function handleMessageClick(msg: any) {
   }
 }
 
-function handleCopyContent(msg: any) {
+function handleCopyContent(msg: ChatMessage) {
   navigator.clipboard.writeText(msg.content).then(() => {
     showSuccess('已复制')
     activeMessageId.value = null
@@ -506,8 +507,19 @@ function handleCopyContent(msg: any) {
   })
 }
 
-function handleDeleteMessage(_msg: any) {
+async function handleDeleteMessage(msg: ChatMessage) {
   activeMessageId.value = null
+  if (!msg.id) return
+  try {
+    await showConfirmDialog({ title: '删除消息', message: '确定删除这条消息吗？' })
+    await chatApi.deleteMessage(msg.id)
+    showSuccess('已删除')
+    messages.value = messages.value.filter(m => m.id !== msg.id)
+    saveToCache(conversationId.value, messages.value)
+  } catch (err: any) {
+    if (err === 'cancel' || err?.name === 'Cancel') return
+    showError(err?.message || '删除失败')
+  }
 }
 
 function handleDownloadFile(msg: any) {
@@ -515,7 +527,7 @@ function handleDownloadFile(msg: any) {
   downloadFile(msg)
 }
 
-async function handleDeleteFile(msg: any) {
+async function handleDeleteFile(msg: ChatMessage) {
   activeMessageId.value = null
   if (!msg.fileId) return
   try {
@@ -530,7 +542,7 @@ async function handleDeleteFile(msg: any) {
   }
 }
 
-async function handleDeletePhoto(msg: any) {
+async function handleDeletePhoto(msg: ChatMessage) {
   if (!msg.photoId) return
   try {
     await showConfirmDialog({ title: '删除图片', message: '确定删除这张图片吗？删除后将无法恢复。' })

@@ -1,5 +1,8 @@
 package com.ai.food.service.chat;
 
+import com.ai.food.exception.PermissionDeniedException;
+import com.ai.food.exception.ResourceNotFoundException;
+import com.ai.food.exception.BusinessException;
 import com.ai.food.model.ChatConversation;
 import com.ai.food.model.ChatMessage;
 import com.ai.food.model.SysUser;
@@ -100,10 +103,10 @@ public class ChatService {
     public ChatMessage sendMessage(Long senderId, Long receiverId, String content, String messageType, Long photoId, Long fileId) {
         String permission = checkSendPermission(senderId, receiverId);
         if (permission.equals("not_allowed")) {
-            throw new RuntimeException("对方未关注你，无法发送消息");
+            throw new PermissionDeniedException("对方未关注你，无法发送消息");
         }
         if (permission.equals("max_reached")) {
-            throw new RuntimeException("非互关最多发送" + MAX_NON_MUTUAL_MESSAGES + "条消息");
+            throw new BusinessException("非互关最多发送" + MAX_NON_MUTUAL_MESSAGES + "条消息");
         }
 
         if (!followService.isMutualFollow(senderId, receiverId)) {
@@ -412,7 +415,7 @@ public class ChatService {
     @Transactional
     public void clearConversation(Long userId, Long conversationId) {
         ChatConversation conv = conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new RuntimeException("对话不存在"));
+                .orElseThrow(() -> new ResourceNotFoundException("对话不存在"));
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -540,7 +543,7 @@ public class ChatService {
         boolean isSender = file.getSenderId().equals(userId);
         boolean isReceiver = message.getReceiverId() != null && message.getReceiverId().equals(userId);
         if (!isSender && !isReceiver) {
-            throw new RuntimeException("无权限删除该文件");
+            throw new PermissionDeniedException("无权限删除该文件");
         }
 
         if (isSender) {
@@ -582,7 +585,7 @@ public class ChatService {
         boolean isSender = photo.getSenderId().equals(userId);
         boolean isReceiver = message.getReceiverId() != null && message.getReceiverId().equals(userId);
         if (!isSender && !isReceiver) {
-            throw new RuntimeException("无权限删除该照片");
+            throw new PermissionDeniedException("无权限删除该照片");
         }
 
         if (isSender) {
@@ -622,5 +625,25 @@ public class ChatService {
         } catch (Exception e) {
             log.error("Failed to async delete photo: id={}", photoId, e);
         }
+    }
+
+    /**
+     * 删除单条文本消息（仅发送者可删除）
+     * @param messageId 消息ID
+     * @param userId 当前用户ID
+     * @throws ResourceNotFoundException 消息不存在
+     * @throws PermissionDeniedException 无权限删除
+     */
+    @Transactional
+    public void deleteMessage(Long messageId, Long userId) {
+        ChatMessage message = messageRepository.findById(messageId).orElse(null);
+        if (message == null) {
+            throw new ResourceNotFoundException("消息不存在");
+        }
+        if (!message.getSenderId().equals(userId)) {
+            throw new PermissionDeniedException("无权限删除该消息");
+        }
+        messageRepository.softDeleteById(messageId);
+        log.info("Message {} deleted by user {}", messageId, userId);
     }
 }

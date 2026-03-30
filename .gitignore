@@ -68,3 +68,29 @@ lerna-debug.log*
 
 # Local git worktrees
 .worktrees/
+
+# 图片文件
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.webp
+*.avif
+*.bmp
+*.tiff
+*.psd
+*.ai
+*.eps
+*.svg
+*.raw
+*.heic
+*.heif
+*.indd
+*.pdf
+*.tga
+*.tif
+*.tiff
+*.ai
+*.eps

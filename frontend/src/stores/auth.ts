@@ -38,6 +38,7 @@ export const useAuthStore = defineStore('auth', () => {
   function setToken(newToken: string) {
     token.value = newToken
     localStorage.setItem('token', newToken)
+    document.cookie = `auth_token=${newToken}; path=/; max-age=604800; SameSite=Strict`
   }
 
   function setUserInfo(info: UserInfo) {
@@ -57,6 +58,7 @@ export const useAuthStore = defineStore('auth', () => {
     userInfo.value = null
     localStorage.removeItem('token')
     localStorage.removeItem(CACHE_KEY)
+    document.cookie = 'auth_token=; path=/; max-age=0'
   }
 
   // 清除过期的 token

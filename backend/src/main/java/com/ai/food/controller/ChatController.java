@@ -1,12 +1,15 @@
 package com.ai.food.controller;
 
 import com.ai.food.dto.ApiResponse;
+import com.ai.food.dto.SendMessageRequest;
 import com.ai.food.model.ChatMessage;
 import com.ai.food.service.chat.ChatService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -59,16 +62,18 @@ public class ChatController {
     }
 
     @PostMapping("/send")
-    public ApiResponse<Map<String, Object>> sendMessage(@RequestBody Map<String, Object> body) {
+    public ApiResponse<Map<String, Object>> sendMessage(@Valid @RequestBody SendMessageRequest request) {
         Long senderId = getCurrentUserId();
-        Long receiverId = Long.parseLong(body.get("receiverId").toString());
-        String content = body.get("content").toString();
-        String messageType = body.get("messageType") != null ? body.get("messageType").toString() : "text";
-        Long photoId = body.get("photoId") != null ? Long.parseLong(body.get("photoId").toString()) : null;
-        Long fileId = body.get("fileId") != null ? Long.parseLong(body.get("fileId").toString()) : null;
 
         try {
-            ChatMessage message = chatService.sendMessage(senderId, receiverId, content, messageType, photoId, fileId);
+            ChatMessage message = chatService.sendMessage(
+                    senderId,
+                    request.getReceiverId(),
+                    request.getContent(),
+                    request.getMessageType(),
+                    request.getPhotoId(),
+                    request.getFileId()
+            );
 
             Map<String, Object> result = new java.util.LinkedHashMap<>();
             result.put("id", message.getId());
@@ -122,6 +127,18 @@ public class ChatController {
         return ApiResponse.success("已删除照片", null);
     }
 
+    @DeleteMapping("/message/{messageId}")
+    public ApiResponse<Void> deleteMessage(@PathVariable Long messageId) {
+        Long userId = getCurrentUserId();
+        try {
+            chatService.deleteMessage(messageId, userId);
+            return ApiResponse.success("已删除消息", null);
+        } catch (RuntimeException e) {
+            log.warn("Delete message failed: {}", e.getMessage());
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+
     @GetMapping("/conversation/with/{otherUserId}")
     public ApiResponse<Map<String, Object>> getOrCreateConversationWith(@PathVariable Long otherUserId) {
         Long userId = getCurrentUserId();
@@ -131,6 +148,10 @@ public class ChatController {
 
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return Long.parseLong(auth.getPrincipal().toString());
+        try {
+            return Long.parseLong(auth.getPrincipal().toString());
+        } catch (NumberFormatException e) {
+            throw new com.ai.food.exception.BusinessException("用户信息解析失败");
+        }
     }
 }

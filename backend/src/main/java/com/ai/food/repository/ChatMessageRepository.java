@@ -57,4 +57,8 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     @Modifying
     @Query(value = "DELETE FROM chat_message WHERE is_deleted = true AND created_at < :before", nativeQuery = true)
     int hardDeleteOldSoftDeleted(@Param("before") LocalDateTime before);
+
+    @Modifying
+    @Query("UPDATE ChatMessage m SET m.isDeleted = true WHERE m.id = :messageId")
+    int softDeleteById(@Param("messageId") Long messageId);
 }
