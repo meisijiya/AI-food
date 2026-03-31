@@ -10,6 +10,7 @@ export interface ChatMessage {
   fileId?: number
   isRead: boolean
   createdAt: string
+  deliveryStatus?: 'pending' | 'sent' | 'failed'
 }
 
 // 图片消息内容

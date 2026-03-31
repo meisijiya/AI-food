@@ -109,15 +109,6 @@ public class ChatService {
             throw new BusinessException("非互关最多发送" + MAX_NON_MUTUAL_MESSAGES + "条消息");
         }
 
-        if (!followService.isMutualFollow(senderId, receiverId)) {
-            try {
-                String countKey = MSG_COUNT_KEY + senderId + ":" + receiverId;
-                stringRedisTemplate.opsForValue().increment(countKey);
-            } catch (Exception e) {
-                log.warn("Redis increment failed for msg count: {}", e.getMessage());
-            }
-        }
-
         ChatConversation conversation = getOrCreateConversation(senderId, receiverId);
 
         // 重置接收方的 hiddenAt — 会话重新出现在列表，但 clearedAt 不变（旧消息仍被过滤）
@@ -167,6 +158,15 @@ public class ChatService {
         }
         notificationService.updateChatNotification(receiverId, conversation.getId(),
                 senderId, senderName, senderAvatar, content);
+
+        if (!followService.isMutualFollow(senderId, receiverId)) {
+            try {
+                String countKey = MSG_COUNT_KEY + senderId + ":" + receiverId;
+                stringRedisTemplate.opsForValue().increment(countKey);
+            } catch (Exception e) {
+                log.warn("Redis increment failed for msg count: {}", e.getMessage());
+            }
+        }
 
         log.info("Message sent: from={} to={}, conversationId={}", senderId, receiverId, conversation.getId());
         return saved;
@@ -257,6 +257,7 @@ public class ChatService {
     @Transactional
     public Map<String, Object> getChatHistory(Long conversationId, Long userId, int page, int size) {
         ChatConversation conv = conversationRepository.findById(conversationId).orElse(null);
+        assertConversationParticipant(conv, userId);
         LocalDateTime clearedAt = getClearedAtForUser(conv, userId);
 
         Pageable pageable = PageRequest.of(page, size);
@@ -416,6 +417,7 @@ public class ChatService {
     public void clearConversation(Long userId, Long conversationId) {
         ChatConversation conv = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new ResourceNotFoundException("对话不存在"));
+        assertConversationParticipant(conv, userId);
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -513,8 +515,22 @@ public class ChatService {
         if (conv == null) return null;
         if (conv.getUser1Id().equals(userId)) {
             return conv.getClearedAtUser1();
-        } else {
+        } else if (conv.getUser2Id().equals(userId)) {
             return conv.getClearedAtUser2();
+        }
+        return null;
+    }
+
+    /**
+     * 校验当前用户是否属于目标会话，避免越权读取或清空他人聊天。
+     */
+    private void assertConversationParticipant(ChatConversation conv, Long userId) {
+        if (conv == null) {
+            throw new ResourceNotFoundException("对话不存在");
+        }
+        boolean isParticipant = conv.getUser1Id().equals(userId) || conv.getUser2Id().equals(userId);
+        if (!isParticipant) {
+            throw new PermissionDeniedException("无权访问该对话");
         }
     }
 

@@ -225,7 +225,15 @@ public class ConversationService {
         }
 
         String normalizedJson = extractJsonFromResponse(aiResponse);
-        saveRecommendationResult(sessionId, state, normalizedJson);
+        boolean saved = saveRecommendationResult(sessionId, state, normalizedJson);
+
+        if (!saved) {
+            WebSocketMessage msg = new WebSocketMessage();
+            msg.setType("error");
+            msg.setContent("推荐结果保存失败，请稍后重试");
+            msg.setProgress(createProgress(state));
+            return msg;
+        }
 
         try {
             Long userId = getUserIdFromSession(sessionId);
@@ -323,7 +331,7 @@ public class ConversationService {
         return "{\"foodName\":\"" + trimmed.replace("\"", "\\\"") + "\",\"reason\":\"根据您的需求为您推荐\"}";
     }
 
-    private void saveRecommendationResult(String sessionId, ConversationState state, String recommendationJson) {
+    private boolean saveRecommendationResult(String sessionId, ConversationState state, String recommendationJson) {
         try {
             RecommendationResult result = recommendationResultRepository.findBySessionId(sessionId)
                     .orElseGet(RecommendationResult::new);
@@ -349,8 +357,10 @@ public class ConversationService {
                     }
                 }
             });
+            return true;
         } catch (Exception e) {
             log.error("Failed to save recommendation result", e);
+            return false;
         }
     }
 

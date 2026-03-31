@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -55,6 +56,9 @@ class ConversationServiceTest {
     private StringRedisTemplate redisTemplate;
 
     @Mock
+    private ValueOperations<String, String> valueOperations;
+
+    @Mock
     private BloomFilterService bloomFilterService;
 
     @Mock
@@ -85,6 +89,7 @@ class ConversationServiceTest {
         lenient().when(recommendationResultRepository.saveAndFlush(any(RecommendationResult.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         lenient().when(paramNormalizationService.normalizeCollectedParams(anyList())).thenReturn(List.of("time=night"));
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         // AI mock
         when(aiService.chat(anyString(), anyString())).thenReturn("好的，记下了！");
     }
@@ -315,6 +320,26 @@ class ConversationServiceTest {
             // 最后一条应该是 recommend
             WebSocketMessage last = results.get(results.size() - 1);
             assertEquals("recommend", last.getType());
+        }
+
+        @Test
+        @DisplayName("推荐结果保存失败时不应标记会话完成")
+        void generateRecommendation_doesNotCompleteSessionWhenSaveFails() {
+            ConversationState state = new ConversationState("session-2", 7, "inertia");
+            state.saveParamValue("time", "晚上");
+            ConversationSession session = new ConversationSession();
+            session.setSessionId("session-2");
+            session.setUserId(1L);
+            when(conversationSessionRepository.findBySessionId("session-2"))
+                    .thenReturn(java.util.Optional.of(session));
+            when(aiService.generateRecommendation(anyString()))
+                    .thenReturn("{\"foodName\":\"火锅\",\"reason\":\"适合晚上\"}");
+            when(recommendationResultRepository.saveAndFlush(any(RecommendationResult.class)))
+                    .thenThrow(new RuntimeException("db down"));
+
+            conversationService.generateRecommendationMessage("session-2", state);
+
+            verify(conversationSessionRepository, never()).save(argThat(s -> "completed".equals(s.getStatus())));
         }
     }
 

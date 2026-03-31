@@ -342,7 +342,11 @@ function sendMessage() {
   const senderId = getRequiredCurrentUserId()
   if (senderId === null) return
 
-  chatWs.sendMessage(targetUserId.value, content)
+  const sent = chatWs.sendMessage(targetUserId.value, content)
+  if (!sent) {
+    showError('连接未就绪，消息未发送')
+    return
+  }
 
   const localMsg: ChatMessage = {
     id: Date.now(),
@@ -352,7 +356,8 @@ function sendMessage() {
     content,
     messageType: 'text',
     isRead: false,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    deliveryStatus: 'pending'
   }
   messages.value.push(localMsg)
   inputMessage.value = ''
@@ -398,7 +403,11 @@ async function handlePhotoUpload(e: Event) {
       originalUrl: res.originalUrl,
       fileName: res.fileName
     })
-    chatWs.sendMessage(targetUserId.value, content, 'image', res.photoId)
+    const sent = chatWs.sendMessage(targetUserId.value, content, 'image', res.photoId)
+    if (!sent) {
+      showError('连接未就绪，图片未发送')
+      return
+    }
 
     const localMsg: ChatMessage = {
       id: Date.now(),
@@ -409,7 +418,8 @@ async function handlePhotoUpload(e: Event) {
       messageType: 'image',
       photoId: res.photoId,
       isRead: false,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      deliveryStatus: 'pending'
     }
     messages.value.push(localMsg)
     saveToCache(conversationId.value, messages.value)
@@ -442,7 +452,11 @@ async function handleFileUpload(e: Event) {
       fileName: res.fileName,
       fileSize: res.fileSize
     })
-    chatWs.sendMessage(targetUserId.value, content, 'file', undefined, res.fileId)
+    const sent = chatWs.sendMessage(targetUserId.value, content, 'file', undefined, res.fileId)
+    if (!sent) {
+      showError('连接未就绪，文件未发送')
+      return
+    }
 
     const localMsg: ChatMessage = {
       id: Date.now(),
@@ -453,7 +467,8 @@ async function handleFileUpload(e: Event) {
       messageType: 'file',
       fileId: res.fileId,
       isRead: false,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      deliveryStatus: 'pending'
     }
     messages.value.push(localMsg)
     saveToCache(conversationId.value, messages.value)
@@ -611,6 +626,7 @@ function handleNewMessage(data: any) {
 
 function handleError(data: any) {
   showError(data.message || '发送失败')
+  markLatestPendingMessageFailed()
   // 权限被拒绝时重新检查
   if (data.message?.includes('消息') || data.message?.includes('发送')) {
     checkPermission()
@@ -638,8 +654,29 @@ function handleSentMessage(data: any) {
   if (data.conversationId === conversationId.value) {
     const lastIndex = messages.value.length - 1
     if (lastIndex >= 0 && messages.value[lastIndex].id > 1000000000000) {
+      data.deliveryStatus = 'sent'
       messages.value[lastIndex] = data
       saveToCache(conversationId.value, messages.value)
+    }
+  }
+}
+
+/**
+ * 将最近一条待确认的本地消息标记为失败，并回滚一次非互关额度的乐观扣减。
+ */
+function markLatestPendingMessageFailed() {
+  for (let i = messages.value.length - 1; i >= 0; i--) {
+    const msg = messages.value[i]
+    if (msg.deliveryStatus === 'pending') {
+      msg.deliveryStatus = 'failed'
+      saveToCache(conversationId.value, messages.value)
+      if (sendPermission.value === 'max_reached') {
+        sendPermission.value = 'ok'
+      }
+      if (remaining.value >= 0) {
+        remaining.value++
+      }
+      break
     }
   }
 }

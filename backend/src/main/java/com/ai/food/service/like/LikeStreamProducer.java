@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.RecordId;
-import org.springframework.data.redis.connection.stream.StreamInfo;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -27,11 +26,26 @@ public class LikeStreamProducer {
     @PostConstruct
     public void init() {
         try {
+            ensureStreamExists();
             stringRedisTemplate.opsForStream().createGroup(STREAM_KEY, CONSUMER_GROUP);
         } catch (Exception e) {
             log.debug("Consumer group already exists or stream not ready: {}", e.getMessage());
         }
         log.info("LikeStreamProducer initialized");
+    }
+
+    /**
+     * 确保 Redis Stream 存在，避免 consumer group 创建时因 key 不存在而失败。
+     */
+    private void ensureStreamExists() {
+        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(STREAM_KEY))) {
+            return;
+        }
+        Map<String, String> bootstrap = Map.of("type", "bootstrap", "timestamp", String.valueOf(System.currentTimeMillis()));
+        RecordId bootstrapId = stringRedisTemplate.opsForStream().add(MapRecord.create(STREAM_KEY, bootstrap));
+        if (bootstrapId != null) {
+            stringRedisTemplate.opsForStream().delete(STREAM_KEY, bootstrapId.getValue());
+        }
     }
 
     public void sendLikeEvent(Long postId, Long userId, boolean liked) {

@@ -60,7 +60,7 @@ function request<T = any>(method: string, url: string, data?: any, config?: any)
     case 'get': return api.get(url, config) as any
     case 'post': return api.post(url, data, config) as any
     case 'put': return api.put(url, data, config) as any
-    case 'delete': return api.delete(url, config) as any
+    case 'delete': return api.delete(url, { ...(config || {}), data }) as any
     default: throw new Error(`Unknown method: ${method}`)
   }
 }

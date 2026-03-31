@@ -42,7 +42,7 @@ public class LikeStreamConsumer {
             List<MapRecord<String, Object, Object>> rawRecords = stringRedisTemplate.opsForStream()
                     .read(Consumer.from(CONSUMER_GROUP, CONSUMER_NAME),
                             options,
-                            StreamOffset.create(STREAM_KEY, ReadOffset.from("0")));
+                            StreamOffset.create(STREAM_KEY, ReadOffset.lastConsumed()));
 
             if (rawRecords == null || rawRecords.isEmpty()) {
                 if (shouldFlush()) {

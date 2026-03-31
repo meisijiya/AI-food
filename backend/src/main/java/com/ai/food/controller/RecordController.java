@@ -71,7 +71,10 @@ public class RecordController {
     }
 
     @DeleteMapping("/batch-delete")
-    public ApiResponse<Void> batchDeleteRecords(@RequestBody Map<String, List<String>> body) {
+    public ApiResponse<Void> batchDeleteRecords(@RequestBody(required = false) Map<String, List<String>> body) {
+        if (body == null) {
+            return ApiResponse.error("请求体不能为空");
+        }
         List<String> sessionIds = body.get("sessionIds");
         if (sessionIds == null || sessionIds.isEmpty()) {
             return ApiResponse.error("请选择要删除的记录");

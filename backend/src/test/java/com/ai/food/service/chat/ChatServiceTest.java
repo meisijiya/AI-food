@@ -1,6 +1,7 @@
 package com.ai.food.service.chat;
 
 import com.ai.food.model.ChatConversation;
+import com.ai.food.exception.PermissionDeniedException;
 import com.ai.food.repository.ChatConversationRepository;
 import com.ai.food.repository.ChatFileRepository;
 import com.ai.food.repository.ChatMessageRepository;
@@ -15,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -26,10 +29,12 @@ import java.util.Optional;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("ChatService soft delete consistency")
 class ChatServiceTest {
 
@@ -112,5 +117,29 @@ class ChatServiceTest {
         verify(messageRepository, never()).hardDeleteByConversationId(100L);
         verify(chatPhotoRepository, never()).hardDeleteByConversationId(100L);
         verify(chatFileRepository, never()).hardDeleteByConversationId(100L);
+    }
+
+    @Test
+    @DisplayName("非会话参与者不能读取聊天历史")
+    void getChatHistory_deniesNonParticipant() {
+        ChatConversation conv = new ChatConversation();
+        ReflectionTestUtils.setField(conv, "id", 200L);
+        ReflectionTestUtils.setField(conv, "user1Id", 1L);
+        ReflectionTestUtils.setField(conv, "user2Id", 2L);
+        when(conversationRepository.findById(200L)).thenReturn(Optional.of(conv));
+
+        assertThrows(PermissionDeniedException.class, () -> chatService.getChatHistory(200L, 3L, 0, 20));
+    }
+
+    @Test
+    @DisplayName("非会话参与者不能清空聊天")
+    void clearConversation_deniesNonParticipant() {
+        ChatConversation conv = new ChatConversation();
+        ReflectionTestUtils.setField(conv, "id", 300L);
+        ReflectionTestUtils.setField(conv, "user1Id", 1L);
+        ReflectionTestUtils.setField(conv, "user2Id", 2L);
+        when(conversationRepository.findById(300L)).thenReturn(Optional.of(conv));
+
+        assertThrows(PermissionDeniedException.class, () -> chatService.clearConversation(4L, 300L));
     }
 }

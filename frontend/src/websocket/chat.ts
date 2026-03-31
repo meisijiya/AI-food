@@ -108,6 +108,11 @@ class ChatWebSocketClient {
   }
 
   sendMessage(receiverId: number, content: string, messageType: string = 'text', photoId?: number, fileId?: number) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !this.isAuthenticated) {
+      console.warn('Chat WebSocket is not ready for sending')
+      return false
+    }
+
     this.send({
       action: 'send',
       receiverId,
@@ -116,6 +121,7 @@ class ChatWebSocketClient {
       photoId,
       fileId
     })
+    return true
   }
 
   markRead(conversationId: number) {

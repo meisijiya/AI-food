@@ -366,6 +366,7 @@ public class FeedService {
     public Map<String, Object> getFeedDetail(Long postId, Long currentUserId) {
         FeedPost post = feedPostRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("动态不存在"));
+        assertFeedVisible(post, currentUserId);
 
         Map<String, Object> result = buildPostMap(post);
         enrichUserInfo(result, post.getUserId());
@@ -402,6 +403,22 @@ public class FeedService {
         feedPostRepository.save(post);
 
         return result;
+    }
+
+    /**
+     * 对详情接口重复执行可见性校验，避免绕过列表过滤直接读到受限动态。
+     */
+    private void assertFeedVisible(FeedPost post, Long currentUserId) {
+        if ("public".equals(post.getVisibility())) {
+            return;
+        }
+        if (currentUserId != null && Objects.equals(post.getUserId(), currentUserId)) {
+            return;
+        }
+        if ("friends".equals(post.getVisibility()) && currentUserId != null && followService.isFollowing(currentUserId, post.getUserId())) {
+            return;
+        }
+        throw new com.ai.food.exception.PermissionDeniedException("无权查看该动态");
     }
 
     @Transactional

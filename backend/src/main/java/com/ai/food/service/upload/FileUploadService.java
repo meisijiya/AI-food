@@ -54,9 +54,11 @@ public class FileUploadService {
     public void deletePhysicalFile(String relativePath) {
         if (relativePath == null || relativePath.isBlank()) return;
         try {
-            Path root = getUploadRoot();
-            String relative = relativePath.startsWith("/uploads") ? relativePath.substring("/uploads".length()) : relativePath;
-            Path filePath = root.resolve(relative.startsWith("/") ? relative.substring(1) : relative);
+            Path filePath = resolveUploadPath(relativePath);
+            if (filePath == null) {
+                log.warn("Rejected physical file delete outside upload root: {}", relativePath);
+                return;
+            }
             Files.deleteIfExists(filePath);
         } catch (Exception e) {
             log.warn("Failed to delete physical file: {}", relativePath, e);
@@ -82,10 +84,7 @@ public class FileUploadService {
                 photoRepository.save(photo);
                 log.info("Soft-deleted old photo id={} for user {}", photo.getId(), userId);
             } else {
-                // 没有 Photo 记录，只删文件，尝试推导配对路径
-                deletePhysicalFile(oldPhotoUrl);
-                String paired = isThumbnailPath(oldPhotoUrl) ? deriveOriginalPath(oldPhotoUrl) : deriveThumbnailPath(oldPhotoUrl);
-                deletePhysicalFile(paired);
+                log.warn("Skip deleting old photo without owned database record: userId={}, path={}", userId, oldPhotoUrl);
             }
         } catch (Exception e) {
             log.warn("Failed to delete old photo: {}", oldPhotoUrl, e);
@@ -125,6 +124,20 @@ public class FileUploadService {
 
     private boolean isThumbnailPath(String path) {
         return path != null && path.contains("_thumb.");
+    }
+
+    /**
+     * 将相对上传路径规范化为 uploads 根目录下的绝对路径，越界时返回 null。
+     */
+    private Path resolveUploadPath(String relativePath) {
+        Path root = getUploadRoot().normalize();
+        String relative = relativePath.startsWith("/uploads") ? relativePath.substring("/uploads".length()) : relativePath;
+        String sanitized = relative.startsWith("/") ? relative.substring(1) : relative;
+        Path resolved = root.resolve(sanitized).normalize();
+        if (!resolved.startsWith(root)) {
+            return null;
+        }
+        return resolved;
     }
 
     public Map<String, Object> uploadPhoto(MultipartFile file, Long userId, String sessionId, String oldPhotoUrl) throws IOException {
