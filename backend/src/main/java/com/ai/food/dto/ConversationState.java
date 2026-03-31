@@ -11,10 +11,8 @@ public class ConversationState {
     
     private String sessionId;
     private Boolean aiProcessing = false;
-    private Boolean sendingToFrontend = false;
     private List<String> pendingMessages = new ArrayList<>();
     private Integer interruptCount = 0;
-    private WebSocketMessage pendingResponse;
     private Integer totalQuestions;
     private Integer currentQuestionCount = 0;
     private List<String> collectedParams = new ArrayList<>();
@@ -24,7 +22,6 @@ public class ConversationState {
     private Map<String, Integer> paramRetryCount = new HashMap<>();
     private String currentParam;
     private boolean inFreeFormStage = false;
-    private List<String> optionalParamsCollected = new ArrayList<>();
     private boolean cancelled = false;
     
     public ConversationState(String sessionId, Integer totalQuestions, String mode) {
@@ -65,10 +62,6 @@ public class ConversationState {
         this.paramValues.put(param, value);
         if (!this.collectedParams.contains(param)) {
             this.collectedParams.add(param);
-        }
-        // 追踪可选参数的收集情况
-        if (!isRequiredParam(param) && !this.optionalParamsCollected.contains(param)) {
-            this.optionalParamsCollected.add(param);
         }
     }
     

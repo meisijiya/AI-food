@@ -6,6 +6,7 @@ Thumbs.db
 .Spotlight-V100
 .Trashes
 ehthumbs.db
+*.Identifier
 
 # IDE相关文件
 .idea/

@@ -1,5 +1,5 @@
 export interface WebSocketMessage {
-  type: 'question' | '2question' | 'chat' | 'interrupt' | 'recommend' | 'system'
+  type: 'question' | '2question' | 'chat' | 'interrupt' | 'recommend' | 'system' | 'error'
   param?: string
   content: string
   progress?: {
@@ -52,19 +52,15 @@ export class WebSocketClient {
       wsUrl = `${protocol}//${wsHost}/ws/conversation/${this.sessionId}?token=${encodeURIComponent(token)}`
     }
 
-    console.log('[WS] Connecting...')
-
     try {
       this.ws = new WebSocket(wsUrl)
 
       this.ws.onopen = () => {
-        console.log('[WS] Connected successfully')
         this.reconnectAttempts = 0
 
         // 仅首次连接发送 start；重连不重复发送（避免覆盖后端状态）
         if (this.isFirstConnection) {
           this.isFirstConnection = false
-          console.log('[WS] Sending start message')
           this.send({ action: 'start', sessionId: this.sessionId, content: '' })
         }
 
@@ -74,7 +70,6 @@ export class WebSocketClient {
       this.ws.onmessage = (event) => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data)
-          console.log('[WS] Received:', message.type, message.param || '')
           this.onMessage(message)
         } catch (error) {
           console.error('[WS] Failed to parse message')
@@ -86,8 +81,7 @@ export class WebSocketClient {
         this.onError(error)
       }
 
-      this.ws.onclose = (event) => {
-        console.log('[WS] Closed, code:', event.code, 'reason:', event.reason)
+      this.ws.onclose = () => {
         this.onClose()
         if (!this.manuallyDisconnected) {
           this.tryReconnect()
@@ -102,7 +96,6 @@ export class WebSocketClient {
   private tryReconnect(): void {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++
-      console.log(`[WS] Reconnecting (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`)
 
       setTimeout(() => {
         this.connect()
@@ -130,10 +123,6 @@ export class WebSocketClient {
 
   cancel(): void {
     this.send({ action: 'cancel', sessionId: this.sessionId, content: '' })
-  }
-
-  reset(): void {
-    this.send({ action: 'reset', sessionId: this.sessionId, content: '' })
   }
 
   disconnect(): void {

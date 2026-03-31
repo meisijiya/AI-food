@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 
 export interface ChatMessage {
   id: string
@@ -23,23 +23,11 @@ export const useChatStore = defineStore('chat', () => {
   const isLoading = ref(false)
   const currentPhase = ref<'chat' | 'recommend'>('chat')
   const recommendationResult = ref<any>(null)
-  const collectedParamValues = ref<Record<string, string>>({})
-  const pendingSessionId = ref<string>('')
-
-  const messageCount = computed(() => messages.value.length)
 
   function setSessionId(id: string) { sessionId.value = id }
 
   function addMessage(message: Omit<ChatMessage, 'id' | 'timestamp'>) {
     messages.value.push({ ...message, id: Date.now().toString(), timestamp: Date.now() })
-    if ((message.type === 'chat' || message.type === 'question') && message.param) {
-      const match = message.content.match(/是(.+?)，我记下了/)
-      if (match) collectedParamValues.value[message.param] = match[1]
-    }
-  }
-
-  function setCollectedParamValue(param: string, value: string) {
-    collectedParamValues.value[param] = value
   }
 
   function updateProgress(newProgress: Progress) { progress.value = newProgress }
@@ -59,14 +47,12 @@ export const useChatStore = defineStore('chat', () => {
     recommendationResult.value = null
     isConnected.value = false
     isLoading.value = false
-    collectedParamValues.value = {}
   }
 
   return {
     sessionId, messages, progress, isConnected, isLoading,
-    currentPhase, recommendationResult, collectedParamValues,
-    messageCount, pendingSessionId,
-    setSessionId, addMessage, setCollectedParamValue,
+    currentPhase, recommendationResult,
+    setSessionId, addMessage,
     updateProgress, setConnected, setLoading, setPhase,
     setRecommendationResult, clearChat
   }

@@ -74,7 +74,6 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
                 case "answer" -> handleAnswer(session, sessionId, clientMessage.getContent(), state);
                 case "complete" -> handleComplete(session, sessionId, state);
                 case "cancel" -> handleCancel(session, sessionId, state);
-                case "reset" -> handleReset(session, sessionId, state);
                 default -> sendError(session, "Unknown action");
             }
         } catch (Exception e) {
@@ -211,31 +210,6 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
         } catch (IOException e) {
             log.error("Failed to send cancel confirmation", e);
         }
-    }
-
-    // ==================== 重新开始（不断连，删除数据并重置状态） ====================
-
-    private void handleReset(WebSocketSession session, String sessionId, ConversationState oldState) throws IOException {
-        log.info("[{}] resetting conversation", sessionId);
-
-        // 标记旧状态为已取消
-        if (oldState != null) {
-            oldState.setCancelled(true);
-            oldState.setAiProcessing(false);
-        }
-
-        // 删除数据库中的旧数据
-        conversationService.cancelSession(sessionId);
-
-        // 创建新的会话状态（复用同一个 sessionId）
-        ConversationState newState = conversationService.initializeConversation(sessionId);
-        conversationStates.put(sessionId, newState);
-
-        // 发送第一条问题
-        WebSocketMessage firstQuestion = conversationService.getFirstQuestion(newState);
-        sendMessage(session, firstQuestion);
-
-        log.info("[{}] conversation reset, sent first question", sessionId);
     }
 
     // ==================== 连接关闭 ====================
