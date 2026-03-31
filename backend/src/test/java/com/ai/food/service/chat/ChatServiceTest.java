@@ -1,6 +1,9 @@
 package com.ai.food.service.chat;
 
 import com.ai.food.model.ChatConversation;
+import com.ai.food.model.ChatFile;
+import com.ai.food.model.ChatMessage;
+import com.ai.food.model.ChatPhoto;
 import com.ai.food.exception.PermissionDeniedException;
 import com.ai.food.repository.ChatConversationRepository;
 import com.ai.food.repository.ChatFileRepository;
@@ -30,6 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -141,5 +145,49 @@ class ChatServiceTest {
         when(conversationRepository.findById(300L)).thenReturn(Optional.of(conv));
 
         assertThrows(PermissionDeniedException.class, () -> chatService.clearConversation(4L, 300L));
+    }
+
+    @Test
+    @DisplayName("双方删除照片后会触发底层物理删除")
+    void deleteChatPhoto_triggersPhysicalCleanupWhenBothDeleted() {
+        ChatPhoto photo = new ChatPhoto();
+        ReflectionTestUtils.setField(photo, "id", 10L);
+        ReflectionTestUtils.setField(photo, "senderId", 1L);
+        ReflectionTestUtils.setField(photo, "originalPath", "/uploads/chat-photos/20260331/a.jpg");
+        ReflectionTestUtils.setField(photo, "thumbnailPath", "/uploads/chat-photos/20260331/a_thumb.jpg");
+        ReflectionTestUtils.setField(photo, "isReceiverDelete", true);
+        ChatMessage message = new ChatMessage();
+        ReflectionTestUtils.setField(message, "receiverId", 2L);
+        when(chatPhotoRepository.findById(10L)).thenReturn(Optional.of(photo));
+        when(messageRepository.findByPhotoId(10L)).thenReturn(Optional.of(message));
+        doNothing().when(chatPhotoRepository).markSenderDeleted(10L);
+        doNothing().when(chatPhotoRepository).markSoftDeleted(10L);
+        doNothing().when(chatPhotoRepository).hardDeleteById(10L);
+
+        chatService.deleteChatPhoto(10L, 1L);
+
+        verify(chatPhotoRepository).markSoftDeleted(10L);
+        verify(fileUploadService).deletePhysicalFile("/uploads/chat-photos/20260331/a.jpg");
+        verify(fileUploadService).deletePhysicalFile("/uploads/chat-photos/20260331/a_thumb.jpg");
+        verify(chatPhotoRepository).hardDeleteById(10L);
+    }
+
+    @Test
+    @DisplayName("无消息记录的孤儿文件允许发送者本人删除")
+    void deleteChatFile_allowsSenderToDeleteOrphanUpload() {
+        ChatFile file = new ChatFile();
+        ReflectionTestUtils.setField(file, "id", 11L);
+        ReflectionTestUtils.setField(file, "senderId", 1L);
+        ReflectionTestUtils.setField(file, "filePath", "/uploads/chat-files/20260331/demo.pdf");
+        when(chatFileRepository.findById(11L)).thenReturn(Optional.of(file));
+        when(messageRepository.findByFileId(11L)).thenReturn(Optional.empty());
+        doNothing().when(chatFileRepository).markSoftDeleted(11L);
+        doNothing().when(chatFileRepository).hardDeleteById(11L);
+
+        chatService.deleteChatFile(11L, 1L);
+
+        verify(chatFileRepository).markSoftDeleted(11L);
+        verify(fileUploadService).deletePhysicalFile("/uploads/chat-files/20260331/demo.pdf");
+        verify(chatFileRepository).hardDeleteById(11L);
     }
 }

@@ -97,6 +97,10 @@ public class FileUploadService {
     public void deleteOldAvatar(String oldThumbnailUrl) {
         if (oldThumbnailUrl == null || oldThumbnailUrl.isBlank()) return;
         try {
+            if (!oldThumbnailUrl.startsWith("/uploads/avatars/")) {
+                log.warn("Skip deleting avatar outside avatar directory: {}", oldThumbnailUrl);
+                return;
+            }
             // thumbnailUrl 格式: /uploads/avatars/xxx_thumb.jpg → 原图路径推导
             String originalUrl = deriveOriginalPath(oldThumbnailUrl);
             deletePhysicalFile(oldThumbnailUrl);

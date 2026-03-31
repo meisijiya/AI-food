@@ -552,7 +552,12 @@ public class ChatService {
 
         ChatMessage message = messageRepository.findByFileId(fileId).orElse(null);
         if (message == null) {
-            log.warn("ChatMessage not found for file: id={}", fileId);
+            if (!file.getSenderId().equals(userId)) {
+                throw new PermissionDeniedException("无权限删除该文件");
+            }
+            chatFileRepository.markSoftDeleted(fileId);
+            asyncDeleteFileAndRecord(fileId, file.getFilePath());
+            log.info("Orphan chat file {} deleted by sender {}", fileId, userId);
             return;
         }
 
@@ -574,6 +579,7 @@ public class ChatService {
         boolean receiverDeleted = isReceiver || Boolean.TRUE.equals(file.getIsReceiverDelete());
         if (senderDeleted && receiverDeleted) {
             chatFileRepository.markSoftDeleted(fileId);
+            asyncDeleteFileAndRecord(fileId, file.getFilePath());
             log.info("File {} marked soft deleted after both parties deleted", fileId);
         }
     }
@@ -594,7 +600,12 @@ public class ChatService {
 
         ChatMessage message = messageRepository.findByPhotoId(photoId).orElse(null);
         if (message == null) {
-            log.warn("ChatMessage not found for photo: id={}", photoId);
+            if (!photo.getSenderId().equals(userId)) {
+                throw new PermissionDeniedException("无权限删除该照片");
+            }
+            chatPhotoRepository.markSoftDeleted(photoId);
+            asyncDeletePhotoAndRecord(photoId, photo.getOriginalPath(), photo.getThumbnailPath());
+            log.info("Orphan chat photo {} deleted by sender {}", photoId, userId);
             return;
         }
 
@@ -616,6 +627,7 @@ public class ChatService {
         boolean receiverDeleted = isReceiver || Boolean.TRUE.equals(photo.getIsReceiverDelete());
         if (senderDeleted && receiverDeleted) {
             chatPhotoRepository.markSoftDeleted(photoId);
+            asyncDeletePhotoAndRecord(photoId, photo.getOriginalPath(), photo.getThumbnailPath());
             log.info("Photo {} marked soft deleted after both parties deleted", photoId);
         }
     }

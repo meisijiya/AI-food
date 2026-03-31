@@ -33,7 +33,7 @@
         </div>
 
         <!-- 图片消息左侧删除按钮 -->
-        <div v-if="msg.messageType === 'image'" class="delete-btn-wrapper">
+        <div v-if="msg.messageType === 'image' && !isDeletedAttachment(msg)" class="delete-btn-wrapper">
           <button class="delete-btn delete-btn-image" @click.stop="handleDeletePhoto(msg)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
@@ -43,11 +43,14 @@
           <!-- 文本消息 -->
           <div v-if="msg.messageType === 'text'" class="message-content">{{ msg.content }}</div>
           <!-- 图片消息 -->
-          <div v-else-if="msg.messageType === 'image'" class="message-image" @click.stop="previewImage(msg)">
+          <div v-else-if="msg.messageType === 'image' && !isDeletedAttachment(msg)" class="message-image" @click.stop="previewImage(msg)">
             <CachedImage :src="parseMediaUrl(msg.content, 'thumbnailUrl')" alt="图片" :lazy="true" />
           </div>
+          <div v-else-if="msg.messageType === 'image'" class="deleted-attachment">
+            <span>图片已删除</span>
+          </div>
           <!-- 文件消息 -->
-          <div v-else-if="msg.messageType === 'file'" class="message-file">
+          <div v-else-if="msg.messageType === 'file' && !isDeletedAttachment(msg)" class="message-file">
             <div class="file-icon">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             </div>
@@ -55,6 +58,9 @@
               <div class="file-name">{{ parseMediaUrl(msg.content, 'fileName') }}</div>
               <div class="file-size">{{ formatFileSize(parseMediaUrl(msg.content, 'fileSize')) }}</div>
             </div>
+          </div>
+          <div v-else-if="msg.messageType === 'file'" class="deleted-attachment">
+            <span>文件已删除</span>
           </div>
           <!-- 兜底 -->
           <div v-else class="message-content">{{ msg.content }}</div>
@@ -67,7 +73,7 @@
             <button class="action-btn" @click.stop="handleCopyContent(msg)">复制内容</button>
             <button class="action-btn action-btn-delete" @click.stop="handleDeleteMessage(msg)">删除</button>
           </template>
-          <template v-else-if="msg.messageType === 'file'">
+          <template v-else-if="msg.messageType === 'file' && !isDeletedAttachment(msg)">
             <button class="action-btn" @click.stop="handleDownloadFile(msg)">下载</button>
             <button class="action-btn action-btn-delete" @click.stop="handleDeleteFile(msg)">删除</button>
           </template>
@@ -491,6 +497,25 @@ function parseMediaUrl(content: string | object, field: string): string {
   }
 }
 
+/**
+ * 判断附件消息是否已在当前视图中被删除，用于保留消息壳体并展示占位态。
+ */
+function isDeletedAttachment(msg: ChatMessage): boolean {
+  return msg.content === '__deleted_attachment__'
+}
+
+/**
+ * 将附件消息改写为“已删除”占位态，而不是直接从消息流中移除。
+ */
+function markAttachmentDeleted(messageId: number) {
+  const target = messages.value.find(m => m.id === messageId)
+  if (!target) return
+  target.content = '__deleted_attachment__'
+  target.photoId = undefined
+  target.fileId = undefined
+  saveToCache(conversationId.value, messages.value)
+}
+
 function previewImage(msg: ChatMessage) {
   try {
     const content = msg.content
@@ -567,8 +592,7 @@ async function handleDeleteFile(msg: ChatMessage) {
     await showConfirmDialog({ title: '删除文件', message: '确定删除这个文件吗？删除后将无法恢复。' })
     await chatApi.deleteChatFile(msg.fileId)
     showSuccess('已删除')
-    messages.value = messages.value.filter(m => m.id !== msg.id)
-    saveToCache(conversationId.value, messages.value)
+    markAttachmentDeleted(msg.id)
   } catch (err: any) {
     if (err === 'cancel' || err?.name === 'Cancel') return
     showError(err?.message || '删除失败')
@@ -581,8 +605,7 @@ async function handleDeletePhoto(msg: ChatMessage) {
     await showConfirmDialog({ title: '删除图片', message: '确定删除这张图片吗？删除后将无法恢复。' })
     await chatApi.deleteChatPhoto(msg.photoId)
     showSuccess('已删除')
-    messages.value = messages.value.filter(m => m.id !== msg.id)
-    saveToCache(conversationId.value, messages.value)
+    markAttachmentDeleted(msg.id)
   } catch (err: any) {
     if (err === 'cancel' || err?.name === 'Cancel') return
     showError(err?.message || '删除失败')
@@ -1000,6 +1023,16 @@ onUnmounted(() => {
   gap: 10px;
   cursor: pointer;
   padding: 4px 0;
+}
+
+.deleted-attachment {
+  min-width: 140px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--color-surface-container-low);
+  color: var(--color-on-surface-variant);
+  font-size: 13px;
+  text-align: center;
 }
 
 .file-icon {
