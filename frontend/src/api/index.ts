@@ -18,6 +18,10 @@ api.interceptors.request.use(
     if (authStore.token) {
       config.headers.Authorization = `Bearer ${authStore.token}`
     }
+    // FormData 请求不设置 Content-Type，让浏览器自动添加 boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type']
+    }
     return config
   },
   (error) => Promise.reject(error)
@@ -112,23 +116,17 @@ export const uploadApi = {
     formData.append('file', file)
     if (sessionId) formData.append('sessionId', sessionId)
     if (oldPhotoUrl) formData.append('oldPhotoUrl', oldPhotoUrl)
-    return request<any>('post', '/upload/photo', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    return request<any>('post', '/upload/photo', formData)
   },
   uploadChatPhoto: (file: File) => {
     const formData = new FormData()
     formData.append('file', file)
-    return request<any>('post', '/upload/chat-photo', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    return request<any>('post', '/upload/chat-photo', formData)
   },
   uploadChatFile: (file: File) => {
     const formData = new FormData()
     formData.append('file', file)
-    return request<any>('post', '/upload/chat-file', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    return request<any>('post', '/upload/chat-file', formData)
   }
 }
 
@@ -214,7 +212,7 @@ export const shareApi = {
 export const matchApi = {
   getRandomMatch: (excludeIds?: number[]) =>
     request('get', '/bloom/random-match', undefined, {
-      params: excludeIds?.length ? { excludeIds: excludeIds.join(',') } : {}
+      params: excludeIds?.length ? { excludeIds } : {}
     })
 }
 

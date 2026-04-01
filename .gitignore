@@ -6,7 +6,7 @@ Thumbs.db
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-*.Identifier
+
 
 # IDE相关文件
 .idea/
@@ -14,6 +14,7 @@ ehthumbs.db
 *.swp
 *.swo
 *~
+backend/.settings/
 
 # 后端Java项目相关
 backend/target/
@@ -95,3 +96,7 @@ lerna-debug.log*
 *.tiff
 *.ai
 *.eps
+
+# 项目敏感文件
+*.Identifier
+

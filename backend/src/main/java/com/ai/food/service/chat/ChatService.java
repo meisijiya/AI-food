@@ -56,6 +56,7 @@ public class ChatService {
      * @return "ok"=可以发送, "max_reached"=已达上限, "not_allowed"=不允许发送
      */
     public String checkSendPermission(Long senderId, Long receiverId) {
+        // 1. 互关 → 直接放行
         if (followService.isMutualFollow(senderId, receiverId)) {
             return "ok";
         }
@@ -63,7 +64,8 @@ public class ChatService {
         boolean senderFollowsReceiver = followService.isFollowing(senderId, receiverId);
         boolean receiverFollowsSender = followService.isFollowing(receiverId, senderId);
 
-        if (senderFollowsReceiver && !receiverFollowsSender) {
+        // 2. 任一方向关注 → 检查消息计数（各自独立计数）
+        if (senderFollowsReceiver || receiverFollowsSender) {
             try {
                 String countKey = MSG_COUNT_KEY + senderId + ":" + receiverId;
                 String countStr = stringRedisTemplate.opsForValue().get(countKey);
@@ -75,6 +77,7 @@ public class ChatService {
             }
         }
 
+        // 3. 无任何关注关系 → 拒绝
         return "not_allowed";
     }
 

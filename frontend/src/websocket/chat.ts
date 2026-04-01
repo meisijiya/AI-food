@@ -20,8 +20,10 @@ class ChatWebSocketClient {
     }
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const host = import.meta.env.VITE_WS_HOST || window.location.host
-    const url = `${protocol}//${host}/ws/chat?token=${encodeURIComponent(authStore.token)}`
+    const wsHost = import.meta.env.VITE_WS_HOST || window.location.host
+    const url = wsHost.startsWith('/')
+      ? `${protocol}//${window.location.host}${wsHost}/chat?token=${encodeURIComponent(authStore.token)}`
+      : `${protocol}//${wsHost}/ws/chat?token=${encodeURIComponent(authStore.token)}`
 
     this.ws = new WebSocket(url)
 
