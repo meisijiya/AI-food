@@ -6,7 +6,11 @@
 
     <!-- Pending photo check-in notification -->
     <div
-      v-if="pendingRecommendation && pendingRecommendation.hasPending && pendingRecommendation.sessionId"
+      v-if="
+        pendingRecommendation &&
+        pendingRecommendation.hasPending &&
+        pendingRecommendation.sessionId
+      "
       class="pending-notification animate-fade-up animate-start-hidden"
     >
       <div class="pending-icon">
@@ -119,7 +123,15 @@
 
     <!-- CTA Button -->
     <div class="cta-area animate-fade-up delay-500 animate-start-hidden">
-      <button class="cta-button" @click="startChat" :disabled="loading">
+      <button
+        v-if="isGuest"
+        class="cta-button guest-cta"
+        @click="goToLogin"
+        style="background-color: #1677ff"
+      >
+        <span>登录后开始体验</span>
+      </button>
+      <button v-else class="cta-button" @click="startChat" :disabled="loading">
         <span v-if="loading" class="cta-loading"></span>
         <span v-else>开始美食之旅</span>
       </button>
@@ -154,20 +166,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { conversationApi, recordApi } from "@/api";
 import { useChatStore } from "@/stores/chat";
+import { useAuthStore } from "@/stores/auth";
 import { showError } from "@/utils/toast";
 const router = useRouter();
 const chatStore = useChatStore();
+const authStore = useAuthStore();
 const loading = ref(false);
 const showConfirmDialog = ref(false);
 const pendingRecommendation = ref<any>(null);
 const version = import.meta.env.VITE_VERSION || "1.0.0";
 const releaseDate = import.meta.env.VITE_TIME || "未知日期";
 
+const isGuest = computed(() => authStore.isGuest);
+
+function goToLogin() {
+  router.push("/login");
+}
+
 onMounted(async () => {
+  if (isGuest.value) return;
+
   try {
     const res = await recordApi.getPendingRecommendation();
     if (res?.hasPending) {
@@ -179,7 +201,10 @@ onMounted(async () => {
 });
 
 const hasPendingPhoto = () => {
-  return pendingRecommendation.value?.hasPending && pendingRecommendation.value?.sessionId;
+  return (
+    pendingRecommendation.value?.hasPending &&
+    pendingRecommendation.value?.sessionId
+  );
 };
 
 const startChat = async () => {
@@ -571,6 +596,15 @@ const goToResult = () => {
   &:disabled {
     opacity: 0.7;
     cursor: not-allowed;
+  }
+
+  &.guest-cta {
+    background: linear-gradient(
+      135deg,
+      var(--color-secondary-fixed),
+      var(--color-secondary-container)
+    );
+    box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.15);
   }
 }
 

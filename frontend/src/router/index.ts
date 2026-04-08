@@ -6,7 +6,7 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     name: 'Home',
     component: () => import('@/views/Home.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: false }
   },
   {
     path: '/login',
@@ -30,7 +30,7 @@ const routes: RouteRecordRaw[] = [
     path: '/records',
     name: 'Records',
     component: () => import('@/views/Records.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: false }
   },
   {
     path: '/records/:sessionId',
@@ -42,19 +42,19 @@ const routes: RouteRecordRaw[] = [
     path: '/profile',
     name: 'Profile',
     component: () => import('@/views/Profile.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: false }
   },
   {
     path: '/feed',
     name: 'Feed',
     component: () => import('@/views/Feed.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: false }
   },
   {
     path: '/feed/:postId',
     name: 'FeedDetail',
     component: () => import('@/views/FeedDetail.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: false }
   },
   {
     path: '/follow',

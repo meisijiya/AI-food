@@ -6,7 +6,7 @@
     <div class="feed-header animate-fade-up">
       <div class="header-left">
         <h1 class="page-title" @click="resetToHall"><em>大厅</em></h1>
-        <button class="friends-entry" @click="router.push('/friends')">
+        <button v-if="!isGuest" class="friends-entry" @click="router.push('/friends')">
           <svg
             width="16"
             height="16"
@@ -24,7 +24,7 @@
           </svg>
           好友
         </button>
-        <button class="match-entry" @click="router.push('/match')">
+        <button v-if="!isGuest" class="match-entry" @click="router.push('/match')">
           <svg
             width="16"
             height="16"
@@ -42,7 +42,7 @@
       </div>
       <div class="header-actions">
         <button
-          v-if="activeTab === 'feed'"
+          v-if="activeTab === 'feed' && !isGuest"
           class="filter-btn"
           @click="showFilter = true"
         >
@@ -60,7 +60,7 @@
           </svg>
           筛选
         </button>
-        <button class="notify-btn" @click="router.push('/notifications')">
+        <button v-if="!isGuest" class="notify-btn" @click="router.push('/notifications')">
           <svg
             width="18"
             height="18"
@@ -105,6 +105,7 @@
         热榜
       </button>
       <button
+        v-if="!isGuest"
         class="sub-nav-item"
         :class="{ active: activeTab === 'friend' }"
         @click="switchTab('friend')"
@@ -379,13 +380,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { feedApi, notificationApi } from "@/api";
 import CachedImage from "@/components/CachedImage.vue";
+import { useAuthStore } from "@/stores/auth";
 
 const router = useRouter();
 const scrollContainer = ref<HTMLElement>();
+const authStore = useAuthStore();
+const isGuest = computed(() => authStore.isGuest);
 
 const activeTab = ref("feed");
 const posts = ref<any[]>([]);
@@ -522,7 +526,9 @@ function formatTime(dateStr: string): string {
 
 onMounted(() => {
   fetchPosts(true);
-  fetchNotifications();
+  if (!isGuest.value) {
+    fetchNotifications();
+  }
 });
 </script>
 

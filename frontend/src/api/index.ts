@@ -78,6 +78,12 @@ export const authApi = {
   logout: () => request('post', '/auth/logout')
 }
 
+// 游客相关接口
+export const guestApi = {
+  getGuestInfo: () => request('get', '/guest/info'),
+  getGuestStats: () => request('get', '/guest/stats')
+}
+
 // 用户相关接口
 export const userApi = {
   getUserInfo: () => request('get', '/user/info'),

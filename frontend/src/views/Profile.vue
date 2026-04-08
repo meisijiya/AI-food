@@ -8,8 +8,40 @@
       <em>个人中心</em>
     </h1>
 
-    <!-- Bento grid wrapper -->
-    <div class="bento-grid">
+    <!-- Guest Welcome Page -->
+    <div v-if="isGuest" class="guest-welcome animate-fade-up delay-100">
+      <div class="guest-icon">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      </div>
+      <h2 class="guest-title">欢迎来到 AI Food</h2>
+      <p class="guest-desc">登录后享受完整的个性化服务</p>
+      <div class="guest-features">
+        <div class="guest-feature-item">
+          <span class="feature-check">✓</span>
+          <span>AI智能美食推荐</span>
+        </div>
+        <div class="guest-feature-item">
+          <span class="feature-check">✓</span>
+          <span>拍照打卡记录</span>
+        </div>
+        <div class="guest-feature-item">
+          <span class="feature-check">✓</span>
+          <span>社区互动分享</span>
+        </div>
+      </div>
+      <button class="guest-login-btn" @click="router.push('/login')">
+        立即登录
+      </button>
+      <button class="guest-back-btn" @click="router.push('/')">
+        返回首页
+      </button>
+    </div>
+
+    <!-- Logged In User Content -->
+    <div v-else class="bento-grid">
       <!-- User info card -->
       <div class="user-card bento-full animate-fade-up delay-100 animate-start-hidden" @click="router.push('/profile-edit')">
         <div class="avatar-circle">
@@ -91,6 +123,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const userInfo = computed(() => authStore.userInfo)
+const isGuest = computed(() => authStore.isGuest)
 const avatarInitial = computed(() => {
   const name = userInfo.value?.nickname || userInfo.value?.username || '?'
   return name.charAt(0).toUpperCase()
@@ -181,7 +214,10 @@ function handleLogout() {
   router.push('/login')
 }
 
-onMounted(fetchData)
+onMounted(() => {
+  if (isGuest.value) return
+  fetchData()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -459,6 +495,122 @@ onMounted(fetchData)
   &:hover {
     border-color: var(--color-primary);
     color: var(--color-primary);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Guest Welcome */
+.guest-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 24px;
+  background: var(--color-surface-container-lowest);
+  border-radius: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  z-index: 1;
+}
+
+.guest-icon {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin-bottom: 24px;
+}
+
+.guest-title {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--color-on-surface);
+  margin-bottom: 8px;
+}
+
+.guest-desc {
+  font-size: 14px;
+  color: var(--color-on-surface-variant);
+  margin-bottom: 32px;
+}
+
+.guest-features {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 32px;
+}
+
+.guest-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--color-on-surface);
+}
+
+.feature-check {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.guest-login-btn {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 2rem;
+  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  color: white;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 12px 32px -8px rgba(0, 89, 182, 0.35);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  margin-bottom: 12px;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 40px -8px rgba(0, 89, 182, 0.45);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.guest-back-btn {
+  width: 100%;
+  padding: 16px;
+  border: 1.5px solid var(--color-surface-container-low);
+  border-radius: 2rem;
+  background: none;
+  color: var(--color-on-surface-variant);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--color-surface-container-low);
   }
 
   &:active {

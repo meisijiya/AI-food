@@ -34,6 +34,7 @@ export const useAuthStore = defineStore('auth', () => {
   const userInfo = ref<UserInfo | null>(safeParseItem<UserInfo>(CACHE_KEY))
 
   const isLoggedIn = computed(() => !!token.value)
+  const isGuest = computed(() => !token.value)
 
   function setToken(newToken: string) {
     token.value = newToken
@@ -72,5 +73,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { token, userInfo, isLoggedIn, setToken, setUserInfo, logout, clearStale }
+  return { token, userInfo, isLoggedIn, isGuest, setToken, setUserInfo, logout, clearStale }
 })

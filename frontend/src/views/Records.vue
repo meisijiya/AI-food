@@ -86,13 +86,27 @@
     <div v-if="finished && records.length > 0" class="no-more">没有更多了</div>
 
     <!-- Empty state -->
-    <div v-if="!loading && records.length === 0" class="empty-state">
+    <div v-if="!loading && records.length === 0 && !isGuest" class="empty-state">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="empty-icon">
         <path d="M12 8v4l3 3"/>
         <circle cx="12" cy="12" r="10"/>
       </svg>
       <div class="empty-text">暂无推荐记录</div>
       <div class="empty-hint">去首页开始你的美食之旅吧</div>
+    </div>
+
+    <!-- Guest login prompt -->
+    <div v-if="isGuest" class="guest-login-prompt">
+      <div class="guest-prompt-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+      <div class="guest-prompt-title">登录后查看推荐记录</div>
+      <div class="guest-prompt-desc">登录后可以查看您的历史推荐和打卡记录</div>
+      <button class="guest-prompt-btn" @click="router.push('/login')">立即登录</button>
+      <button class="guest-prompt-btn-secondary" @click="router.push('/')">返回首页</button>
     </div>
 
     <div class="nav-spacer"></div>
@@ -102,6 +116,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { recordApi } from '@/api'
 import { showSuccess, showError } from '@/utils/toast'
 
@@ -115,6 +130,8 @@ interface RecordItem {
 }
 
 const router = useRouter()
+const authStore = useAuthStore()
+const isGuest = computed(() => authStore.isGuest)
 const scrollContainer = ref<HTMLElement>()
 
 const records = ref<RecordItem[]>([])
@@ -256,6 +273,8 @@ function displayReason(record: RecordItem) {
 }
 
 onMounted(() => {
+  if (isGuest.value) return
+
   fetchRecords(true)
 
   const el = scrollContainer.value
@@ -577,6 +596,93 @@ onMounted(() => {
   font-size: 12px;
   color: var(--color-on-surface-variant);
   opacity: 0.6;
+}
+
+/* Guest login prompt */
+.guest-login-prompt {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  z-index: 1;
+}
+
+.guest-prompt-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin-bottom: 24px;
+}
+
+.guest-prompt-title {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 22px;
+  color: var(--color-on-surface);
+  margin-bottom: 8px;
+}
+
+.guest-prompt-desc {
+  font-size: 14px;
+  color: var(--color-on-surface-variant);
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.guest-prompt-btn {
+  width: 100%;
+  max-width: 300px;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 2rem;
+  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  color: white;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 12px 32px -8px rgba(0, 89, 182, 0.35);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  margin-bottom: 12px;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 40px -8px rgba(0, 89, 182, 0.45);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.guest-prompt-btn-secondary {
+  width: 100%;
+  max-width: 300px;
+  padding: 14px 24px;
+  border: 1.5px solid var(--color-surface-container-low);
+  border-radius: 2rem;
+  background: none;
+  color: var(--color-on-surface-variant);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--color-surface-container-low);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 .nav-spacer {

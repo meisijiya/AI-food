@@ -41,14 +41,14 @@ public class FeedController {
             @RequestParam(required = false) String foodName,
             @RequestParam(required = false) String paramName,
             @RequestParam(required = false) String paramValue) {
-        Long userId = getCurrentUserId();
+        Long userId = getCurrentUserIdOrNull();
         Map<String, Object> result = feedService.getPublicFeedList(page, size, foodName, paramName, paramValue, userId);
         return ApiResponse.success(result);
     }
 
     @GetMapping("/hot-rank")
     public ApiResponse<Map<String, Object>> getHotRank() {
-        Long userId = getCurrentUserId();
+        Long userId = getCurrentUserIdOrNull();
         Map<String, Object> result = feedService.getHotRank(userId);
         return ApiResponse.success(result);
     }
@@ -64,7 +64,7 @@ public class FeedController {
 
     @GetMapping("/detail/{postId}")
     public ApiResponse<Map<String, Object>> getFeedDetail(@PathVariable Long postId) {
-        Long currentUserId = getCurrentUserId();
+        Long currentUserId = getCurrentUserIdOrNull();
         Map<String, Object> result = feedService.getFeedDetail(postId, currentUserId);
         return ApiResponse.success(result);
     }
@@ -121,5 +121,20 @@ public class FeedController {
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return Long.parseLong(auth.getPrincipal().toString());
+    }
+
+    /**
+     * 获取当前用户ID，如果未登录则返回null（游客）
+     */
+    private Long getCurrentUserIdOrNull() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || auth.getPrincipal() == null || "anonymousUser".equals(auth.getPrincipal().toString())) {
+                return null;
+            }
+            return Long.parseLong(auth.getPrincipal().toString());
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

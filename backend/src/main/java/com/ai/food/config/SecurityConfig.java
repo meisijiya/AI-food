@@ -32,6 +32,11 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/share/detail/**").permitAll()
+                .requestMatchers("/api/guest/**").permitAll()
+                .requestMatchers("/api/feed/list").permitAll()
+                .requestMatchers("/api/feed/hot-rank").permitAll()
+                .requestMatchers("/api/feed/detail/**").permitAll()
+                .requestMatchers("/api/feed/comments/**").permitAll()
                 .requestMatchers("/ws/**").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/**", "/swagger-resources/**", "/webjars/**").permitAll()

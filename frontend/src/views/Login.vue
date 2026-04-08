@@ -118,6 +118,18 @@
         <span v-else>注 册</span>
       </button>
     </form>
+
+    <!-- Guest access divider -->
+    <div class="guest-divider animate-fade-up delay-500 animate-start-hidden">
+      <span class="divider-line"></span>
+      <span class="divider-text">或者</span>
+      <span class="divider-line"></span>
+    </div>
+
+    <!-- Guest access button -->
+    <button class="guest-btn animate-fade-up delay-600 animate-start-hidden" @click="goAsGuest">
+      先看看
+    </button>
   </div>
 </template>
 
@@ -233,6 +245,10 @@ const handleRegister = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const goAsGuest = () => {
+  router.push('/')
 }
 </script>
 
@@ -508,6 +524,56 @@ const handleRegister = async () => {
   animation: spin 0.8s linear infinite;
 }
 
+/* Guest access */
+.guest-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 360px;
+  margin: 20px 0 16px;
+  z-index: 1;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--color-surface-container-low);
+}
+
+.divider-text {
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+.guest-btn {
+  width: 100%;
+  max-width: 360px;
+  padding: 14px;
+  border: 1.5px solid var(--color-surface-container-low);
+  border-radius: 2rem;
+  background: var(--color-surface-container-lowest);
+  color: var(--color-on-surface-variant);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 1;
+
+  &:hover {
+    background: var(--color-surface-container-low);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -528,6 +594,11 @@ const handleRegister = async () => {
 
   .input-pill {
     height: 56px;
+  }
+
+  .guest-divider,
+  .guest-btn {
+    max-width: 400px;
   }
 }
 </style>

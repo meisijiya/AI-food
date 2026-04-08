@@ -372,7 +372,9 @@ public class FeedService {
         enrichUserInfo(result, post.getUserId());
 
         // Check if current user liked
-        Boolean isLiked = stringRedisTemplate.opsForSet().isMember(LIKE_SET_KEY + postId, currentUserId.toString());
+        Boolean isLiked = currentUserId != null ? 
+            stringRedisTemplate.opsForSet().isMember(LIKE_SET_KEY + postId, currentUserId.toString()) : 
+            false;
         result.put("isLiked", Boolean.TRUE.equals(isLiked));
 
         // Photo info

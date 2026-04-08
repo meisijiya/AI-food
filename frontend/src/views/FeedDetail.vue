@@ -49,7 +49,7 @@
         </div>
         <div class="user-actions">
           <button
-            v-if="!isOwnPost"
+            v-if="!isGuest && !isOwnPost"
             class="follow-btn"
             :class="{ following: isFollowing }"
             :disabled="checkingFollow"
@@ -57,7 +57,7 @@
           >
             {{ isFollowing ? '已关注' : '关注' }}
           </button>
-          <button class="like-btn" :class="{ liked: isLiked }" @click="toggleLike">
+          <button v-if="!isGuest" class="like-btn" :class="{ liked: isLiked }" @click="toggleLike">
             <svg width="20" height="20" viewBox="0 0 24 24" :fill="isLiked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
             <span>{{ likeCount }}</span>
           </button>
@@ -68,7 +68,7 @@
       <div class="divider animate-fade-up delay-350 animate-start-hidden"></div>
 
       <!-- Comments -->
-      <div class="comments-section animate-fade-up delay-400 animate-start-hidden">
+      <div v-if="!isGuest" class="comments-section animate-fade-up delay-400 animate-start-hidden">
         <div class="section-label">评论 ({{ commentTotal }})</div>
 
         <div v-if="comments.length === 0 && !loadingComments" class="no-comments">
@@ -100,10 +100,21 @@
         </button>
         <div v-if="loadingComments" class="loading-more"><div class="spinner"></div></div>
       </div>
+
+      <!-- Guest comments prompt -->
+      <div v-else-if="isGuest" class="guest-comments-prompt animate-fade-up delay-400 animate-start-hidden">
+        <div class="guest-comments-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <div class="guest-comments-text">登录后查看评论</div>
+        <button class="guest-comments-btn" @click="router.push('/login')">立即登录</button>
+      </div>
     </template>
 
     <!-- Bottom comment input -->
-    <div class="comment-input-bar" v-if="post">
+    <div class="comment-input-bar" v-if="post && !isGuest">
       <button class="plus-btn-comment" :class="{ active: showAttach }" @click.stop="toggleAttach">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
       </button>
@@ -189,6 +200,7 @@ import EmojiPicker from '@/components/EmojiPicker.vue'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const isGuest = computed(() => authStore.isGuest)
 
 const post = ref<any>(null)
 const loading = ref(true)
@@ -423,7 +435,7 @@ onMounted(async () => {
   await fetchDetail()
   fetchComments(true)
   // Check follow status for post author
-  if (post.value?.userId && !isOwnPost.value) {
+  if (post.value?.userId && !isOwnPost.value && !isGuest.value) {
     try {
       const res = await followApi.checkFollow(post.value.userId)
       isFollowing.value = res?.isFollowing || false
@@ -689,6 +701,39 @@ onMounted(async () => {
 
 .loading-more {
   display: flex; justify-content: center; padding: 16px 0;
+}
+
+/* Guest comments prompt */
+.guest-comments-prompt {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 40px 20px; background: var(--color-surface-container-lowest);
+  border-radius: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.8);
+  margin-top: 16px; z-index: 1; position: relative;
+}
+
+.guest-comments-icon {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  display: flex; align-items: center; justify-content: center;
+  color: white; margin-bottom: 16px;
+}
+
+.guest-comments-text {
+  font-size: 14px; color: var(--color-on-surface-variant);
+  margin-bottom: 16px;
+}
+
+.guest-comments-btn {
+  padding: 10px 24px; border: none; border-radius: 100px;
+  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  color: white; font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s;
+  &:hover {
+    opacity: 0.9;
+  }
+  &:active {
+    transform: scale(0.95);
+  }
 }
 
 /* Comment input bar */
