@@ -271,17 +271,58 @@ http://localhost:8080/doc.html
 
 ---
 
-## 💡 复盘 <!-- NEW · 2026-06-23 -->
+## 💡 复盘 <!-- UPDATED · 2026-06-23 · 源码验证版 -->
 
-> ⚠️ **本段由 Mavis 代起草**——面试前请自己读一遍，确认 3 条都认同；如果有更具体的真实细节（哪个文件 / 哪次踩坑），加进去。**AI 写的复盘你自己消化了才算你的**。
+> 本段由用户口述 + Mavis 源码验证 + 润色。面试前自己读一遍，能讲清楚「为什么这是问题 + 重做怎么改」才算你的。
 
-如果重做一次，我会改这 3 件事：
+如果重做一次，我会改这 4 件事：
 
-1. **先写测试再写代码** —— AI-food 的 Service 层基本没有单元测试覆盖，加新功能或重构时只能手动跑主流程。下次一定先写测试再写代码，至少核心 Service（AI 推荐、点赞、认证、Feed）要有单元测试 + 集成测试，把测试当成"开发的护栏"而不是"交付前的负担"。
-2. **数据库设计先画 ER 图评审** —— 表结构是边写边改的，现在加个字段要同步改 Service / Controller / DTO / 前端，迁移脚本也是后补的，痛苦。下次先 ER 图评审 + 写迁移脚本基线 + Code Review，再动业务代码。
-3. **AI Prompt 模板化 + 评测驱动** —— Prompt 写在 Java 代码里，调参要重新打包部署，每次迭代很慢。下次要抽成独立配置文件 + 评测样例驱动（典型 / 异常 / 边界），改 Prompt 不需要重新发布，10 分钟迭代一次。
+### 1. 图片存储从「本地磁盘」迁到「对象存储 + CDN」
 
-**附加**：做完这次包装（5 段式 README + Docker 部署 + 测试）后，下一步最想做的是**给 AI-food 加 RAG 检索**——把"附近好吃的川菜"这种模糊查询变成基于真实评论和历史推荐的语义检索，而不是仅靠 tag 匹配。
+**现状**：`FileUploadService.java:48` `getUploadRoot()` 直接用 `Paths.get(System.getProperty("user.dir"), "uploads")` —— 所有用户头像、菜品图、聊天图片/文件都写在 JVM 工作目录下的 `uploads/` 子目录（`photos/`、`avatars/`、`chat-photos/`、`chat-files/`）。
+
+**问题**：
+- 单点故障：服务器磁盘挂了，所有图片全没
+- 没备份 + 没副本：磁盘满 / 服务器迁移要手动搬数据
+- 没 CDN：用户读图片直接打源站，带宽和延迟都差
+- 多实例部署会乱：上传到 A 实例，读请求落到 B 实例找不到文件
+
+**改进方案**：接 MinIO（本地开发）或阿里云 OSS / 腾讯云 COS（生产）+ CDN 加速。代码改动只在 `FileUploadService` 一个文件，收益巨大。
+
+### 2. AI Prompt + 调参 → 「配置中心 + 评测驱动」
+
+**现状**：`AiService.java:33-40` 用 `ClassPathResource("prompts/xxx.txt")` 把 4 个 Prompt（question-generation / answer-validation / recommendation / similarity）加载到 Java `String`。
+
+**好的一面**：Prompt 已经外部化（不用改 Java 代码就能改 prompt 文字）。
+
+**问题**：
+- Prompt 调参要重新打包 + 部署，没法 10 分钟迭代一次
+- 没有 Prompt 版本管理（不知道哪个版本效果好）
+- 没有评测样例（不知道改完是变好还是变差）
+- 没法 A/B 测试（同一意图不同 prompt 效果对比）
+
+**改进方案**：Prompt 抽到 Nacos / Apollo 配置中心 + 加评测模块（典型/异常/边界 9 条样例）+ LLM-as-Judge 自动评分。
+
+### 3. 点赞模块的阈值常量 → 配置化
+
+**现状**：`HeavyKeeperService.java:25-28` 4 个硬编码常量：`DECAY_FACTOR = 0.9`、`DECAY_INTERVAL_MS = 60000`、`TOP_K_DEFAULT = 100`、`HOT_THRESHOLD = 10`。
+
+**问题**：
+- 调参要重新打包 + 重启
+- 不同阶段（冷启动 vs 增长期 vs 平稳期）最优参数不同，没法实验
+- 没压测时的"找最优阈值"工作流
+
+**改进方案**：搬 `@ConfigurationProperties("app.like")` 一个类 + `application.yml` 配，热加载用 Nacos。
+
+### 4. AI 推荐加 RAG（避免幻觉 + 输出真实餐厅）
+
+**现状**：`AiService.java:107` `generateRecommendation()` 直接调 LLM 生成推荐，**没有真实餐厅/菜品知识库支撑** → LLM 会编造不存在的餐厅或菜名（幻觉）。
+
+**改进方案**：
+- 维护「真实餐厅/菜品」知识库（数据库 + 向量库）
+- LLM 生成前 RAG 检索 Top-K 真实候选
+- Prompt 强制 LLM 只在候选里挑
+- 输出带「数据来源 + 商家链接」
 
 ---
 
