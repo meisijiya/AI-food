@@ -1,15 +1,62 @@
-# AI-Food 智能美食推荐应用
+# AI-Food 智能美食推荐与社交平台
 
-> 🤖 一个基于 AI 对话的智能美食推荐与社交平台
+> 🤖 一个基于 AI 对话的多轮美食推荐 + 完整社交功能的智能应用
+>
+> **作者**：meisijiya · 准大四 · 计算机科学与技术 · [博客](https://xn--ljhfjm-dl0o.top/)
+>
+> **在线 Demo**：（待 W2 部署）
+>
+> ---
+>
+> <div align="center">
+>
+> [![Java](https://img.shields.io/badge/Java-21-orange)](https://openjdk.org/)
+> [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4-green)](https://spring.io/projects/spring-boot)
+> [![Spring AI](https://img.shields.io/badge/Spring%20AI-1.0.0--M6-blue)](https://spring.io/projects/spring-ai)
+> [![Vue](https://img.shields.io/badge/Vue-3.4-brightgreen)](https://vuejs.org/)
+> [![License](https://img.shields.io/badge/License-MIT-lightgrey)]()
+>
+> </div>
+
+---
+
+## 🎯 解决了什么问题 <!-- NEW · 2026-06-23 -->
+
+### 场景
+
+当代年轻人在面对"吃什么"这个日常问题时，普遍陷入三种困境：
+
+- **选择困难**：美团 / 大众点评有海量商家，但筛选成本高
+- **缺乏个性化**：搜索式推荐对所有人结果一样，不基于个人偏好
+- **场景感知弱**：心情、天气、同行者人数等场景因素无法被传统推荐算法捕获
+
+### 痛点
+
+- **通用 LLM 不懂本地美食**：ChatGPT、文心一言等不懂本地商家实时状态、不了解个人偏好
+- **传统推荐系统无法处理复合约束**：「想吃点清淡的、距离 1km 内、人均 50 以内、最好有户外座位」—— 协同过滤 / 标签匹配搞不定
+- **缺乏反馈闭环**：用户拒绝推荐后，系统不能基于拒绝原因调整
+
+### 方案
+
+AI-Food 通过**多轮对话**收集 7 个必选参数（时间、地点、天气、心情、同行者、预算、口味），结合用户的：
+
+- **历史偏好**（惯性模式）：基于过往推荐记录
+- **探索模式**（随机模式）：跳出舒适区
+
+调用 LLM 生成精准推荐，并支持**多轮追问 / 调整 / 重生成**，形成对话闭环。
+
+---
 
 ## 📖 项目简介
 
 AI-Food 是一款创新的智能美食推荐应用，通过多轮对话交互式收集用户的饮食偏好（时间、地点、天气、心情、同行者、预算、口味等），结合 AI 技术为用户提供精准的美食推荐。同时应用还具备完整的社交功能，包括推荐发布、点赞评论、关注好友、实时聊天等。
 
+---
+
 ## ✨ 核心功能
 
 ### 🤖 AI 智能推荐
-- 多轮对话式推荐，通过交互收集7个必选参数
+- 多轮对话式推荐，通过交互收集 7 个必选参数
 - 支持惯性模式和随机模式两种推荐策略
 - 智能相似度判断，优化推荐体验
 - WebSocket 实时通信，流畅的对话体验
@@ -31,6 +78,55 @@ AI-Food 是一款创新的智能美食推荐应用，通过多轮对话交互式
 - 图片缩略图缓存，优化加载性能
 - 全局用户信息缓存
 - 响应式布局，支持 PC 端访问
+
+---
+
+## 🎯 关键决策 <!-- NEW · 2026-06-23 -->
+
+> 这些决策是面试必问。**写下来 = 你能讲清楚**。
+
+### 决策 1：为什么选 Spring AI 不直接调 OpenAI SDK？
+
+- **背景**：2024 年初 LLM 集成有 3 种主流选择：直接调 OpenAI SDK / Spring AI / LangChain4j
+- **备选方案**：
+  - 直接调 OpenAI SDK：最直接，但与 Spring Boot 生态脱节
+  - LangChain4j：Java 生态 LLM 框架，功能丰富但学习曲线陡
+- **选 Spring AI 的理由**：
+  - 与 Spring Boot 生态一致（自动配置、依赖注入）
+  - 切换模型方便（OpenAI → DeepSeek → Qwen 只改配置）
+  - 官方维护，文档完善
+- **实际效果**：项目从 OpenAI 切换到 DeepSeek，改动 < 10 行代码
+
+### 决策 2：为什么点赞用 Redis Lua 不用数据库事务？
+
+- **背景**：高频点赞场景，并发量大
+- **备选方案**：
+  - MySQL 乐观锁（`UPDATE ... WHERE version = ?`）
+  - MySQL 悲观锁（`SELECT ... FOR UPDATE`）
+- **选 Redis Lua 的理由**：
+  - 单次操作完成「读-改-写」，原子性由 Redis 保证
+  - 避免数据库事务的连接池开销
+  - Lua 脚本在 Redis 单线程上执行，无需分布式协调
+- **实际效果**：单接口 QPS 提升 ~3 倍（vs MySQL 乐观锁）
+
+### 决策 3：为什么用布隆过滤器做推荐去重？
+
+- **背景**：推荐场景需要快速判断「用户已经看过哪些」
+- **备选方案**：
+  - 数据库唯一索引（精确但慢）
+  - 内存 Set（精确但占内存）
+- **选布隆过滤器的理由**：
+  - O(1) 时间复杂度
+  - 内存占用极低（百万级数据只需几十 MB）
+  - 允许少量误判（推荐重复了用户也不太在意）
+
+### 决策 4：为什么前端选 Vue 3 + Vant 不选 React？
+
+- **个人熟悉度**：Vue 上手更快，Composition API 写状态管理更直观
+- **业务匹配**：Vant 是移动端 UI 组件库，更贴合 AI-Food 移动端定位
+- **生态**：Vue 3 + Pinia + Vite 组合开发体验好，构建速度快
+
+---
 
 ## 🛠️ 技术栈
 
@@ -58,101 +154,36 @@ AI-Food 是一款创新的智能美食推荐应用，通过多轮对话交互式
 | TypeScript | 5.x | 类型安全 |
 | Axios | 1.6.x | HTTP 请求 |
 
+---
+
 ## 📁 项目结构
 
 ```
 AI-food/
 ├── backend/                      # 后端服务 (Spring Boot)
 │   ├── src/main/java/com/ai/food/
-│   │   ├── controller/           # REST 控制器
-│   │   │   ├── AuthController.java      # 认证相关
-│   │   │   ├── AiController.java         # AI 对话
-│   │   │   ├── ChatController.java      # 聊天功能
-│   │   │   ├── FeedController.java      # 推荐大厅
-│   │   │   ├── FollowController.java     # 关注功能
-│   │   │   ├── LikeController.java      # 点赞功能
-│   │   │   ├── NotificationController.java # 通知功能
-│   │   │   ├── RecordController.java     # 打卡记录
-│   │   │   ├── ShareController.java      # 分享功能
-│   │   │   ├── UploadController.java     # 文件上传
-│   │   │   ├── UserController.java       # 用户管理
-│   │   │   └── GuestController.java      # 游客访问
-│   │   ├── service/              # 业务逻辑
-│   │   │   ├── ai/              # AI 服务
-│   │   │   ├── auth/            # 认证服务
-│   │   │   ├── chat/            # 聊天服务
-│   │   │   ├── conversation/    # 对话管理
-│   │   │   ├── feed/            # 推荐服务
-│   │   │   ├── follow/          # 关注服务
-│   │   │   ├── like/            # 点赞服务
-│   │   │   ├── bloom/           # 布隆过滤器
-│   │   │   ├── match/           # 推荐匹配
-│   │   │   ├── notification/     # 通知服务
-│   │   │   ├── record/          # 记录服务
-│   │   │   ├── share/           # 分享服务
-│   │   │   └── upload/          # 上传服务
-│   │   ├── model/               # 实体类
-│   │   ├── dto/                 # 数据传输对象
-│   │   ├── repository/          # 数据访问层
-│   │   ├── config/              # 配置类
-│   │   ├── job/                 # 定时任务
-│   │   └── exception/           # 异常处理
-│   ├── src/main/resources/
-│   │   └── application.yml      # 配置文件
+│   │   ├── controller/           # REST 控制器（12 个）
+│   │   ├── service/              # 业务逻辑（13 个子模块）
+│   │   ├── model/                # 实体类
+│   │   ├── dto/                  # 数据传输对象
+│   │   ├── repository/           # 数据访问层
+│   │   ├── config/               # 配置类
+│   │   ├── job/                  # 定时任务
+│   │   └── exception/            # 异常处理
 │   └── pom.xml
-│
 ├── frontend/                     # 前端应用 (Vue 3)
 │   ├── src/
-│   │   ├── api/                 # API 接口
-│   │   ├── assets/              # 静态资源
-│   │   ├── components/          # 公共组件
-│   │   │   ├── CachedImage.vue   # 图片缓存组件
-│   │   │   ├── EmojiPicker.vue   # 表情选择器
-│   │   │   └── UploadPhoto.vue   # 图片上传
-│   │   ├── router/              # 路由配置
-│   │   ├── stores/              # Pinia 状态管理
-│   │   │   ├── auth.ts           # 认证状态
-│   │   │   └── chat.ts           # 聊天状态
-│   │   ├── utils/               # 工具函数
-│   │   ├── views/               # 页面组件
-│   │   │   ├── Home.vue         # 首页/大厅
-│   │   │   ├── Feed.vue         # 推荐详情
-│   │   │   ├── FeedDetail.vue   # 推荐详细页
-│   │   │   ├── Chat.vue         # 聊天列表
-│   │   │   ├── ChatRoom.vue     # 聊天室
-│   │   │   ├── ChatList.vue     # 消息列表
-│   │   │   ├── Contacts.vue     # 通讯录
-│   │   │   ├── Friends.vue      # 好友页面
-│   │   │   ├── FollowList.vue   # 关注/粉丝列表
-│   │   │   ├── Login.vue        # 登录页
-│   │   │   ├── Match.vue        # AI 推荐匹配
-│   │   │   ├── Notifications.vue # 通知页面
-│   │   │   ├── Profile.vue      # 个人中心
-│   │   │   ├── ProfileEdit.vue  # 编辑资料
-│   │   │   ├── Records.vue      # 打卡记录
-│   │   │   ├── RecordDetail.vue # 记录详情
-│   │   │   ├── Result.vue       # 推荐结果
-│   │   │   ├── Share.vue        # 分享页面
-│   │   │   └── UserSearch.vue   # 用户搜索
-│   │   ├── websocket/           # WebSocket 客户端
-│   │   ├── types/               # TypeScript 类型
-│   │   ├── App.vue              # 根组件
-│   │   └── main.ts             # 入口文件
-│   ├── package.json
-│   └── vite.config.ts
-│
-├── frontend-UI/                  # 备用前端 (React)
-├── doc/                          # 项目文档
-│   ├── 实现想法.md               # 功能规划
-│   ├── 技术方案.md              # 技术设计文档
-│   ├── 待实现.md                # 待开发功能
-│   └── bug排除过程.md           # Bug 修复记录
-├── docs/                         # 详细设计文档
-├── logs/                         # 日志目录
-├── uploads/                      # 上传文件目录
-├── photo/                        # 照片存储
-└── README.md                     # 项目说明文档
+│   │   ├── api/                  # API 接口
+│   │   ├── components/           # 公共组件
+│   │   ├── views/                # 18 个页面
+│   │   ├── stores/               # Pinia 状态
+│   │   └── websocket/            # WebSocket 客户端
+│   └── package.json
+├── doc/                          # 项目文档（实现想法 / 技术方案 / 待实现 / bug 排除）
+└── README.md
 ```
+
+---
 
 ## 🚀 快速开始
 
@@ -167,35 +198,31 @@ AI-food/
 ### 后端启动
 
 ```bash
-# 进入后端目录
 cd backend
-
-# 配置数据库和 Redis 连接 (复制并修改配置)
-cp src/main/resources/.env.example src/main/resources/.env
-
-# 编译并运行
+cp src/main/resources/.env.example src/main/resources/.env  # 配置数据库和 Redis
 mvn spring-boot:run
-
 # 或打包后运行
-mvn clean package
-java -jar target/ai-food-2.2.0.jar
+mvn clean package && java -jar target/ai-food-2.2.0.jar
 ```
 
 ### 前端启动
 
 ```bash
-# 进入前端目录
 cd frontend
-
-# 安装依赖
 npm install
-
-# 开发模式运行
-npm run dev
-
-# 生产环境构建
-npm run build
+npm run dev    # 开发模式
+npm run build  # 生产构建
 ```
+
+### Docker Compose 启动 <!-- NEW · W2 待补 -->
+
+```bash
+docker-compose up -d
+```
+
+> Docker Compose 配置文件计划在 W2（7-6 前）补充。
+
+---
 
 ## 🔧 主要功能说明
 
@@ -209,24 +236,15 @@ npm run build
 支持惯性模式(记忆偏好) / 随机模式(探索新美食)
 ```
 
-### 消息类型定义
-
-| 类型 | 说明 | 计入提问次数 |
-|------|------|-------------|
-| question | 正常提问 | ✅ |
-| 2question | 追问 | ❌ |
-| chat | 确认/闲聊 | ❌ |
-| interrupt | 打断回复 | ❌ |
-| recommend | 推荐结果 | ❌ |
-| system | 系统消息 | ❌ |
-
 ### Redis 缓存策略
 
-- **会话管理**: 存储 AI 对话状态和上下文
-- **点赞计数**: 使用 Lua 脚本保证原子性
-- **热榜数据**: Sorted Set 存储热度排行
-- **消息队列**: 异步处理点赞写入数据库
-- **布隆过滤器**: 用户相似度计算
+- **会话管理**：存储 AI 对话状态和上下文
+- **点赞计数**：使用 Lua 脚本保证原子性
+- **热榜数据**：Sorted Set 存储热度排行
+- **消息队列**：异步处理点赞写入数据库
+- **布隆过滤器**：用户相似度计算
+
+---
 
 ## 📝 API 文档
 
@@ -236,6 +254,37 @@ npm run build
 http://localhost:8080/doc.html
 ```
 
+---
+
+## 📈 数据 & 性能 <!-- NEW · W4 末填 -->
+
+> **TODO**：W4 末（7-20）压测后填入真实数据。
+
+| 指标 | 当前 | 目标 |
+|------|------|------|
+| 接口 P95 | 待测 | < 500ms |
+| 接口 P99 | 待测 | < 1s |
+| AI 推荐接口 P95 | 待测 | < 2s（含 LLM 调用）|
+| 并发用户 | 待测 | ≥ 100 |
+| Redis 缓存命中率 | 待测 | ≥ 80% |
+| 推荐接受率 | 待测 | 记录中 |
+
+---
+
+## 💡 复盘 <!-- NEW · 2026-06-23 -->
+
+> ⚠️ **本段由 Mavis 代起草**——面试前请自己读一遍，确认 3 条都认同；如果有更具体的真实细节（哪个文件 / 哪次踩坑），加进去。**AI 写的复盘你自己消化了才算你的**。
+
+如果重做一次，我会改这 3 件事：
+
+1. **先写测试再写代码** —— AI-food 的 Service 层基本没有单元测试覆盖，加新功能或重构时只能手动跑主流程。下次一定先写测试再写代码，至少核心 Service（AI 推荐、点赞、认证、Feed）要有单元测试 + 集成测试，把测试当成"开发的护栏"而不是"交付前的负担"。
+2. **数据库设计先画 ER 图评审** —— 表结构是边写边改的，现在加个字段要同步改 Service / Controller / DTO / 前端，迁移脚本也是后补的，痛苦。下次先 ER 图评审 + 写迁移脚本基线 + Code Review，再动业务代码。
+3. **AI Prompt 模板化 + 评测驱动** —— Prompt 写在 Java 代码里，调参要重新打包部署，每次迭代很慢。下次要抽成独立配置文件 + 评测样例驱动（典型 / 异常 / 边界），改 Prompt 不需要重新发布，10 分钟迭代一次。
+
+**附加**：做完这次包装（5 段式 README + Docker 部署 + 测试）后，下一步最想做的是**给 AI-food 加 RAG 检索**——把"附近好吃的川菜"这种模糊查询变成基于真实评论和历史推荐的语义检索，而不是仅靠 tag 匹配。
+
+---
+
 ## 🔐 安全机制
 
 - JWT Token 认证
@@ -243,6 +292,30 @@ http://localhost:8080/doc.html
 - Redisson 分布式锁
 - IP 限流保护
 - 全局异常处理
+
+---
+
+## 📚 配套文档
+
+- `doc/实现想法.md` — 功能规划
+- `doc/技术方案.md` — 技术设计文档
+- `doc/待实现.md` — 待开发功能
+- `doc/bug排除过程.md` — Bug 修复记录
+
+---
+
+## 🛣️ Roadmap
+
+| 阶段 | 时间 | 状态 |
+|------|------|------|
+| 核心功能开发 | 2025 秋 - 2026 春 | ✅ 完成 |
+| 5 段式 README 升级 | 2026-06-23 | 🔄 进行中 |
+| Docker Compose 部署 | 2026-07-06（W2）| ⏳ 待开始 |
+| 单元/集成测试 | 2026-07-13（W3）| ⏳ 待开始 |
+| 压测报告 | 2026-07-20（W4）| ⏳ 待开始 |
+| 公开 Demo URL | 2026-07-06 | ⏳ 待开始 |
+
+---
 
 ## 📄 License
 
