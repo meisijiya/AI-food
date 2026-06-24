@@ -100,3 +100,14 @@ lerna-debug.log*
 # 项目敏感文件
 *.Identifier
 
+# ============================================
+# Selenium 测试产物
+# ============================================
+docs/screenshots/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.python-version
+
