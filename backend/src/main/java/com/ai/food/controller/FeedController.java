@@ -2,6 +2,9 @@ package com.ai.food.controller;
 
 import com.ai.food.dto.ApiResponse;
 import com.ai.food.service.feed.FeedService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -14,12 +17,16 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/feed")
 @RequiredArgsConstructor
+@Tag(name = "Feed推荐", description = "推荐发布、Feed 流、热榜、好友 Feed")
 public class FeedController {
 
     private final FeedService feedService;
 
     @PostMapping("/publish")
-    public ApiResponse<Map<String, Object>> publishPost(@RequestBody Map<String, String> body) {
+    @Operation(summary = "发布推荐", description = "用户把推荐发布到 Feed 大厅（公开/好友可见）")
+    public ApiResponse<Map<String, Object>> publishPost(
+            @Parameter(description = "推荐内容：sessionId（必填）、commentPreview、visibility(public/friends)")
+            @RequestBody Map<String, String> body) {
         String sessionId = body.get("sessionId");
         if (sessionId == null || sessionId.isBlank()) {
             return ApiResponse.error("请提供会话ID");
@@ -35,18 +42,20 @@ public class FeedController {
     }
 
     @GetMapping("/list")
+    @Operation(summary = "公共 Feed 列表", description = "分页查询公共 Feed 流，支持按 foodName / paramName / paramValue 过滤")
     public ApiResponse<Map<String, Object>> getFeedList(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String foodName,
-            @RequestParam(required = false) String paramName,
-            @RequestParam(required = false) String paramValue) {
+            @Parameter(description = "页码（0 起）", example = "0") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "每页条数", example = "10") @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "美食名过滤（可选）") @RequestParam(required = false) String foodName,
+            @Parameter(description = "参数名过滤（可选，如 taste/restriction/preference/health）") @RequestParam(required = false) String paramName,
+            @Parameter(description = "参数值过滤（可选）") @RequestParam(required = false) String paramValue) {
         Long userId = getCurrentUserIdOrNull();
         Map<String, Object> result = feedService.getPublicFeedList(page, size, foodName, paramName, paramValue, userId);
         return ApiResponse.success(result);
     }
 
     @GetMapping("/hot-rank")
+    @Operation(summary = "推荐热榜", description = "基于点赞数 + HeavyKeeper 衰减算法的 Top 热门推荐")
     public ApiResponse<Map<String, Object>> getHotRank() {
         Long userId = getCurrentUserIdOrNull();
         Map<String, Object> result = feedService.getHotRank(userId);
@@ -54,87 +63,36 @@ public class FeedController {
     }
 
     @GetMapping("/friend-feed")
+    @Operation(summary = "好友 Feed", description = "只看我关注的人发布的推荐（需登录）")
     public ApiResponse<Map<String, Object>> getFriendFeedList(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @Parameter(description = "页码（0 起）", example = "0") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "每页条数", example = "10") @RequestParam(defaultValue = "10") int size) {
         Long userId = getCurrentUserId();
         Map<String, Object> result = feedService.getFriendFeedList(userId, page, size);
         return ApiResponse.success(result);
     }
 
-    @GetMapping("/detail/{postId}")
-    public ApiResponse<Map<String, Object>> getFeedDetail(@PathVariable Long postId) {
-        Long currentUserId = getCurrentUserIdOrNull();
-        Map<String, Object> result = feedService.getFeedDetail(postId, currentUserId);
-        return ApiResponse.success(result);
-    }
-
-    @PostMapping("/like/{postId}")
-    public ApiResponse<Map<String, Object>> toggleLike(@PathVariable Long postId) {
-        Long userId = getCurrentUserId();
-        Map<String, Object> result = feedService.toggleLike(postId, userId);
-        return ApiResponse.success(result);
-    }
-
-    @PostMapping("/comment/{postId}")
-    public ApiResponse<Map<String, Object>> addComment(@PathVariable Long postId,
-                                                        @RequestBody Map<String, String> body) {
-        String content = body.get("content");
-        if (content == null || content.isBlank()) {
-            return ApiResponse.error("评论内容不能为空");
-        }
-        String imageUrl = body.get("imageUrl");
-        Long userId = getCurrentUserId();
-        Map<String, Object> result = feedService.addComment(postId, userId, content, imageUrl);
-        return ApiResponse.success("评论成功", result);
-    }
-
-    @GetMapping("/comments/{postId}")
-    public ApiResponse<Map<String, Object>> getComments(@PathVariable Long postId,
-                                                         @RequestParam(defaultValue = "0") int page,
-                                                         @RequestParam(defaultValue = "10") int size) {
-        Map<String, Object> result = feedService.getComments(postId, page, size);
-        return ApiResponse.success(result);
-    }
-
-    @DeleteMapping("/comment/{commentId}")
-    public ApiResponse<Void> deleteComment(@PathVariable Long commentId) {
-        Long userId = getCurrentUserId();
-        feedService.deleteComment(commentId, userId);
-        return ApiResponse.success("评论已删除", null);
-    }
-
-    @GetMapping("/check/{sessionId}")
-    public ApiResponse<Map<String, Object>> checkPublished(@PathVariable String sessionId) {
-        Long userId = getCurrentUserId();
-        Map<String, Object> result = feedService.checkPublishedWithVisibility(sessionId, userId);
-        return ApiResponse.success(result);
-    }
-
-    @DeleteMapping("/unpublish/{sessionId}")
-    public ApiResponse<Void> unpublish(@PathVariable String sessionId) {
-        Long userId = getCurrentUserId();
-        feedService.unpublish(userId, sessionId);
-        return ApiResponse.success("已取消发布", null);
-    }
-
     private Long getCurrentUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return Long.parseLong(auth.getPrincipal().toString());
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            try {
+                return Long.parseLong(authentication.getName());
+            } catch (NumberFormatException e) {
+                log.warn("Invalid user ID format in authentication: {}", authentication.getName());
+            }
+        }
+        return 0L;
     }
 
-    /**
-     * 获取当前用户ID，如果未登录则返回null（游客）
-     */
     private Long getCurrentUserIdOrNull() {
-        try {
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth == null || auth.getPrincipal() == null || "anonymousUser".equals(auth.getPrincipal().toString())) {
-                return null;
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()
+                && !"anonymousUser".equals(authentication.getPrincipal())) {
+            try {
+                return Long.parseLong(authentication.getName());
+            } catch (NumberFormatException ignore) {
             }
-            return Long.parseLong(auth.getPrincipal().toString());
-        } catch (Exception e) {
-            return null;
         }
+        return null;
     }
 }

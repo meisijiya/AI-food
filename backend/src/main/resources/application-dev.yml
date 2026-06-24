@@ -1,0 +1,57 @@
+# ============================================
+# 开发环境配置（本地 / Docker Compose 容器内）
+# ============================================
+
+spring:
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:ai_food}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: ${MYSQL_USER:aifood}
+    password: ${MYSQL_PASSWORD:aifood123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: AIFoodHikariCP
+
+  jpa:
+    hibernate:
+      ddl-auto: update  # 开发环境用 update，schema.sql 配合 IF NOT EXISTS
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+    open-in-view: false
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      continue-on-error: true  # 开发环境允许重复执行 schema
+
+# 文件上传本地路径（开发用）
+app:
+  upload:
+    base-url: ${APP_UPLOAD_BASE_URL:./uploads}
+
+# 开发环境日志更详细
+logging:
+  level:
+    com.ai.food: DEBUG
+    com.ai.food.controller: DEBUG
+    com.ai.food.service: DEBUG

@@ -1,0 +1,52 @@
+# ============================================
+# 生产环境配置（演示环境 / 中小厂部署）
+# 启用更多安全 + 性能配置
+# ============================================
+
+spring:
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:mysql}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:ai_food}?useUnicode=true&characterEncoding=utf8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: AIFoodHikariCP-Prod
+
+  jpa:
+    hibernate:
+      ddl-auto: validate  # 生产用 validate，不自动改表结构
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 32
+          max-idle: 16
+          min-idle: 4
+
+# 生产环境：文件上传指向 /app/uploads（Docker volume 挂载）
+app:
+  upload:
+    base-url: /uploads
+
+# 生产环境日志
+logging:
+  level:
+    com.ai.food: INFO
+    root: WARN
+  file:
+    name: /app/logs/ai-food.log

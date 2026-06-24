@@ -1,0 +1,123 @@
+# ============================================
+# AI-food 后端通用配置
+# 任何 profile 都会加载
+# ============================================
+
+spring:
+  application:
+    name: ai-food
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  # Jackson
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+
+  # Servlet 上传文件大小
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 100MB
+
+  # Spring DataSource（由 profile 覆盖）
+  # Spring Data Redis（由 profile 覆盖）
+
+# 文件上传路径（容器内）
+app:
+  upload:
+    base-url: ${APP_UPLOAD_BASE_URL:/uploads}
+
+# Spring AI / DeepSeek 配置
+spring.ai.openai:
+  api-key: ${DEEPSEEK_API_KEY:your-deepseek-api-key-here}
+  base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+  chat:
+    options:
+      model: ${DEEPSEEK_MODEL:deepseek-chat}
+      temperature: 0.7
+
+# ================== 服务端口 ==================
+server:
+  port: 8080
+  servlet:
+    context-path: /
+  compression:
+    enabled: true
+    mime-types: application/json,text/html,text/xml,text/plain
+  tomcat:
+    threads:
+      max: 200
+
+# ================== Springdoc / Knife4j ==================
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+  default-flat-param-object: true
+  show-actuator: false
+  group-configs:
+    - group: 0-所有接口
+      paths-to-match: /api/**
+      display-name: 0-所有接口
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+    enable-version: true
+    enable-swagger-models: true
+    swagger-model-name: 实体类列表
+    enable-custom-code: false
+  basic:
+    enable: false  # 生产环境可以打开 basic auth
+  production: false
+  display-custom: |
+    <div style="text-align: center; padding: 20px;">
+      <h1>AI 美食推荐应用 API 文档</h1>
+      <p>基于 Spring Boot 3.4 + Spring AI 1.0.0-M6 + DeepSeek</p>
+      <p>
+        <a href="https://github.com/meisijiya/AI-food" target="_blank">GitHub 仓库</a> |
+        <a href="/actuator/health" target="_blank">健康检查</a>
+      </p>
+    </div>
+
+# ================== Actuator（健康检查） ==================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  health:
+    redis:
+      enabled: true
+    db:
+      enabled: true
+    defaults:
+      enabled: true
+
+# ================== Logging ==================
+logging:
+  level:
+    root: INFO
+    com.ai.food: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
+  file:
+    name: ${LOG_PATH:/app/logs}/ai-food.log
+    max-size: 50MB
+    max-history: 30
