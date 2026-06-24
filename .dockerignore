@@ -1,0 +1,48 @@
+# ============================================
+# Docker 镜像构建时排除的目录/文件
+# ============================================
+
+# Git / VCS
+.git
+.gitignore
+.gitattributes
+
+# IDE / 编辑器
+.idea
+.vscode
+*.iml
+*.swp
+.DS_Store
+Thumbs.db
+
+# 文档 / 笔记
+README.md
+*.md
+docs/
+doc/
+
+# 前端（前端独立构建，不在 backend 镜像里）
+frontend/
+
+# 日志 / 临时
+logs/
+*.log
+*.tmp
+target/classes/
+target/test-classes/
+target/generated-sources/
+target/generated-test-sources/
+
+# 密钥 / 敏感文件
+.env
+.env.local
+**/secrets/
+**/credentials/
+**/*.pem
+**/*.key
+**/*.secret
+
+# 单元测试产物
+.mvn/
+mvnw
+mvnw.cmd
