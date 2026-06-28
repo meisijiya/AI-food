@@ -187,8 +187,8 @@ public class MessageValidator {
                 .map(Map.Entry::getKey)
                 .orElse(null);
 
-        log.debug("<<< detectParamFromAnswer() result: '{}' (score: {})", 
-                detectedParam, 
+        log.debug("<<< detectParamFromAnswer() result: '{}' (score: {})",
+                detectedParam,
                 detectedParam != null ? paramScores.get(detectedParam) : 0);
         return detectedParam;
     }

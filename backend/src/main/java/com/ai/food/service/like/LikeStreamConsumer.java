@@ -38,7 +38,7 @@ public class LikeStreamConsumer {
             StreamReadOptions options = StreamReadOptions.empty()
                     .count(BATCH_SIZE)
                     .block(Duration.ofMillis(MAX_BLOCK_MS));
-            
+
             List<MapRecord<String, Object, Object>> rawRecords = stringRedisTemplate.opsForStream()
                     .read(Consumer.from(CONSUMER_GROUP, CONSUMER_NAME),
                             options,
@@ -89,7 +89,7 @@ public class LikeStreamConsumer {
 
             postLikedUsers.computeIfAbsent(postId, k -> new HashSet<>()).add(userId);
 
-            log.debug("Processed like event: postId={}, userId={}, liked={}, recordId={}", 
+            log.debug("Processed like event: postId={}, userId={}, liked={}, recordId={}",
                     postId, userId, liked, recordId);
         } catch (Exception e) {
             log.error("Error processing record {}: {}", recordId, e.getMessage());
@@ -97,7 +97,7 @@ public class LikeStreamConsumer {
     }
 
     private boolean shouldFlush() {
-        return System.currentTimeMillis() - lastFlushTime >= FLUSH_INTERVAL_MS 
+        return System.currentTimeMillis() - lastFlushTime >= FLUSH_INTERVAL_MS
                 && (!likeCountDelta.isEmpty() || !postLikedUsers.isEmpty());
     }
 
@@ -117,11 +117,11 @@ public class LikeStreamConsumer {
 
         try {
             List<FeedPost> postsToUpdate = new ArrayList<>();
-            
+
             for (Map.Entry<Long, Integer> entry : deltaToFlush.entrySet()) {
                 Long postId = entry.getKey();
                 Integer delta = entry.getValue();
-                
+
                 Optional<FeedPost> postOpt = feedPostRepository.findById(postId);
                 if (postOpt.isPresent()) {
                     FeedPost post = postOpt.get();
@@ -133,7 +133,7 @@ public class LikeStreamConsumer {
 
             if (!postsToUpdate.isEmpty()) {
                 feedPostRepository.saveAll(postsToUpdate);
-                log.info("Flushed like count updates for {} posts, deltas: {}", 
+                log.info("Flushed like count updates for {} posts, deltas: {}",
                         postsToUpdate.size(), deltaToFlush);
             }
 

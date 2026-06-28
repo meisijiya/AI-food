@@ -147,7 +147,7 @@ export const conversationApi = {
 
 // 大厅相关接口
 export const feedApi = {
-  publish: (data: { sessionId: string; commentPreview?: string; visibility?: string }) => 
+  publish: (data: { sessionId: string; commentPreview?: string; visibility?: string }) =>
     request('post', '/feed/publish', data),
   getList: (params?: { page?: number; size?: number; foodName?: string; paramName?: string; paramValue?: string }) =>
     request('get', '/feed/list', undefined, { params }),

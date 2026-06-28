@@ -10,18 +10,18 @@ import java.util.List;
 
 @Repository
 public interface QaRecordRepository extends JpaRepository<QaRecord, Long> {
-    
+
     List<QaRecord> findBySessionIdOrderByQuestionOrderAsc(String sessionId);
-    
+
     List<QaRecord> findBySessionId(String sessionId);
-    
+
     long countBySessionId(String sessionId);
-    
+
     @Modifying
     @Transactional
     @Query("UPDATE QaRecord q SET q.isDeleted = true WHERE q.sessionId = :sessionId")
     void softDeleteBySessionId(String sessionId);
-    
+
     @Modifying
     @Transactional
     @Query("UPDATE QaRecord q SET q.isDeleted = true WHERE q.sessionId IN :sessionIds")

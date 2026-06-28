@@ -42,7 +42,7 @@ export class WebSocketClient {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const wsHost = import.meta.env.VITE_WS_HOST || window.location.host
     const token = localStorage.getItem('token') || ''
-    
+
     let wsUrl: string
     if (wsHost.startsWith('/')) {
       // 相对路径配置，直接拼接

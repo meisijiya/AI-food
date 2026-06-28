@@ -28,7 +28,7 @@ public interface FeedCommentRepository extends JpaRepository<FeedComment, Long> 
     @Modifying
     @Query("UPDATE FeedComment c SET c.isDeleted = true WHERE c.postId = :postId")
     void softDeleteByPostId(@Param("postId") Long postId);
-    
+
     @Modifying
     @Query("UPDATE FeedComment c SET c.isDeleted = true WHERE c.postId IN :postIds")
     void softDeleteByPostIdIn(@Param("postIds") List<Long> postIds);

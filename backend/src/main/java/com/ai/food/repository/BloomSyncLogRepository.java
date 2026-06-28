@@ -8,10 +8,10 @@ import java.util.List;
 
 @Repository
 public interface BloomSyncLogRepository extends JpaRepository<BloomSyncLog, Long> {
-    
+
     List<BloomSyncLog> findByUserId(Long userId);
-    
+
     List<BloomSyncLog> findBySyncedAtAfter(LocalDateTime after);
-    
+
     long countByStatus(String status);
 }

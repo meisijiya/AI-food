@@ -13,9 +13,9 @@
 
     <!-- Contact List -->
     <div class="contact-list">
-      <div 
-        v-for="(contact, index) in contacts" 
-        :key="contact.userId" 
+      <div
+        v-for="(contact, index) in contacts"
+        :key="contact.userId"
         class="contact-item animate-fade-up"
         :style="{ animationDelay: (index % 10) * 0.05 + 's' }"
         @click="openChat(contact)"
@@ -81,7 +81,7 @@ async function openChat(contact: any) {
   try {
     const conversations = await chatApi.getConversations()
     const existing = conversations?.find((c: any) => c.userId === contact.userId)
-    
+
     if (existing) {
       router.push({
         path: '/chat-room',

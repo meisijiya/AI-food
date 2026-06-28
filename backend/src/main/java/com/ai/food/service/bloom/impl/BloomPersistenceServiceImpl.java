@@ -76,7 +76,7 @@ public class BloomPersistenceServiceImpl implements BloomPersistenceService {
     public void restoreAllFromMySQL() {
         List<UserBloomFilter> allFilters = userBloomFilterRepository.findAll();
         log.info("Restoring {} bloom filters from MySQL", allFilters.size());
-        
+
         for (UserBloomFilter filter : allFilters) {
             try {
                 redisDao.setBitArray(filter.getUserId(), filter.getBitArray());
@@ -96,7 +96,7 @@ public class BloomPersistenceServiceImpl implements BloomPersistenceService {
 
         Optional<UserBloomFilter> optFilter = userBloomFilterRepository.findByUserId(userId);
         UserBloomFilter filter;
-        
+
         if (optFilter.isPresent()) {
             filter = optFilter.get();
             filter.setBitArray(bitArray);

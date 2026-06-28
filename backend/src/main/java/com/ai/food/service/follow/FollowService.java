@@ -22,7 +22,7 @@ public class FollowService {
     @Transactional
     public Map<String, Object> toggleFollow(Long followerId, Long followingId) {
         Optional<UserFollow> existing = userFollowRepository.findByFollowerIdAndFollowingId(followerId, followingId);
-        
+
         boolean isFollowing;
         if (existing.isPresent()) {
             userFollowRepository.delete(existing.get());
@@ -38,7 +38,7 @@ public class FollowService {
         }
 
         long followerCount = userFollowRepository.countByFollowingId(followingId);
-        
+
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("isFollowing", isFollowing);
         result.put("followerCount", followerCount);
@@ -47,10 +47,10 @@ public class FollowService {
 
     public Map<String, Object> getFollowingList(Long userId, int page, int size) {
         List<Long> followingIds = userFollowRepository.findFollowingIdsByUserId(userId);
-        
+
         int start = page * size;
         int end = Math.min(start + size, followingIds.size());
-        
+
         List<Map<String, Object>> items = new ArrayList<>();
         if (start < followingIds.size()) {
             List<Long> pageIds = followingIds.subList(start, end);
@@ -76,12 +76,12 @@ public class FollowService {
 
     public Map<String, Object> getFollowersList(Long userId, int page, int size) {
         List<Long> followerIds = userFollowRepository.findFollowerIdsByUserId(userId);
-        
+
         int start = page * size;
         int end = Math.min(start + size, followerIds.size());
-        
+
         Set<Long> myFollowingIds = new HashSet<>(userFollowRepository.findFollowingIdsByUserId(userId));
-        
+
         List<Map<String, Object>> items = new ArrayList<>();
         if (start < followerIds.size()) {
             List<Long> pageIds = followerIds.subList(start, end);
@@ -113,7 +113,7 @@ public class FollowService {
     public Map<String, Object> getFollowStats(Long userId) {
         long followingCount = userFollowRepository.countByFollowerId(userId);
         long followerCount = userFollowRepository.countByFollowingId(userId);
-        
+
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("followingCount", followingCount);
         result.put("followerCount", followerCount);
@@ -131,7 +131,7 @@ public class FollowService {
     public List<Long> getMutualFriendIds(Long userId) {
         Set<Long> followingIds = new HashSet<>(userFollowRepository.findFollowingIdsByUserId(userId));
         List<Long> followerIds = userFollowRepository.findFollowerIdsByUserId(userId);
-        
+
         // 互关 = 我关注的人 ∩ 关注我的人
         followingIds.retainAll(followerIds);
         return new ArrayList<>(followingIds);
@@ -143,10 +143,10 @@ public class FollowService {
 
     public Map<String, Object> getMutualFriendsList(Long userId, int page, int size) {
         List<Long> mutualIds = getMutualFriendIds(userId);
-        
+
         int start = page * size;
         int end = Math.min(start + size, mutualIds.size());
-        
+
         List<Map<String, Object>> items = new ArrayList<>();
         if (start < mutualIds.size()) {
             List<Long> pageIds = mutualIds.subList(start, end);

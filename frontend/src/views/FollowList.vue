@@ -13,15 +13,15 @@
 
     <!-- Tab Bar -->
     <div class="tab-bar animate-fade-up delay-100">
-      <button 
-        class="tab-item" 
+      <button
+        class="tab-item"
         :class="{ active: activeTab === 'following' }"
         @click="switchTab('following')"
       >
         关注 {{ followStats.followingCount }}
       </button>
-      <button 
-        class="tab-item" 
+      <button
+        class="tab-item"
         :class="{ active: activeTab === 'followers' }"
         @click="switchTab('followers')"
       >
@@ -31,9 +31,9 @@
 
     <!-- User List -->
     <div class="user-list">
-      <div 
-        v-for="(user, index) in userList" 
-        :key="user.userId" 
+      <div
+        v-for="(user, index) in userList"
+        :key="user.userId"
         class="user-item animate-fade-up"
         :style="{ animationDelay: (index % 10) * 0.05 + 's' }"
       >
@@ -44,7 +44,7 @@
         <div class="user-info" @click="viewUserPosts(user.userId)">
           <div class="user-name">{{ user.nickname }}</div>
         </div>
-        <button 
+        <button
           v-if="user.userId !== currentUserId"
           class="follow-btn"
           :class="{ following: user.isFollowing }"
@@ -221,13 +221,13 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  
+
   &.active {
     background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
     border-color: transparent;
     color: white;
   }
-  
+
   &:not(.active):active {
     background: var(--color-surface-container-low);
   }

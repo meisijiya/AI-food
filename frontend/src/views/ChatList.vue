@@ -12,9 +12,9 @@
 
     <!-- Conversation List -->
     <div class="conversation-list">
-      <div 
-        v-for="(conv, index) in conversations" 
-        :key="conv.conversationId" 
+      <div
+        v-for="(conv, index) in conversations"
+        :key="conv.conversationId"
         class="conversation-item animate-fade-up"
         :style="{ animationDelay: (index % 10) * 0.05 + 's' }"
         @click="openChat(conv)"

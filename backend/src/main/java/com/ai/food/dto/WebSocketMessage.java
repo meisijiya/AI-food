@@ -9,12 +9,12 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class WebSocketMessage {
-    
+
     private String type; // question/2question/chat/interrupt/recommend/system
     private String param;
     private String content;
     private Progress progress;
-    
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

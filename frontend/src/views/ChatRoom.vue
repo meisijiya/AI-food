@@ -21,9 +21,9 @@
       </div>
       <div v-if="!hasMore && messages.length > 0" class="no-more">没有更多消息了</div>
 
-      <div 
-        v-for="msg in messages" 
-        :key="msg.id" 
+      <div
+        v-for="msg in messages"
+        :key="msg.id"
         class="message-item"
         :class="{ 'message-self': msg.senderId === currentUserId }"
       >
@@ -105,8 +105,8 @@
       <button class="emoji-trigger" @click="toggleEmoji" :disabled="sendPermission !== 'ok'" :class="{ active: showEmoji }">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
       </button>
-      <input 
-        v-model="inputMessage" 
+      <input
+        v-model="inputMessage"
         class="message-input"
         :placeholder="sendPermission === 'ok' ? '输入消息...' : '无法发送消息'"
         :disabled="sendPermission !== 'ok'"

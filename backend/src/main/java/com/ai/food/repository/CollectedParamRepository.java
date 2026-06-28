@@ -11,20 +11,20 @@ import java.util.Optional;
 
 @Repository
 public interface CollectedParamRepository extends JpaRepository<CollectedParam, Long> {
-    
+
     List<CollectedParam> findBySessionId(String sessionId);
-    
+
     Optional<CollectedParam> findBySessionIdAndParamName(String sessionId, String paramName);
-    
+
     boolean existsBySessionIdAndParamName(String sessionId, String paramName);
-    
+
     long countBySessionId(String sessionId);
-    
+
     @Modifying
     @Transactional
     @Query("UPDATE CollectedParam c SET c.isDeleted = true WHERE c.sessionId = :sessionId")
     void softDeleteBySessionId(String sessionId);
-    
+
     @Modifying
     @Transactional
     @Query("UPDATE CollectedParam c SET c.isDeleted = true WHERE c.sessionId IN :sessionIds")

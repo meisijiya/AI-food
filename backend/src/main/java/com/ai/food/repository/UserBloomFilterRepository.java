@@ -7,8 +7,8 @@ import java.util.Optional;
 
 @Repository
 public interface UserBloomFilterRepository extends JpaRepository<UserBloomFilter, Long> {
-    
+
     Optional<UserBloomFilter> findByUserId(Long userId);
-    
+
     boolean existsByUserId(Long userId);
 }

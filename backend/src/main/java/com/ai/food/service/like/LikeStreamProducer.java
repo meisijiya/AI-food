@@ -58,9 +58,9 @@ public class LikeStreamProducer {
 
         MapRecord<String, String, String> record = MapRecord.create(STREAM_KEY, event);
         RecordId recordId = stringRedisTemplate.opsForStream().add(record);
-        
+
         if (recordId != null) {
-            log.debug("Sent like event to stream: postId={}, userId={}, liked={}, recordId={}", 
+            log.debug("Sent like event to stream: postId={}, userId={}, liked={}, recordId={}",
                     postId, userId, liked, recordId);
         }
     }
@@ -75,9 +75,9 @@ public class LikeStreamProducer {
 
         MapRecord<String, String, String> record = MapRecord.create(STREAM_KEY, event);
         RecordId recordId = stringRedisTemplate.opsForStream().add(record);
-        
+
         if (recordId != null) {
-            log.debug("Sent unlike event to stream: postId={}, userId={}, recordId={}", 
+            log.debug("Sent unlike event to stream: postId={}, userId={}, recordId={}",
                     postId, userId, recordId);
         }
     }

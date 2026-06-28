@@ -92,20 +92,20 @@ public class BloomFilterServiceImpl implements BloomFilterService {
     @Override
     public List<UserSimilarityDTO> getTopKSimilarUsers(Long userId, int k) {
         byte[] currentBitArray = redisDao.getBitArray(userId);
-        
+
         List<SysUser> allUsers = userRepository.findAll();
-        
+
         List<UserSimilarityDTO> similarities = new ArrayList<>();
         for (SysUser user : allUsers) {
             if (user.getId().equals(userId)) {
                 continue;
             }
-            
+
             byte[] userBitArray = redisDao.getBitArray(user.getId());
             if (userBitArray == null || isEmptyBitArray(userBitArray)) {
                 continue;
             }
-            
+
             double similarity = redisDao.calculateSimilarity(currentBitArray, userBitArray);
             if (similarity > 0) {
                 similarities.add(new UserSimilarityDTO(

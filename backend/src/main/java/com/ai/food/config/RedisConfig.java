@@ -38,7 +38,7 @@ public class RedisConfig {
             local userId = ARGV[1]
             local countKey = ARGV[2]
             local isMember = redis.call('SISMEMBER', setKey, userId)
-            
+
             if isMember == 1 then
                 redis.call('SREM', setKey, userId)
                 local newCount = redis.call('DECR', countKey)

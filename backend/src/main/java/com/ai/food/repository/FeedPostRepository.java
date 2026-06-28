@@ -57,7 +57,7 @@ public interface FeedPostRepository extends JpaRepository<FeedPost, Long> {
     @Modifying
     @Query("UPDATE FeedPost f SET f.isDeleted = true WHERE f.sessionId = :sessionId")
     void softDeleteBySessionId(@Param("sessionId") String sessionId);
-    
+
     @Modifying
     @Query("UPDATE FeedPost f SET f.isDeleted = true WHERE f.sessionId IN :sessionIds")
     void softDeleteBySessionIdIn(@Param("sessionIds") List<String> sessionIds);
@@ -65,14 +65,14 @@ public interface FeedPostRepository extends JpaRepository<FeedPost, Long> {
     @Modifying
     @Query("UPDATE FeedPost f SET f.isDeleted = true WHERE f.id = :postId")
     void softDeleteByPostId(@Param("postId") Long postId);
-    
+
     @Modifying
     @Query("UPDATE FeedPost f SET f.isDeleted = true WHERE f.id IN :postIds")
     void softDeleteByPostIdIn(@Param("postIds") List<Long> postIds);
 
     @Query("SELECT f FROM FeedPost f WHERE f.sessionId = :sessionId AND f.isDeleted = false")
     Optional<FeedPost> findBySessionId(@Param("sessionId") String sessionId);
-    
+
     @Query("SELECT f FROM FeedPost f WHERE f.sessionId IN :sessionIds AND f.isDeleted = false")
     List<FeedPost> findBySessionIdIn(@Param("sessionIds") List<String> sessionIds);
 

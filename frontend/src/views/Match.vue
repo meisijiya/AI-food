@@ -28,7 +28,7 @@
       <div class="user-card glass-card vibrant-shadow animate-scale-in" :key="currentMatch.userId">
         <!-- Decorative glow blob -->
         <div class="card-glow"></div>
-        
+
         <!-- Avatar Section -->
         <div class="avatar-section">
           <div class="avatar-wrapper">
@@ -60,8 +60,8 @@
         <!-- Collected Params -->
         <div class="params-section" v-if="hasParams">
           <div class="params-grid">
-            <div 
-              v-for="(value, key) in currentMatch.collectedParams" 
+            <div
+              v-for="(value, key) in currentMatch.collectedParams"
               :key="key"
               class="param-item"
             >
@@ -73,7 +73,7 @@
 
         <!-- Action Buttons -->
         <div class="action-buttons">
-          <button 
+          <button
             v-if="!currentMatch.isFollowing"
             class="btn-primary"
             @click="followMatchUser"
@@ -87,7 +87,7 @@
             关注
           </button>
 
-          <button 
+          <button
             class="btn-secondary"
             @click="goToChat"
           >
@@ -99,7 +99,7 @@
         </div>
 
         <!-- Next Button -->
-        <button 
+        <button
           class="btn-ghost"
           @click="fetchNextMatch"
         >
@@ -122,7 +122,7 @@
         </div>
         <h3 class="empty-title">暂无匹配</h3>
         <p class="empty-hint">发布推荐记录，让更多人发现你</p>
-        <button 
+        <button
           class="btn-back"
           @click="goBackToHall"
         >
@@ -153,7 +153,7 @@ function resetMatchSessionState() {
 }
 
 const hasParams = computed(() => {
-  return currentMatch.value?.collectedParams && 
+  return currentMatch.value?.collectedParams &&
     Object.keys(currentMatch.value.collectedParams).length > 0
 })
 

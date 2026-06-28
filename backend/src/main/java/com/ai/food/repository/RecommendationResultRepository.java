@@ -11,16 +11,16 @@ import java.util.Optional;
 
 @Repository
 public interface RecommendationResultRepository extends JpaRepository<RecommendationResult, Long> {
-    
+
     Optional<RecommendationResult> findBySessionId(String sessionId);
-    
+
     List<RecommendationResult> findBySessionIdIn(List<String> sessionIds);
-    
+
     @Modifying
     @Transactional
     @Query("UPDATE RecommendationResult r SET r.isDeleted = true WHERE r.sessionId = :sessionId")
     void softDeleteBySessionId(String sessionId);
-    
+
     @Modifying
     @Transactional
     @Query("UPDATE RecommendationResult r SET r.isDeleted = true WHERE r.sessionId IN :sessionIds")

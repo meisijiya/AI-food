@@ -5,15 +5,15 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { 
-  Bell, 
-  Utensils, 
-  Activity, 
-  Moon, 
-  Droplets, 
-  Timer, 
-  Flame, 
-  LayoutDashboard, 
+import {
+  Bell,
+  Utensils,
+  Activity,
+  Moon,
+  Droplets,
+  Timer,
+  Flame,
+  LayoutDashboard,
   User,
   ChevronRight,
   MessageSquare,
@@ -120,7 +120,7 @@ const ChatRoom = ({ isNavVisible }: { isNavVisible: boolean }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const toggleMenu = (menu: string) => {
-    setExpandedMenus(prev => 
+    setExpandedMenus(prev =>
       prev.includes(menu) ? prev.filter(m => m !== menu) : [...prev, menu]
     );
   };
@@ -158,7 +158,7 @@ const ChatRoom = ({ isNavVisible }: { isNavVisible: boolean }) => {
       });
 
       const aiText = response.text || "I'm here to support your journey. How are you feeling today?";
-      
+
       const aiMessage = {
         id: Date.now(),
         user: "Sanctuary AI",
@@ -203,7 +203,7 @@ const ChatRoom = ({ isNavVisible }: { isNavVisible: boolean }) => {
       {/* Sidebar */}
       <motion.aside
         initial={false}
-        animate={{ 
+        animate={{
           width: isSidebarOpen ? 280 : 0,
           opacity: isSidebarOpen ? 1 : 0,
           x: isSidebarOpen ? 0 : -20
@@ -221,16 +221,16 @@ const ChatRoom = ({ isNavVisible }: { isNavVisible: boolean }) => {
           {/* Search */}
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40" />
-            <input 
-              type="text" 
-              placeholder="Search chats..." 
+            <input
+              type="text"
+              placeholder="Search chats..."
               className="w-full bg-white/50 border border-black/5 rounded-xl py-2 pl-10 pr-4 text-sm focus:ring-2 ring-primary/10 transition-all outline-none placeholder:text-on-surface-variant/30"
             />
           </div>
 
           {/* Group Chats */}
           <div className="space-y-2">
-            <button 
+            <button
               onClick={() => toggleMenu('groups')}
               className="w-full flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60 px-2 hover:text-primary transition-colors"
             >
@@ -267,7 +267,7 @@ const ChatRoom = ({ isNavVisible }: { isNavVisible: boolean }) => {
 
           {/* Private Chats */}
           <div className="space-y-2">
-            <button 
+            <button
               onClick={() => toggleMenu('private')}
               className="w-full flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60 px-2 hover:text-primary transition-colors"
             >
@@ -318,7 +318,7 @@ const ChatRoom = ({ isNavVisible }: { isNavVisible: boolean }) => {
       <div className="flex-1 flex flex-col relative overflow-hidden">
         {/* Sidebar Toggle (when closed) */}
         {!isSidebarOpen && (
-          <button 
+          <button
             onClick={() => setIsSidebarOpen(true)}
             className="absolute top-6 left-6 z-30 p-2 bg-white/80 backdrop-blur-md rounded-xl border border-black/5 shadow-sm text-on-surface-variant hover:text-primary transition-all"
           >
@@ -348,21 +348,21 @@ const ChatRoom = ({ isNavVisible }: { isNavVisible: boolean }) => {
         </div>
 
         {/* Messages Area */}
-        <div 
+        <div
           ref={scrollRef}
           className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6 no-scrollbar bg-gradient-to-b from-transparent to-surface-container-low/20"
         >
         {messages.map((msg) => (
-          <motion.div 
+          <motion.div
             key={msg.id}
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             className={`flex items-end gap-3 ${msg.isMe ? "flex-row-reverse" : "flex-row"}`}
           >
             <div className="relative group">
-              <img 
-                src={msg.avatar} 
-                className={`w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm transition-transform group-hover:scale-110 ${msg.role === 'ai' ? "ring-2 ring-primary/20" : ""}`} 
+              <img
+                src={msg.avatar}
+                className={`w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm transition-transform group-hover:scale-110 ${msg.role === 'ai' ? "ring-2 ring-primary/20" : ""}`}
                 alt={msg.user}
               />
               {msg.role === 'ai' && (
@@ -379,8 +379,8 @@ const ChatRoom = ({ isNavVisible }: { isNavVisible: boolean }) => {
                 </div>
               )}
               <div className={`px-5 py-3 rounded-2xl text-sm leading-relaxed shadow-sm transition-all hover:shadow-md ${
-                msg.isMe 
-                  ? "bg-primary text-white rounded-br-none shadow-primary/10" 
+                msg.isMe
+                  ? "bg-primary text-white rounded-br-none shadow-primary/10"
                   : msg.role === 'ai'
                     ? "bg-gradient-to-br from-white to-primary/5 text-on-surface rounded-bl-none border border-primary/10 italic font-serif text-base"
                     : "bg-white text-on-surface rounded-bl-none border border-black/5"
@@ -393,7 +393,7 @@ const ChatRoom = ({ isNavVisible }: { isNavVisible: boolean }) => {
         ))}
 
         {isTyping && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="flex items-center gap-3"
@@ -416,15 +416,15 @@ const ChatRoom = ({ isNavVisible }: { isNavVisible: boolean }) => {
           <button className="text-on-surface-variant hover:text-primary transition-colors p-1">
             <Smile size={20} />
           </button>
-          <input 
-            type="text" 
-            placeholder="Share your ritual or ask Sanctuary AI..." 
+          <input
+            type="text"
+            placeholder="Share your ritual or ask Sanctuary AI..."
             className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 placeholder:text-on-surface-variant/40"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
           />
-          <button 
+          <button
             onClick={handleSend}
             disabled={!inputValue.trim()}
             className={`p-2.5 rounded-full transition-all ${inputValue.trim() ? "bg-primary text-white scale-105 shadow-lg shadow-primary/20 hover:scale-110 active:scale-95" : "text-on-surface-variant/20"}`}
@@ -473,12 +473,12 @@ const ActivityView = () => (
         </div>
         <div className="h-32 flex items-end gap-1.5 relative z-10">
           {[40, 55, 45, 70, 60, 85, 75, 90, 65, 50, 45, 60, 75, 80].map((h, i) => (
-            <motion.div 
+            <motion.div
               key={i}
               initial={{ height: 0 }}
               animate={{ height: `${h}%` }}
               transition={{ delay: i * 0.05, type: "spring", stiffness: 100 }}
-              className="flex-1 bg-gradient-to-t from-red-100 to-red-300 rounded-t-full hover:to-red-500 transition-colors cursor-crosshair" 
+              className="flex-1 bg-gradient-to-t from-red-100 to-red-300 rounded-t-full hover:to-red-500 transition-colors cursor-crosshair"
             />
           ))}
         </div>
@@ -505,20 +505,20 @@ const ActivityView = () => (
             <span>Evening</span>
           </div>
           <div className="h-6 w-full bg-slate-100 rounded-full overflow-hidden flex p-1">
-            <motion.div 
+            <motion.div
               initial={{ width: 0 }}
               animate={{ width: "30%" }}
-              className="h-full bg-orange-400 rounded-l-full" 
+              className="h-full bg-orange-400 rounded-l-full"
             />
-            <motion.div 
+            <motion.div
               initial={{ width: 0 }}
               animate={{ width: "50%" }}
-              className="h-full bg-yellow-500" 
+              className="h-full bg-yellow-500"
             />
-            <motion.div 
+            <motion.div
               initial={{ width: 0 }}
               animate={{ width: "20%" }}
-              className="h-full bg-yellow-200 rounded-r-full" 
+              className="h-full bg-yellow-200 rounded-r-full"
             />
           </div>
           <p className="text-xs text-on-surface-variant leading-relaxed">
@@ -577,8 +577,8 @@ const ActivityView = () => (
           { title: 'High Intensity Interval', time: 'Yesterday, 5:15 PM', duration: '30 min', type: 'Strength', intensity: 'High' },
           { title: 'Evening Sanctuary Walk', time: '2 days ago', duration: '20 min', type: 'Recovery', intensity: 'Low' },
         ].map((ritual, i) => (
-          <motion.div 
-            key={i} 
+          <motion.div
+            key={i}
             whileHover={{ x: 10 }}
             className="bg-white/60 backdrop-blur-sm rounded-3xl p-6 flex items-center justify-between border border-white shadow-sm hover:shadow-md transition-all cursor-pointer group"
           >
@@ -614,14 +614,14 @@ const ProfileView = () => (
   >
     <div className="flex flex-col items-center text-center space-y-6 pt-8">
       <div className="relative">
-        <motion.div 
+        <motion.div
           animate={{ rotate: [3, -3, 3] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
           className="w-40 h-40 rounded-[3rem] overflow-hidden border-8 border-white shadow-2xl relative z-10"
         >
-          <img 
-            src="https://picsum.photos/seed/olivia/400/400" 
-            alt="Olivia" 
+          <img
+            src="https://picsum.photos/seed/olivia/400/400"
+            alt="Olivia"
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
           />
@@ -646,8 +646,8 @@ const ProfileView = () => (
         { label: 'Streak', value: '12', icon: <Flame size={16} /> },
         { label: 'Badges', value: '8', icon: <Award size={16} /> },
       ].map((stat, i) => (
-        <motion.div 
-          key={i} 
+        <motion.div
+          key={i}
           whileHover={{ y: -5 }}
           className="bg-white/80 backdrop-blur-md rounded-[2.5rem] p-8 text-center border border-white shadow-sm hover:shadow-md transition-all"
         >
@@ -708,9 +708,9 @@ export default function App() {
       <header className="fixed top-0 w-full z-50 bg-white/60 backdrop-blur-xl flex justify-between items-center px-6 h-16 border-b border-black/5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm cursor-pointer hover:opacity-90 transition-opacity">
-            <img 
-              src="https://picsum.photos/seed/olivia/200/200" 
-              alt="Olivia" 
+            <img
+              src="https://picsum.photos/seed/olivia/200/200"
+              alt="Olivia"
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
             />
@@ -746,27 +746,27 @@ export default function App() {
               {/* Main Bento Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
                 {/* Vitality Card */}
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.1 }}
                   className="lg:col-span-8 bg-surface-container-lowest rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 vibrant-shadow relative overflow-hidden group border border-white"
                 >
                   <div className="absolute top-0 right-0 w-64 h-64 bg-secondary-fixed/10 rounded-full blur-3xl -mr-20 -mt-20 group-hover:bg-secondary-fixed/20 transition-colors duration-700" />
-                  
+
                   <div className="relative z-10 flex flex-col sm:flex-row items-center gap-8 sm:gap-12">
                     <div className="shrink-0">
                       <VitalityGauge />
                     </div>
-                    
+
                     <div className="flex-1 space-y-6 sm:space-y-8 w-full text-center sm:text-left">
                       <div>
                         <h3 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-on-surface">Wellness Momentum</h3>
                         <p className="text-on-surface-variant text-sm sm:text-base mt-1">You've maintained your streak for 12 days.</p>
                       </div>
-                      
+
                       <MetabolicFlux />
-                      
+
                       <button className="w-full sm:w-auto px-10 py-4 rounded-full bg-gradient-to-r from-primary-container to-primary text-white font-bold text-sm tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all uppercase">
                         View Full Analysis
                       </button>
@@ -775,7 +775,7 @@ export default function App() {
                 </motion.div>
 
                 {/* Calories Card */}
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.2 }}
@@ -798,7 +798,7 @@ export default function App() {
               {/* Activity Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                 {/* Movement */}
-                <motion.div 
+                <motion.div
                   whileHover={{ y: -8 }}
                   className="bg-surface-container-low rounded-[2rem] p-8 space-y-8 border border-white/50 transition-shadow hover:shadow-xl hover:shadow-primary/5"
                 >
@@ -814,17 +814,17 @@ export default function App() {
                       <span className="text-on-surface-variant text-sm mb-2 font-medium">/ 10k steps</span>
                     </div>
                     <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                      <motion.div 
+                      <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: "84%" }}
-                        className="h-full bg-primary rounded-full shadow-[0_0_8px_rgba(0,89,182,0.3)]" 
+                        className="h-full bg-primary rounded-full shadow-[0_0_8px_rgba(0,89,182,0.3)]"
                       />
                     </div>
                   </div>
                 </motion.div>
 
                 {/* Rest */}
-                <motion.div 
+                <motion.div
                   whileHover={{ y: -8 }}
                   className="bg-surface-container-low rounded-[2rem] p-8 space-y-8 border border-white/50 transition-shadow hover:shadow-xl hover:shadow-cyan-500/5"
                 >
@@ -848,7 +848,7 @@ export default function App() {
                 </motion.div>
 
                 {/* Hydration */}
-                <motion.div 
+                <motion.div
                   whileHover={{ y: -8 }}
                   className="bg-surface-container-low rounded-[2rem] p-8 space-y-8 border border-white/50 transition-shadow hover:shadow-xl hover:shadow-blue-500/5 sm:col-span-2 lg:col-span-1"
                 >
@@ -871,7 +871,7 @@ export default function App() {
               </div>
 
               {/* Recipe Suggestion */}
-              <motion.section 
+              <motion.section
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -896,9 +896,9 @@ export default function App() {
                     </div>
                   </div>
                   <div className="relative min-h-[350px] group overflow-hidden">
-                    <img 
-                      src="https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&q=80&w=1200" 
-                      alt="Glazed Salmon" 
+                    <img
+                      src="https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&q=80&w=1200"
+                      alt="Glazed Salmon"
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2000ms]"
                       referrerPolicy="no-referrer"
                     />
@@ -940,9 +940,9 @@ export default function App() {
       )}
 
       {/* Bottom Navigation */}
-      <motion.nav 
+      <motion.nav
         initial={false}
-        animate={{ 
+        animate={{
           y: isNavVisible ? 0 : 100,
           opacity: isNavVisible ? 1 : 0,
           pointerEvents: isNavVisible ? 'auto' : 'none'
@@ -950,35 +950,35 @@ export default function App() {
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
         className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-inverse-surface/90 backdrop-blur-2xl rounded-full px-8 py-4 z-50 flex justify-between items-center shadow-2xl shadow-primary/10 border border-white/10"
       >
-        <button 
+        <button
           onClick={() => setView('dashboard')}
           className={`relative flex flex-col items-center transition-all duration-300 ${view === 'dashboard' ? "text-cyan-400 scale-110" : "text-white/40 hover:text-white"}`}
         >
           <LayoutDashboard size={24} strokeWidth={2.5} />
           {view === 'dashboard' && <div className="absolute -bottom-2 w-1 h-1 bg-cyan-400 rounded-full" />}
         </button>
-        <button 
+        <button
           onClick={() => setView('chat')}
           className={`relative flex flex-col items-center transition-all duration-300 ${view === 'chat' ? "text-cyan-400 scale-110" : "text-white/40 hover:text-white"}`}
         >
           <MessageSquare size={24} strokeWidth={2.5} />
           {view === 'chat' && <div className="absolute -bottom-2 w-1 h-1 bg-cyan-400 rounded-full" />}
         </button>
-        <button 
+        <button
           onClick={() => setView('activity')}
           className={`relative flex flex-col items-center transition-all duration-300 ${view === 'activity' ? "text-cyan-400 scale-110" : "text-white/40 hover:text-white"}`}
         >
           <Activity size={24} strokeWidth={2.5} />
           {view === 'activity' && <div className="absolute -bottom-2 w-1 h-1 bg-cyan-400 rounded-full" />}
         </button>
-        <button 
+        <button
           onClick={() => setView('profile')}
           className={`relative flex flex-col items-center transition-all duration-300 ${view === 'profile' ? "text-cyan-400 scale-110" : "text-white/40 hover:text-white"}`}
         >
           <User size={24} strokeWidth={2.5} />
           {view === 'profile' && <div className="absolute -bottom-2 w-1 h-1 bg-cyan-400 rounded-full" />}
         </button>
-        <button 
+        <button
           onClick={() => setIsNavVisible(false)}
           className="text-white/40 hover:text-white transition-colors flex flex-col items-center ml-2 pl-2 border-l border-white/10"
           title="Hide Navigation"

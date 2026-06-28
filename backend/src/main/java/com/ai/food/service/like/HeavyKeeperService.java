@@ -43,7 +43,7 @@ public class HeavyKeeperService {
         String postIdStr = postId.toString();
         stringRedisTemplate.opsForZSet().incrementScore(HK_LIKE_COUNT_KEY, postIdStr, 1);
         stringRedisTemplate.opsForZSet().incrementScore(HK_LIKE_DECAY_KEY, postIdStr, 1);
-        stringRedisTemplate.opsForValue().set(HK_LIKE_TIMESTAMP_KEY + ":" + postIdStr, 
+        stringRedisTemplate.opsForValue().set(HK_LIKE_TIMESTAMP_KEY + ":" + postIdStr,
                 String.valueOf(System.currentTimeMillis()));
     }
 
@@ -118,7 +118,7 @@ public class HeavyKeeperService {
             localHotPosts.clear();
             List<Long> newHotPosts = getTopKHotPosts(TOP_K_DEFAULT);
             localHotPosts.addAll(newHotPosts);
-            
+
         } catch (Exception e) {
             log.error("Error during decay operation", e);
         }
