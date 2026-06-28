@@ -29,6 +29,13 @@ app:
   upload:
     base-url: ${APP_UPLOAD_BASE_URL:/uploads}
 
+# ================== JWT ==================
+# 开发默认值：base64('ai-food-dev-secret-please-rotate-in-prod')
+# 生产必须通过 JWT_SECRET 环境变量覆盖（建议 ≥ 32 字节随机 + base64）
+jwt:
+  secret: ${JWT_SECRET:YWktZm9vZC1kZXYtc2VjcmV0LXBsZWFzZS1yb3RhdGUtaW4tcHJvZA==}
+  expiration: ${JWT_EXPIRATION:604800000}  # 7 天（毫秒）
+
 # Spring AI / DeepSeek 配置
 spring.ai.openai:
   api-key: ${DEEPSEEK_API_KEY:your-deepseek-api-key-here}
