@@ -1,11 +1,11 @@
 workflow: full
-phase: build
+phase: verify
 context_compression: off
 build_mode: subagent-driven-development
 build_pause: null
 subagent_dispatch: confirmed
 tdd_mode: direct
-review_mode: null
+review_mode: standard
 isolation: branch
 verify_mode: null
 auto_transition: true
@@ -20,3 +20,4 @@ verified_at: null
 archived: false
 handoff_context: openspec/changes/migrate-jpa-to-mybatis-plus/.comet/handoff/design-context.json
 handoff_hash: 1d7b4474936ae79c9dde329f03270aeb038cf5d92fb1fa99550d2126588b9081
+build_command: sudo /home/ubuntu/.local/bin/rtk docker run --rm -v /home/ubuntu/.local/share/opencode/worktree/ce001bf198281167fbee74d415b3a556510875ba/gentle-lagoon:/workspace -v /tmp/m2:/root/.m2 -w /workspace/backend maven:3.9-eclipse-temurin-21 mvn -B -ntp compile -DskipTests -q
