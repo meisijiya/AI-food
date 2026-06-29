@@ -2,31 +2,51 @@ package com.ai.food.service.bloom.impl;
 
 import com.ai.food.dto.MatchUserDetailDTO;
 import com.ai.food.dto.UserSimilarityDTO;
+import com.ai.food.mapper.CollectedParamMapper;
+import com.ai.food.mapper.ConversationSessionMapper;
+import com.ai.food.mapper.RecommendationResultMapper;
+import com.ai.food.mapper.UserMapper;
 import com.ai.food.model.CollectedParam;
 import com.ai.food.model.ConversationSession;
 import com.ai.food.model.SysUser;
-import com.ai.food.repository.CollectedParamRepository;
-import com.ai.food.repository.ConversationSessionRepository;
-import com.ai.food.repository.RecommendationResultRepository;
-import com.ai.food.repository.UserRepository;
 import com.ai.food.service.bloom.BloomFilterRedisDao;
 import com.ai.food.service.bloom.BloomFilterService;
 import com.ai.food.service.follow.FollowService;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * 布隆过滤器业务服务（MyBatis-Plus 迁移版）。
+ * <p>
+ * 继承 {@link ServiceImpl} 后，{@code baseMapper} 指向 {@link UserMapper}；
+ * 其余实体（会话 / 已收集参数 / 推荐结果）走注入的 Mapper 字段。
+ * </p>
+ * <p>
+ * 构造函数显式列出所有依赖，便于稳定测试与外部注入；{@code baseMapper} 由父类自动注入。
+ * </p>
+ */
 @Slf4j
 @Service
-public class BloomFilterServiceImpl implements BloomFilterService {
+public class BloomFilterServiceImpl extends ServiceImpl<UserMapper, SysUser> implements BloomFilterService {
 
     private final BloomFilterRedisDao redisDao;
-    private final UserRepository userRepository;
-    private final ConversationSessionRepository conversationSessionRepository;
-    private final CollectedParamRepository collectedParamRepository;
-    private final RecommendationResultRepository recommendationResultRepository;
+    private final ConversationSessionMapper conversationSessionMapper;
+    private final CollectedParamMapper collectedParamMapper;
+    private final RecommendationResultMapper recommendationResultMapper;
     private final FollowService followService;
 
     private static final int BIT_SIZE = 256;
@@ -35,19 +55,17 @@ public class BloomFilterServiceImpl implements BloomFilterService {
     private static final String[] HASH_SALTS = {"bloom_salt1", "bloom_salt2", "bloom_salt3"};
 
     /**
-     * 显式构造器用于稳定测试和依赖注入。
+     * 显式构造器：保留所有依赖，便于测试时按需 mock。
      */
     public BloomFilterServiceImpl(BloomFilterRedisDao redisDao,
-                                  UserRepository userRepository,
-                                  ConversationSessionRepository conversationSessionRepository,
-                                  CollectedParamRepository collectedParamRepository,
-                                  RecommendationResultRepository recommendationResultRepository,
+                                  ConversationSessionMapper conversationSessionMapper,
+                                  CollectedParamMapper collectedParamMapper,
+                                  RecommendationResultMapper recommendationResultMapper,
                                   FollowService followService) {
         this.redisDao = redisDao;
-        this.userRepository = userRepository;
-        this.conversationSessionRepository = conversationSessionRepository;
-        this.collectedParamRepository = collectedParamRepository;
-        this.recommendationResultRepository = recommendationResultRepository;
+        this.conversationSessionMapper = conversationSessionMapper;
+        this.collectedParamMapper = collectedParamMapper;
+        this.recommendationResultMapper = recommendationResultMapper;
         this.followService = followService;
     }
 
@@ -93,7 +111,7 @@ public class BloomFilterServiceImpl implements BloomFilterService {
     public List<UserSimilarityDTO> getTopKSimilarUsers(Long userId, int k) {
         byte[] currentBitArray = redisDao.getBitArray(userId);
 
-        List<SysUser> allUsers = userRepository.findAll();
+        List<SysUser> allUsers = baseMapper.selectList(null);
 
         List<UserSimilarityDTO> similarities = new ArrayList<>();
         for (SysUser user : allUsers) {
@@ -144,7 +162,7 @@ public class BloomFilterServiceImpl implements BloomFilterService {
             return null;
         }
 
-        Set<Long> excludeWithSelf = new java.util.HashSet<>();
+        Set<Long> excludeWithSelf = new HashSet<>();
         if (excludeIds != null) {
             excludeWithSelf.addAll(excludeIds);
         }
@@ -171,7 +189,7 @@ public class BloomFilterServiceImpl implements BloomFilterService {
             log.debug("Bloom random-match similarity: userId={}, candidateId={}, similarity={}",
                     userId, candidateId, similarity);
             if (similarity > 0) {
-                SysUser targetUser = userRepository.findById(candidateId).orElse(null);
+                SysUser targetUser = baseMapper.selectById(candidateId);
                 if (targetUser == null) {
                     log.warn("Bloom random-match candidate missing in database: candidateId={}", candidateId);
                     continue;
@@ -201,17 +219,20 @@ public class BloomFilterServiceImpl implements BloomFilterService {
         return null;
     }
 
+    /**
+     * 汇总目标用户最近 10 个 session 的"参数名 → 最新值"映射，用于匹配页详情展示。
+     */
     private Map<String, String> getUserCollectedParams(Long userId) {
         Map<String, String> params = new LinkedHashMap<>();
 
-        List<ConversationSession> sessions = conversationSessionRepository.findTop10ByUserIdOrderByCreatedAtDesc(userId);
+        List<ConversationSession> sessions = conversationSessionMapper.findTop10ByUserIdOrderByCreatedAtDesc(userId);
         if (sessions.isEmpty()) {
             return params;
         }
 
         Set<String> paramNames = new LinkedHashSet<>();
         for (ConversationSession session : sessions) {
-            List<CollectedParam> collectedParams = collectedParamRepository.findBySessionId(session.getSessionId());
+            List<CollectedParam> collectedParams = collectedParamMapper.findBySessionId(session.getSessionId());
             for (CollectedParam param : collectedParams) {
                 if (param.getParamName() != null && param.getParamValue() != null) {
                     paramNames.add(param.getParamName());
@@ -221,10 +242,10 @@ public class BloomFilterServiceImpl implements BloomFilterService {
 
         for (String paramName : paramNames) {
             for (ConversationSession session : sessions) {
-                Optional<CollectedParam> param = collectedParamRepository.findBySessionIdAndParamName(
+                CollectedParam param = collectedParamMapper.findBySessionIdAndParamName(
                         session.getSessionId(), paramName);
-                if (param.isPresent() && param.get().getParamValue() != null) {
-                    params.put(paramName, param.get().getParamValue());
+                if (param != null && param.getParamValue() != null) {
+                    params.put(paramName, param.getParamValue());
                     break;
                 }
             }
@@ -237,13 +258,14 @@ public class BloomFilterServiceImpl implements BloomFilterService {
      * 获取目标用户最近一次推荐结果里的食物名，供匹配页直观展示。
      */
     private String getLatestFoodName(Long userId) {
-        List<ConversationSession> sessions = conversationSessionRepository.findTop10ByUserIdOrderByCreatedAtDesc(userId);
+        List<ConversationSession> sessions = conversationSessionMapper.findTop10ByUserIdOrderByCreatedAtDesc(userId);
         for (ConversationSession session : sessions) {
-            Optional<String> foodName = recommendationResultRepository.findBySessionId(session.getSessionId())
+            String foodName = Optional.ofNullable(recommendationResultMapper.findBySessionId(session.getSessionId()))
                     .map(result -> result.getFoodName())
-                    .filter(name -> name != null && !name.isBlank());
-            if (foodName.isPresent()) {
-                return foodName.get();
+                    .filter(name -> name != null && !name.isBlank())
+                    .orElse(null);
+            if (foodName != null) {
+                return foodName;
             }
         }
         return null;

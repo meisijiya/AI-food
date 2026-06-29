@@ -1,26 +1,48 @@
 package com.ai.food.service.share;
 
-import com.ai.food.model.*;
-import com.ai.food.repository.*;
+import com.ai.food.mapper.CollectedParamMapper;
+import com.ai.food.mapper.ConversationSessionMapper;
+import com.ai.food.mapper.PhotoMapper;
+import com.ai.food.mapper.QaRecordMapper;
+import com.ai.food.mapper.RecommendationResultMapper;
+import com.ai.food.mapper.ShareRecordMapper;
+import com.ai.food.mapper.UserMapper;
+import com.ai.food.model.CollectedParam;
+import com.ai.food.model.ConversationSession;
+import com.ai.food.model.Photo;
+import com.ai.food.model.QaRecord;
+import com.ai.food.model.RecommendationResult;
+import com.ai.food.model.ShareRecord;
+import com.ai.food.model.SysUser;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
+/**
+ * 分享链接业务（创建 / 公开查看 / 检查是否已分享）。
+ * <p>主实体为 {@link ShareRecord}，{@code baseMapper} 由 ServiceImpl 父类注入；
+ * 因聚合展示需要联查 6 张相邻业务表，其余 Mapper 通过构造函数注入。
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ShareService {
+public class ShareService extends ServiceImpl<ShareRecordMapper, ShareRecord> {
 
-    private final ShareRecordRepository shareRecordRepository;
-    private final ConversationSessionRepository conversationSessionRepository;
-    private final RecommendationResultRepository recommendationResultRepository;
-    private final PhotoRepository photoRepository;
-    private final CollectedParamRepository collectedParamRepository;
-    private final QaRecordRepository qaRecordRepository;
-    private final UserRepository userRepository;
+    private final ConversationSessionMapper conversationSessionMapper;
+    private final RecommendationResultMapper recommendationResultMapper;
+    private final PhotoMapper photoMapper;
+    private final CollectedParamMapper collectedParamMapper;
+    private final QaRecordMapper qaRecordMapper;
+    private final UserMapper userMapper;
 
     /**
      * 创建或获取分享链接（同一记录同一用户只创建一个）
@@ -28,13 +50,15 @@ public class ShareService {
     @Transactional
     public Map<String, Object> createShare(String sessionId, Long userId) {
         // 检查是否已存在
-        Optional<ShareRecord> existing = shareRecordRepository.findBySessionIdAndUserId(sessionId, userId);
+        Optional<ShareRecord> existing = Optional.ofNullable(
+                baseMapper.findBySessionIdAndUserId(sessionId, userId));
         if (existing.isPresent()) {
             return buildShareResponse(existing.get());
         }
 
         // 验证 session 属于该用户
-        Optional<ConversationSession> optSession = conversationSessionRepository.findBySessionId(sessionId);
+        Optional<ConversationSession> optSession = Optional.ofNullable(
+                conversationSessionMapper.findBySessionId(sessionId));
         if (optSession.isEmpty() || !userId.equals(optSession.get().getUserId())) {
             throw new RuntimeException("无权分享此记录");
         }
@@ -47,7 +71,11 @@ public class ShareService {
         shareRecord.setUserId(userId);
         shareRecord.setSessionId(sessionId);
         shareRecord.setViewCount(0);
-        ShareRecord saved = shareRecordRepository.save(shareRecord);
+        // ponytail: 显式 insert 语义清晰，避免 ServiceImpl.save 的 select-then-decide
+        ShareRecord saved = baseMapper.insert(shareRecord) > 0 ? shareRecord : null;
+        if (saved == null) {
+            throw new RuntimeException("分享记录创建失败");
+        }
 
         log.debug("Share created: token={}, user={}", shareToken, userId);
 
@@ -59,24 +87,27 @@ public class ShareService {
      */
     @Transactional
     public Map<String, Object> getShareDetail(String shareToken) {
-        ShareRecord share = shareRecordRepository.findByShareToken(shareToken)
+        ShareRecord share = Optional.ofNullable(baseMapper.findByShareToken(shareToken))
                 .orElseThrow(() -> new RuntimeException("分享链接不存在或已失效"));
 
         // 增加浏览次数
         share.setViewCount(share.getViewCount() + 1);
-        shareRecordRepository.save(share);
+        // ponytail: 显式 updateById，保留乐观锁 + version 自增语义
+        baseMapper.updateById(share);
 
         String sessionId = share.getSessionId();
         Long userId = share.getUserId();
 
         // 获取推荐信息
-        Optional<RecommendationResult> optRec = recommendationResultRepository.findBySessionId(sessionId);
-        Optional<Photo> optPhoto = photoRepository.findFirstByRelatedSessionIdOrderByCreatedAtDesc(sessionId);
-        List<CollectedParam> params = collectedParamRepository.findBySessionId(sessionId);
-        List<QaRecord> qaRecords = qaRecordRepository.findBySessionIdOrderByQuestionOrderAsc(sessionId);
+        Optional<RecommendationResult> optRec = Optional.ofNullable(
+                recommendationResultMapper.findBySessionId(sessionId));
+        Optional<Photo> optPhoto = Optional.ofNullable(
+                photoMapper.findFirstByRelatedSessionIdOrderByCreatedAtDesc(sessionId));
+        List<CollectedParam> params = collectedParamMapper.findBySessionId(sessionId);
+        List<QaRecord> qaRecords = qaRecordMapper.findBySessionIdOrderByQuestionOrderAsc(sessionId);
 
         // 获取分享者信息
-        Optional<SysUser> optUser = userRepository.findById(userId);
+        Optional<SysUser> optUser = Optional.ofNullable(userMapper.selectById(userId));
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("shareToken", shareToken);
@@ -136,7 +167,8 @@ public class ShareService {
      * 检查记录是否已分享
      */
     public Map<String, Object> checkShare(String sessionId, Long userId) {
-        Optional<ShareRecord> existing = shareRecordRepository.findBySessionIdAndUserId(sessionId, userId);
+        Optional<ShareRecord> existing = Optional.ofNullable(
+                baseMapper.findBySessionIdAndUserId(sessionId, userId));
         if (existing.isPresent()) {
             return buildShareResponse(existing.get());
         }

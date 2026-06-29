@@ -1,20 +1,34 @@
 package com.ai.food.service.feed;
 
-import com.ai.food.model.*;
-import com.ai.food.repository.*;
+import com.ai.food.exception.PermissionDeniedException;
+import com.ai.food.mapper.ChatPhotoMapper;
+import com.ai.food.mapper.CollectedParamMapper;
+import com.ai.food.mapper.ConversationSessionMapper;
+import com.ai.food.mapper.FeedCommentMapper;
+import com.ai.food.mapper.FeedPostMapper;
+import com.ai.food.mapper.PhotoMapper;
+import com.ai.food.mapper.RecommendationResultMapper;
+import com.ai.food.mapper.UserMapper;
+import com.ai.food.model.ChatPhoto;
+import com.ai.food.model.CollectedParam;
+import com.ai.food.model.ConversationSession;
+import com.ai.food.model.FeedComment;
+import com.ai.food.model.FeedPost;
+import com.ai.food.model.Photo;
+import com.ai.food.model.RecommendationResult;
+import com.ai.food.model.SysUser;
 import com.ai.food.service.follow.FollowService;
 import com.ai.food.service.like.LikeService;
 import com.ai.food.service.notification.NotificationService;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
@@ -23,21 +37,38 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
+/**
+ * 动态 Feed 业务服务（MyBatis-Plus 迁移版）。
+ * <p>
+ * 继承 {@link ServiceImpl} 后，{@code baseMapper} 指向 {@link FeedPostMapper}；
+ * 其余实体（评论 / 照片 / 推荐 / 会话 / 用户 / 已收集参数）走注入的 Mapper 字段。
+ * </p>
+ * <p>
+ * 分页在服务边界做 0-based → 1-based 转换，返回给前端的 {@code page} 编号仍维持 0-based。
+ * </p>
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class FeedService {
+public class FeedService extends ServiceImpl<FeedPostMapper, FeedPost> {
 
-    private final FeedPostRepository feedPostRepository;
-    private final FeedCommentRepository feedCommentRepository;
-    private final RecommendationResultRepository recommendationResultRepository;
-    private final PhotoRepository photoRepository;
-    private final ChatPhotoRepository chatPhotoRepository;
-    private final CollectedParamRepository collectedParamRepository;
-    private final ConversationSessionRepository conversationSessionRepository;
-    private final UserRepository userRepository;
+    private final FeedCommentMapper feedCommentMapper;
+    private final RecommendationResultMapper recommendationResultMapper;
+    private final PhotoMapper photoMapper;
+    private final ChatPhotoMapper chatPhotoMapper;
+    private final CollectedParamMapper collectedParamMapper;
+    private final ConversationSessionMapper conversationSessionMapper;
+    private final UserMapper userMapper;
     private final FollowService followService;
     private final NotificationService notificationService;
     private final LikeService likeService;
@@ -55,30 +86,37 @@ public class FeedService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * 发布推荐结果到动态。同一 session+user 只能发一次。
+     */
     @Transactional
     public Map<String, Object> publishPost(Long userId, String sessionId, String commentPreview, String visibility) {
         // Check if already published
-        Optional<FeedPost> existing = feedPostRepository.findBySessionIdAndUserId(sessionId, userId);
-        if (existing.isPresent()) {
+        FeedPost existing = baseMapper.findBySessionIdAndUserId(sessionId, userId);
+        if (existing != null) {
             throw new RuntimeException("该推荐结果已发布到动态");
         }
 
         // Verify session belongs to user
-        ConversationSession session = conversationSessionRepository.findBySessionId(sessionId)
-                .orElseThrow(() -> new RuntimeException("会话不存在"));
+        ConversationSession session = conversationSessionMapper.findBySessionId(sessionId);
+        if (session == null) {
+            throw new RuntimeException("会话不存在");
+        }
         if (!userId.equals(session.getUserId())) {
             throw new RuntimeException("无权发布此推荐结果");
         }
 
         // Get recommendation result
-        RecommendationResult rec = recommendationResultRepository.findBySessionId(sessionId)
-                .orElseThrow(() -> new RuntimeException("推荐结果不存在"));
+        RecommendationResult rec = recommendationResultMapper.findBySessionId(sessionId);
+        if (rec == null) {
+            throw new RuntimeException("推荐结果不存在");
+        }
 
         // Get photo
-        Optional<Photo> optPhoto = photoRepository.findFirstByRelatedSessionIdOrderByCreatedAtDesc(sessionId);
+        Photo optPhoto = photoMapper.findFirstByRelatedSessionIdOrderByCreatedAtDesc(sessionId);
 
         // Get collected params
-        List<CollectedParam> params = collectedParamRepository.findBySessionId(sessionId);
+        List<CollectedParam> params = collectedParamMapper.findBySessionId(sessionId);
 
         // Build FeedPost
         FeedPost post = new FeedPost();
@@ -86,26 +124,31 @@ public class FeedService {
         post.setSessionId(sessionId);
         post.setFoodName(rec.getFoodName());
         post.setReason(rec.getReason());
-        post.setThumbnailUrl(optPhoto.map(Photo::getThumbnailPath).orElse(null));
-        post.setOriginalPhotoUrl(optPhoto.map(Photo::getOriginalPath).orElse(null));
+        post.setThumbnailUrl(optPhoto != null ? optPhoto.getThumbnailPath() : null);
+        post.setOriginalPhotoUrl(optPhoto != null ? optPhoto.getOriginalPath() : null);
         post.setCommentPreview(commentPreview != null && commentPreview.length() > 30
                 ? commentPreview.substring(0, 30) : commentPreview);
         post.setCollectedParams(buildCollectedParamsJson(params));
         post.setVisibility(visibility);
         post.setPublishedAt(LocalDateTime.now());
 
-        FeedPost saved = feedPostRepository.save(post);
-        log.debug("Feed post published: postId={}, user={}, visibility={}", saved.getId(), userId, visibility);
+        // insert 会回填主键 + 写入 createdAt/updatedAt
+        baseMapper.insert(post);
+        log.debug("Feed post published: postId={}, user={}, visibility={}", post.getId(), userId, visibility);
 
         // Push to followers' friend feed
-        pushToFollowersFeeds(saved, userId);
+        pushToFollowersFeeds(post, userId);
 
-        return buildPostMap(saved);
+        return buildPostMap(post);
     }
 
+    /**
+     * 公共动态流：已登录则过滤"仅粉丝可见"；支持按 foodName / paramValue 模糊搜索。
+     */
     public Map<String, Object> getPublicFeedList(int page, int size, String foodName,
                                                   String paramName, String paramValue, Long currentUserId) {
-        Pageable pageable = PageRequest.of(page, size);
+        // MP 分页 1-based，控制器传 0-based
+        IPage<FeedPost> postPage = new Page<>(page + 1, size);
 
         String searchParamValue = null;
         if (paramName != null && paramValue != null) {
@@ -114,23 +157,22 @@ public class FeedService {
 
         String searchFoodName = foodName != null && !foodName.isBlank() ? foodName : null;
 
-        Page<FeedPost> postPage;
         if (currentUserId != null) {
             List<Long> followingIds = followService.getFollowingIds(currentUserId);
             if (!followingIds.isEmpty()) {
-                postPage = feedPostRepository.findPublicAndFansOnlyByFilters(
-                        followingIds, searchFoodName, searchParamValue, pageable);
+                postPage = baseMapper.findPublicAndFansOnlyByFilters(
+                        postPage, followingIds, searchFoodName, searchParamValue);
             } else {
-                postPage = feedPostRepository.findPublicByFilters(
-                        searchFoodName, searchParamValue, pageable);
+                postPage = baseMapper.findPublicByFilters(
+                        postPage, searchFoodName, searchParamValue);
             }
         } else {
-            postPage = feedPostRepository.findPublicByFilters(
-                    searchFoodName, searchParamValue, pageable);
+            postPage = baseMapper.findPublicByFilters(
+                    postPage, searchFoodName, searchParamValue);
         }
 
         List<Map<String, Object>> items = new ArrayList<>();
-        for (FeedPost post : postPage.getContent()) {
+        for (FeedPost post : postPage.getRecords()) {
             Map<String, Object> item = buildPostMap(post);
             items.add(item);
         }
@@ -138,13 +180,16 @@ public class FeedService {
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("items", items);
-        result.put("page", postPage.getNumber());
+        result.put("page", (int) postPage.getCurrent() - 1);
         result.put("size", postPage.getSize());
-        result.put("totalElements", postPage.getTotalElements());
-        result.put("totalPages", postPage.getTotalPages());
+        result.put("totalElements", postPage.getTotal());
+        result.put("totalPages", (int) postPage.getPages());
         return result;
     }
 
+    /**
+     * 热榜 Top20：未登录走缓存，登录时按粉丝可见性过滤。
+     */
     public Map<String, Object> getHotRank(Long currentUserId) {
         // 优先从缓存获取（仅当未登录时使用缓存，已登录时需要过滤粉丝可见帖子）
         if (currentUserId == null) {
@@ -162,6 +207,9 @@ public class FeedService {
         return loadAndCacheHotRank(currentUserId);
     }
 
+    /**
+     * 从 Redis ZSet 读出 Top20 帖子 ID 列表 → 数据库加载详情 → 写缓存。
+     */
     private Map<String, Object> loadAndCacheHotRank(Long currentUserId) {
         Set<ZSetOperations.TypedTuple<String>> hotPosts = stringRedisTemplate.opsForZSet()
                 .reverseRangeWithScores(HOT_RANK_KEY, 0, 19);
@@ -200,7 +248,7 @@ public class FeedService {
             return emptyResult;
         }
 
-        List<FeedPost> posts = feedPostRepository.findByIdIn(postIds);
+        List<FeedPost> posts = baseMapper.findByIdIn(postIds);
         Map<Long, FeedPost> postMap = new LinkedHashMap<>();
         for (FeedPost post : posts) {
             postMap.put(post.getId(), post);
@@ -215,7 +263,7 @@ public class FeedService {
         List<Map<String, Object>> items = new ArrayList<>();
         for (Long postId : postIds) {
             FeedPost post = postMap.get(postId);
-            if (post != null && !post.getIsDeleted()) {
+            if (post != null && Integer.valueOf(0).equals(post.getIsDeleted())) {
                 // Filter fans-only posts: only show to followers of the author
                 if ("friends".equals(post.getVisibility())) {
                     if (currentUserId == null || !followingIds.contains(post.getUserId())) {
@@ -244,6 +292,9 @@ public class FeedService {
         return result;
     }
 
+    /**
+     * 构造简化版帖子 Map（用于热榜卡片展示）。
+     */
     private Map<String, Object> buildSimplifiedPostMap(FeedPost post) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", post.getId());
@@ -256,6 +307,9 @@ public class FeedService {
         return map;
     }
 
+    /**
+     * 检查某 postId 是否在热榜 Top20 中，是则刷新缓存。
+     */
     private void checkAndRefreshHotRank(Long postId) {
         // 获取当前 Top 20 的 postId 列表
         Set<ZSetOperations.TypedTuple<String>> currentTop = stringRedisTemplate.opsForZSet()
@@ -281,13 +335,19 @@ public class FeedService {
         }
     }
 
-    @Scheduled(cron = "0 */10 * * * ?")  // 每10分钟执行
+    /**
+     * 定时刷新热榜缓存（仅未登录分支），每 10 分钟一次。
+     */
+    @Scheduled(cron = "0 */10 * * * ?")
     public void refreshHotRankCacheScheduled() {
         log.info("Scheduled hot rank cache refresh started");
         loadAndCacheHotRank(null);
         log.info("Scheduled hot rank cache refresh completed");
     }
 
+    /**
+     * 读取某用户的关注流（已由发布时 fan-out 写入 Redis List）。
+     */
     public Map<String, Object> getFriendFeedList(Long userId, int page, int size) {
         String key = FRIEND_FEED_KEY + userId;
         long start = page * size;
@@ -319,6 +379,9 @@ public class FeedService {
         return result;
     }
 
+    /**
+     * 发布帖子时 fan-out 到所有粉丝的 Redis 关注流（最多保留最近 100 条）。
+     */
     private void pushToFollowersFeeds(FeedPost post, Long userId) {
         List<Long> followerIds = followService.getFollowerIds(userId);
         if (followerIds.isEmpty()) {
@@ -328,9 +391,8 @@ public class FeedService {
         // Get user info for summary
         String nickname = "匿名用户";
         String avatar = null;
-        Optional<SysUser> userOpt = userRepository.findById(userId);
-        if (userOpt.isPresent()) {
-            SysUser user = userOpt.get();
+        SysUser user = userMapper.selectById(userId);
+        if (user != null) {
             nickname = user.getNickname() != null ? user.getNickname() : user.getUsername();
             avatar = user.getAvatar();
         }
@@ -363,9 +425,14 @@ public class FeedService {
         }
     }
 
+    /**
+     * 动态详情：含可见性校验、是否已点赞、关联照片 / 参数、浏览数 +1、命中热榜则刷缓存。
+     */
     public Map<String, Object> getFeedDetail(Long postId, Long currentUserId) {
-        FeedPost post = feedPostRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("动态不存在"));
+        FeedPost post = baseMapper.selectById(postId);
+        if (post == null) {
+            throw new RuntimeException("动态不存在");
+        }
         assertFeedVisible(post, currentUserId);
 
         Map<String, Object> result = buildPostMap(post);
@@ -378,14 +445,14 @@ public class FeedService {
         result.put("isLiked", Boolean.TRUE.equals(isLiked));
 
         // Photo info
-        Optional<Photo> optPhoto = photoRepository.findFirstByRelatedSessionIdOrderByCreatedAtDesc(post.getSessionId());
-        if (optPhoto.isPresent()) {
-            result.put("photoUrl", optPhoto.get().getOriginalPath());
-            result.put("thumbnailUrl", optPhoto.get().getThumbnailPath());
+        Photo optPhoto = photoMapper.findFirstByRelatedSessionIdOrderByCreatedAtDesc(post.getSessionId());
+        if (optPhoto != null) {
+            result.put("photoUrl", optPhoto.getOriginalPath());
+            result.put("thumbnailUrl", optPhoto.getThumbnailPath());
         }
 
         // Collected params
-        List<CollectedParam> params = collectedParamRepository.findBySessionId(post.getSessionId());
+        List<CollectedParam> params = collectedParamMapper.findBySessionId(post.getSessionId());
         List<Map<String, String>> paramList = new ArrayList<>();
         for (CollectedParam p : params) {
             Map<String, String> pm = new LinkedHashMap<>();
@@ -402,7 +469,7 @@ public class FeedService {
 
         // Update view count in DB
         post.setViewCount(post.getViewCount() + 1);
-        feedPostRepository.save(post);
+        baseMapper.updateById(post);
 
         return result;
     }
@@ -420,37 +487,47 @@ public class FeedService {
         if ("friends".equals(post.getVisibility()) && currentUserId != null && followService.isFollowing(currentUserId, post.getUserId())) {
             return;
         }
-        throw new com.ai.food.exception.PermissionDeniedException("无权查看该动态");
+        throw new PermissionDeniedException("无权查看该动态");
     }
 
+    /**
+     * 点赞 / 取消点赞（实际逻辑在 LikeService）。
+     */
     @Transactional
     public Map<String, Object> toggleLike(Long postId, Long userId) {
         return likeService.toggleLike(postId, userId);
     }
 
+    /**
+     * 添加评论并更新帖子评论计数 + 通知作者 + 命中热榜则刷缓存。
+     */
     @Transactional
     public Map<String, Object> addComment(Long postId, Long userId, String content, String imageUrl) {
-        FeedPost post = feedPostRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("动态不存在"));
+        FeedPost post = baseMapper.selectById(postId);
+        if (post == null) {
+            throw new RuntimeException("动态不存在");
+        }
 
         FeedComment comment = new FeedComment();
         comment.setPostId(postId);
         comment.setUserId(userId);
         comment.setContent(content);
         comment.setImageUrl(imageUrl);
-        FeedComment saved = feedCommentRepository.save(comment);
+        feedCommentMapper.insert(comment);
 
         // Increment comment count
         post.setCommentCount(post.getCommentCount() + 1);
-        feedPostRepository.save(post);
+        baseMapper.updateById(post);
 
         // Add notification for post owner
         if (!post.getUserId().equals(userId)) {
-            String commenterName = userRepository.findById(userId)
-                    .map(u -> u.getNickname() != null ? u.getNickname() : u.getUsername())
-                    .orElse("匿名用户");
+            String commenterName = "匿名用户";
+            SysUser commenter = userMapper.selectById(userId);
+            if (commenter != null) {
+                commenterName = commenter.getNickname() != null ? commenter.getNickname() : commenter.getUsername();
+            }
             notificationService.addCommentNotification(
-                    post.getUserId(), saved.getId(), postId, userId, commenterName, content);
+                    post.getUserId(), comment.getId(), postId, userId, commenterName, content);
         }
 
         // Increment hot score for comment (+5)
@@ -459,22 +536,25 @@ public class FeedService {
         checkAndRefreshHotRank(postId);
 
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("id", saved.getId());
-        result.put("postId", saved.getPostId());
-        result.put("userId", saved.getUserId());
-        result.put("content", saved.getContent());
-        result.put("imageUrl", saved.getImageUrl());
-        result.put("createdAt", saved.getCreatedAt());
-        enrichUserInfo(result, saved.getUserId());
+        result.put("id", comment.getId());
+        result.put("postId", comment.getPostId());
+        result.put("userId", comment.getUserId());
+        result.put("content", comment.getContent());
+        result.put("imageUrl", comment.getImageUrl());
+        result.put("createdAt", comment.getCreatedAt());
+        enrichUserInfo(result, comment.getUserId());
         return result;
     }
 
+    /**
+     * 获取某帖子的评论分页（按时间倒序）。
+     */
     public Map<String, Object> getComments(Long postId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<FeedComment> commentPage = feedCommentRepository.findByPostIdOrderByCreatedAtDesc(postId, pageable);
+        IPage<FeedComment> commentPage = new Page<>(page + 1, size);
+        feedCommentMapper.findByPostIdOrderByCreatedAtDesc(commentPage, postId);
 
         List<Map<String, Object>> items = new ArrayList<>();
-        for (FeedComment comment : commentPage.getContent()) {
+        for (FeedComment comment : commentPage.getRecords()) {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("id", comment.getId());
             item.put("postId", comment.getPostId());
@@ -488,54 +568,67 @@ public class FeedService {
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("items", items);
-        result.put("page", commentPage.getNumber());
+        result.put("page", (int) commentPage.getCurrent() - 1);
         result.put("size", commentPage.getSize());
-        result.put("totalElements", commentPage.getTotalElements());
-        result.put("totalPages", commentPage.getTotalPages());
+        result.put("totalElements", commentPage.getTotal());
+        result.put("totalPages", (int) commentPage.getPages());
         return result;
     }
 
+    /**
+     * 删除评论：归属校验 → 软删评论 → 同步删除关联 chat_photo → 同步通知/计数 → 热榜扣分。
+     */
     @Transactional
     public void deleteComment(Long commentId, Long userId) {
-        FeedComment comment = feedCommentRepository.findByIdAndUserId(commentId, userId)
-                .orElseThrow(() -> new RuntimeException("评论不存在或无权限删除"));
+        FeedComment comment = feedCommentMapper.findByIdAndUserId(commentId, userId);
+        if (comment == null) {
+            throw new RuntimeException("评论不存在或无权限删除");
+        }
         if (Boolean.TRUE.equals(comment.getIsDeleted())) {
             return;
         }
 
-        int updated = feedCommentRepository.softDeleteByIdAndUserId(commentId, userId);
+        int updated = feedCommentMapper.softDeleteByIdAndUserId(commentId, userId);
         if (updated <= 0) {
             return;
         }
 
         if (comment.getImageUrl() != null && !comment.getImageUrl().isBlank()) {
-            chatPhotoRepository.findByOriginalPath(comment.getImageUrl())
-                    .or(() -> chatPhotoRepository.findByThumbnailPath(comment.getImageUrl()))
-                    .ifPresent(photo -> {
-                        photo.setIsDeleted(true);
-                        chatPhotoRepository.save(photo);
-                    });
+            ChatPhoto photo = chatPhotoMapper.findByOriginalPath(comment.getImageUrl());
+            if (photo == null) {
+                photo = chatPhotoMapper.findByThumbnailPath(comment.getImageUrl());
+            }
+            if (photo != null) {
+                photo.setIsDeleted(1);
+                chatPhotoMapper.updateById(photo);
+            }
         }
 
-        feedPostRepository.findById(comment.getPostId())
-                .ifPresent(post -> notificationService.removeCommentNotification(post.getUserId(), commentId));
+        FeedPost postForNotif = baseMapper.selectById(comment.getPostId());
+        if (postForNotif != null) {
+            notificationService.removeCommentNotification(postForNotif.getUserId(), commentId);
+        }
 
-        feedPostRepository.findById(comment.getPostId()).ifPresent(post -> {
-            int currentCount = post.getCommentCount() == null ? 0 : post.getCommentCount();
-            post.setCommentCount(Math.max(0, currentCount - 1));
-            feedPostRepository.save(post);
-        });
+        FeedPost postForCount = baseMapper.selectById(comment.getPostId());
+        if (postForCount != null) {
+            int currentCount = postForCount.getCommentCount() == null ? 0 : postForCount.getCommentCount();
+            postForCount.setCommentCount(Math.max(0, currentCount - 1));
+            baseMapper.updateById(postForCount);
+        }
 
         stringRedisTemplate.opsForZSet().incrementScore(HOT_RANK_KEY, comment.getPostId().toString(), -5);
         checkAndRefreshHotRank(comment.getPostId());
     }
 
+    /**
+     * 检查某 session 是否已发布到动态，返回可见性。
+     */
     public Map<String, Object> checkPublishedWithVisibility(String sessionId, Long userId) {
-        Optional<FeedPost> opt = feedPostRepository.findBySessionIdAndUserId(sessionId, userId);
+        FeedPost post = baseMapper.findBySessionIdAndUserId(sessionId, userId);
         Map<String, Object> result = new LinkedHashMap<>();
-        if (opt.isPresent()) {
+        if (post != null) {
             result.put("published", true);
-            result.put("visibility", opt.get().getVisibility());
+            result.put("visibility", post.getVisibility());
         } else {
             result.put("published", false);
             result.put("visibility", null);
@@ -543,21 +636,29 @@ public class FeedService {
         return result;
     }
 
+    /**
+     * 简单判断：某 session 是否已被当前用户发布过。
+     */
     public boolean checkPublished(String sessionId, Long userId) {
-        return feedPostRepository.findBySessionIdAndUserId(sessionId, userId).isPresent();
+        return baseMapper.findBySessionIdAndUserId(sessionId, userId) != null;
     }
 
+    /**
+     * 撤回动态：级联软删评论 + 软删动态 + 清理 Redis + 删除物理文件。
+     */
     @Transactional
     public void unpublish(Long userId, String sessionId) {
-        FeedPost post = feedPostRepository.findBySessionIdAndUserId(sessionId, userId)
-                .orElseThrow(() -> new RuntimeException("该动态不存在或已被取消"));
+        FeedPost post = baseMapper.findBySessionIdAndUserId(sessionId, userId);
+        if (post == null) {
+            throw new RuntimeException("该动态不存在或已被取消");
+        }
 
         // 软删除关联评论
-        feedCommentRepository.softDeleteByPostId(post.getId());
+        feedCommentMapper.softDeleteByPostId(post.getId());
 
         // 软删除动态
-        post.setIsDeleted(true);
-        feedPostRepository.save(post);
+        post.setIsDeleted(1);
+        baseMapper.updateById(post);
 
         // Clean up Redis
         cleanRedisForDeletedPost(post.getId(), userId);
@@ -569,6 +670,9 @@ public class FeedService {
         log.debug("Feed post unpublished: postId={}, user={}", post.getId(), userId);
     }
 
+    /**
+     * 清理动态相关 Redis：点赞 set、计数、热榜、关注流条目。
+     */
     public void cleanRedisForDeletedPost(Long postId, Long userId) {
         try {
             // Clean up like data
@@ -620,6 +724,9 @@ public class FeedService {
         }
     }
 
+    /**
+     * 删除单张物理照片文件（用于动态撤回）。
+     */
     private void deletePhotoFiles(String url) {
         if (url == null || url.isBlank()) return;
         try {
@@ -632,20 +739,31 @@ public class FeedService {
         }
     }
 
+    /**
+     * 把外部累计的点赞数同步回数据库（内部使用）。
+     */
     private void updateDbLikeCount(Long postId, int count) {
-        feedPostRepository.findById(postId).ifPresent(post -> {
+        FeedPost post = baseMapper.selectById(postId);
+        if (post != null) {
             post.setLikeCount(count);
-            feedPostRepository.save(post);
-        });
+            baseMapper.updateById(post);
+        }
     }
 
+    /**
+     * 注入单条用户公开信息（昵称 / 头像）。
+     */
     private void enrichUserInfo(Map<String, Object> target, Long userId) {
-        userRepository.findById(userId).ifPresent(user -> {
+        SysUser user = userMapper.selectById(userId);
+        if (user != null) {
             target.put("nickname", user.getNickname() != null ? user.getNickname() : "匿名用户");
             target.put("avatar", user.getAvatar());
-        });
+        }
     }
 
+    /**
+     * 批量注入用户公开信息，减少 N+1 查询。
+     */
     private void batchEnrichUserInfo(List<Map<String, Object>> items) {
         if (items == null || items.isEmpty()) return;
         Set<Long> userIds = new LinkedHashSet<>();
@@ -655,7 +773,7 @@ public class FeedService {
         }
         if (userIds.isEmpty()) return;
         Map<Long, SysUser> userMap = new LinkedHashMap<>();
-        for (SysUser user : userRepository.findByIdIn(new ArrayList<>(userIds))) {
+        for (SysUser user : userMapper.findByIdIn(new ArrayList<>(userIds))) {
             userMap.put(user.getId(), user);
         }
         for (Map<String, Object> item : items) {
@@ -669,6 +787,9 @@ public class FeedService {
         }
     }
 
+    /**
+     * 构造帖子详情 Map（不含用户信息，由 enrich 方法补充）。
+     */
     private Map<String, Object> buildPostMap(FeedPost post) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", post.getId());
@@ -686,6 +807,9 @@ public class FeedService {
         return map;
     }
 
+    /**
+     * 序列化为前端可直接展示的已收集参数 JSON。
+     */
     private String buildCollectedParamsJson(List<CollectedParam> params) {
         List<Map<String, String>> list = new ArrayList<>();
         for (CollectedParam p : params) {

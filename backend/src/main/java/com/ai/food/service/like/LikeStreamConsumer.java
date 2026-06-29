@@ -1,7 +1,7 @@
 package com.ai.food.service.like;
 
+import com.ai.food.mapper.FeedPostMapper;
 import com.ai.food.model.FeedPost;
-import com.ai.food.repository.FeedPostRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.stream.*;
@@ -11,15 +11,26 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
+/**
+ * Redis Stream 消费者：批量读取 like 事件、聚合 like_count 增量，定时刷盘到 MySQL。
+ * <p>非标准 ServiceImpl 模式，仅消费 + 写库，通过构造函数注入 {@link FeedPostMapper}。
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class LikeStreamConsumer {
 
     private final StringRedisTemplate stringRedisTemplate;
-    private final FeedPostRepository feedPostRepository;
+    private final FeedPostMapper feedPostMapper;
 
     private static final String STREAM_KEY = "stream:like:events";
     private static final String CONSUMER_GROUP = "cg:like:consumers";
@@ -122,7 +133,7 @@ public class LikeStreamConsumer {
                 Long postId = entry.getKey();
                 Integer delta = entry.getValue();
 
-                Optional<FeedPost> postOpt = feedPostRepository.findById(postId);
+                Optional<FeedPost> postOpt = Optional.ofNullable(feedPostMapper.selectById(postId));
                 if (postOpt.isPresent()) {
                     FeedPost post = postOpt.get();
                     int newCount = Math.max(0, post.getLikeCount() + delta);
@@ -132,7 +143,10 @@ public class LikeStreamConsumer {
             }
 
             if (!postsToUpdate.isEmpty()) {
-                feedPostRepository.saveAll(postsToUpdate);
+                // ponytail: 单条 updateById 循环而非 saveAll，保留乐观锁 version 自增语义，失败行易回滚
+                for (FeedPost post : postsToUpdate) {
+                    feedPostMapper.updateById(post);
+                }
                 log.info("Flushed like count updates for {} posts, deltas: {}",
                         postsToUpdate.size(), deltaToFlush);
             }

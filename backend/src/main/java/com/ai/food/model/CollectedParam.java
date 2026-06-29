@@ -1,42 +1,41 @@
 package com.ai.food.model;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 
+/**
+ * 已收集参数实体（MyBatis-Plus 迁移版）
+ * <p>
+ * 表名 collected_params。唯一约束 (session_id, param_name) 由 Flyway 迁移脚本管理。
+ */
 @Data
-@Entity
-@Where(clause = "is_deleted = false")
-@Table(name = "collected_params", uniqueConstraints = {
-    @UniqueConstraint(name = "uk_session_param", columnNames = {"session_id", "param_name"})
-})
+@TableName("collected_params")
 public class CollectedParam {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    @Column(name = "session_id", nullable = false, length = 64)
+    @TableField("session_id")
     private String sessionId;
 
-    @Column(name = "param_name", length = 50)
+    @TableField("param_name")
     private String paramName;
 
-    @Column(name = "param_value", columnDefinition = "TEXT")
+    @TableField("param_value")
     private String paramValue;
 
-    @Column(name = "param_type", length = 20)
+    @TableField("param_type")
     private String paramType; // required/optional
 
-    @Column(name = "collected_at")
+    @TableField("collected_at")
     private LocalDateTime collectedAt;
 
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = false;
+    @TableField("is_deleted")
+    @TableLogic(value = "0", delval = "1")
+    private Integer isDeleted = 0;
 
-    @PrePersist
-    protected void onCreate() {
-        collectedAt = LocalDateTime.now();
-    }
+    @TableField("version")
+    @Version
+    private Integer version;
 }

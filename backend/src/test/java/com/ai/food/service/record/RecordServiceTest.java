@@ -1,14 +1,14 @@
 package com.ai.food.service.record;
 
+import com.ai.food.mapper.CollectedParamMapper;
+import com.ai.food.mapper.ConversationSessionMapper;
+import com.ai.food.mapper.FeedCommentMapper;
+import com.ai.food.mapper.FeedPostMapper;
+import com.ai.food.mapper.PhotoMapper;
+import com.ai.food.mapper.QaRecordMapper;
+import com.ai.food.mapper.RecommendationResultMapper;
 import com.ai.food.model.ConversationSession;
 import com.ai.food.model.RecommendationResult;
-import com.ai.food.repository.CollectedParamRepository;
-import com.ai.food.repository.ConversationSessionRepository;
-import com.ai.food.repository.FeedCommentRepository;
-import com.ai.food.repository.FeedPostRepository;
-import com.ai.food.repository.PhotoRepository;
-import com.ai.food.repository.QaRecordRepository;
-import com.ai.food.repository.RecommendationResultRepository;
 import com.ai.food.service.bloom.BloomFilterService;
 import com.ai.food.service.feed.FeedService;
 import org.junit.jupiter.api.DisplayName;
@@ -16,10 +16,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -30,25 +30,25 @@ import static org.mockito.Mockito.when;
 class RecordServiceTest {
 
     @Mock
-    private ConversationSessionRepository conversationSessionRepository;
+    private ConversationSessionMapper conversationSessionMapper;
 
     @Mock
-    private RecommendationResultRepository recommendationResultRepository;
+    private RecommendationResultMapper recommendationResultMapper;
 
     @Mock
-    private CollectedParamRepository collectedParamRepository;
+    private CollectedParamMapper collectedParamMapper;
 
     @Mock
-    private QaRecordRepository qaRecordRepository;
+    private QaRecordMapper qaRecordMapper;
 
     @Mock
-    private PhotoRepository photoRepository;
+    private PhotoMapper photoMapper;
 
     @Mock
-    private FeedPostRepository feedPostRepository;
+    private FeedPostMapper feedPostMapper;
 
     @Mock
-    private FeedCommentRepository feedCommentRepository;
+    private FeedCommentMapper feedCommentMapper;
 
     @Mock
     private FeedService feedService;
@@ -63,24 +63,22 @@ class RecordServiceTest {
     @DisplayName("删除记录时同步移除匹配画像")
     void deleteRecord_removesBloomRecommendation() {
         RecordService service = new RecordService(
-                conversationSessionRepository,
-                recommendationResultRepository,
-                collectedParamRepository,
-                qaRecordRepository,
-                photoRepository,
-                feedPostRepository,
-                feedCommentRepository,
-                feedService,
-                redisTemplate,
-                bloomFilterService
+                recommendationResultMapper,
+                collectedParamMapper,
+                qaRecordMapper,
+                photoMapper,
+                feedPostMapper,
+                feedCommentMapper,
+                feedService, redisTemplate, bloomFilterService
         );
+        ReflectionTestUtils.setField(service, "baseMapper", conversationSessionMapper);
         ConversationSession session = new ConversationSession();
         session.setSessionId("s-1");
         session.setUserId(9L);
         RecommendationResult result = new RecommendationResult();
         result.setId(88L);
-        when(conversationSessionRepository.findBySessionId("s-1")).thenReturn(Optional.of(session));
-        when(recommendationResultRepository.findBySessionId("s-1")).thenReturn(Optional.of(result));
+        when(conversationSessionMapper.findBySessionId("s-1")).thenReturn(session);
+        when(recommendationResultMapper.findBySessionId("s-1")).thenReturn(result);
 
         service.deleteRecord("s-1");
 
@@ -91,22 +89,22 @@ class RecordServiceTest {
     @DisplayName("缺少推荐结果时不调用匹配画像删除")
     void deleteRecord_skipsBloomRemovalWhenRecommendationMissing() {
         RecordService service = new RecordService(
-                conversationSessionRepository,
-                recommendationResultRepository,
-                collectedParamRepository,
-                qaRecordRepository,
-                photoRepository,
-                feedPostRepository,
-                feedCommentRepository,
+                recommendationResultMapper,
+                collectedParamMapper,
+                qaRecordMapper,
+                photoMapper,
+                feedPostMapper,
+                feedCommentMapper,
                 feedService,
                 redisTemplate,
                 bloomFilterService
         );
+        ReflectionTestUtils.setField(service, "baseMapper", conversationSessionMapper);
         ConversationSession session = new ConversationSession();
         session.setSessionId("s-2");
         session.setUserId(9L);
-        when(conversationSessionRepository.findBySessionId("s-2")).thenReturn(Optional.of(session));
-        when(recommendationResultRepository.findBySessionId("s-2")).thenReturn(Optional.empty());
+        when(conversationSessionMapper.findBySessionId("s-2")).thenReturn(session);
+        when(recommendationResultMapper.findBySessionId("s-2")).thenReturn(null);
 
         service.deleteRecord("s-2");
 
@@ -117,17 +115,17 @@ class RecordServiceTest {
     @DisplayName("批量删除记录时逐条移除匹配画像")
     void batchDeleteRecords_removesBloomRecommendations() {
         RecordService service = new RecordService(
-                conversationSessionRepository,
-                recommendationResultRepository,
-                collectedParamRepository,
-                qaRecordRepository,
-                photoRepository,
-                feedPostRepository,
-                feedCommentRepository,
+                recommendationResultMapper,
+                collectedParamMapper,
+                qaRecordMapper,
+                photoMapper,
+                feedPostMapper,
+                feedCommentMapper,
                 feedService,
                 redisTemplate,
                 bloomFilterService
         );
+        ReflectionTestUtils.setField(service, "baseMapper", conversationSessionMapper);
 
         ConversationSession session1 = new ConversationSession();
         session1.setSessionId("s-1");
@@ -141,12 +139,12 @@ class RecordServiceTest {
         RecommendationResult result2 = new RecommendationResult();
         result2.setId(99L);
 
-        when(conversationSessionRepository.findBySessionId("s-1")).thenReturn(Optional.of(session1));
-        when(conversationSessionRepository.findBySessionId("s-2")).thenReturn(Optional.of(session2));
-        when(recommendationResultRepository.findBySessionId("s-1")).thenReturn(Optional.of(result1));
-        when(recommendationResultRepository.findBySessionId("s-2")).thenReturn(Optional.of(result2));
-        when(feedPostRepository.findBySessionIdIn(List.of("s-1", "s-2"))).thenReturn(List.of());
-        when(photoRepository.findByRelatedSessionIdInOrderByCreatedAtDesc(List.of("s-1", "s-2"))).thenReturn(List.of());
+        when(conversationSessionMapper.findBySessionId("s-1")).thenReturn(session1);
+        when(conversationSessionMapper.findBySessionId("s-2")).thenReturn(session2);
+        when(recommendationResultMapper.findBySessionId("s-1")).thenReturn(result1);
+        when(recommendationResultMapper.findBySessionId("s-2")).thenReturn(result2);
+        when(feedPostMapper.findBySessionIdIn(List.of("s-1", "s-2"))).thenReturn(List.of());
+        when(photoMapper.findByRelatedSessionIdInOrderByCreatedAtDesc(List.of("s-1", "s-2"))).thenReturn(List.of());
 
         service.batchDeleteRecords(List.of("s-1", "s-2"));
 

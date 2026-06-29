@@ -2,12 +2,14 @@ package com.ai.food.service.conversation;
 
 import com.ai.food.dto.ConversationState;
 import com.ai.food.dto.WebSocketMessage;
+import com.ai.food.model.CollectedParam;
 import com.ai.food.model.ConversationSession;
+import com.ai.food.model.QaRecord;
 import com.ai.food.model.RecommendationResult;
-import com.ai.food.repository.CollectedParamRepository;
-import com.ai.food.repository.ConversationSessionRepository;
-import com.ai.food.repository.QaRecordRepository;
-import com.ai.food.repository.RecommendationResultRepository;
+import com.ai.food.mapper.CollectedParamMapper;
+import com.ai.food.mapper.ConversationSessionMapper;
+import com.ai.food.mapper.QaRecordMapper;
+import com.ai.food.mapper.RecommendationResultMapper;
 import com.ai.food.service.ai.AiService;
 import com.ai.food.service.bloom.BloomFilterService;
 import com.ai.food.service.match.ParamNormalizationService;
@@ -41,16 +43,16 @@ class ConversationServiceTest {
     private AiService aiService;
 
     @Mock
-    private ConversationSessionRepository conversationSessionRepository;
+    private ConversationSessionMapper conversationSessionMapper;
 
     @Mock
-    private QaRecordRepository qaRecordRepository;
+    private QaRecordMapper qaRecordMapper;
 
     @Mock
-    private CollectedParamRepository collectedParamRepository;
+    private CollectedParamMapper collectedParamMapper;
 
     @Mock
-    private RecommendationResultRepository recommendationResultRepository;
+    private RecommendationResultMapper recommendationResultMapper;
 
     @Mock
     private StringRedisTemplate redisTemplate;
@@ -72,22 +74,21 @@ class ConversationServiceTest {
         MessageTagParser messageTagParser = new MessageTagParser(messageValidator, aiService);
         conversationService = new ConversationService(
                 aiService, messageValidator, messageTagParser,
-                conversationSessionRepository, qaRecordRepository, collectedParamRepository,
-                recommendationResultRepository, redisTemplate, bloomFilterService, paramNormalizationService
+                qaRecordMapper, collectedParamMapper,
+                recommendationResultMapper, redisTemplate, bloomFilterService, paramNormalizationService
         );
+        ReflectionTestUtils.setField(conversationService, "baseMapper", conversationSessionMapper);
         ReflectionTestUtils.setField(conversationService, "minQuestions", 7);
         ReflectionTestUtils.setField(conversationService, "maxQuestions", 10);
         ReflectionTestUtils.setField(conversationService, "maxParamRetry", 2);
 
         // 默认 mock
-        when(conversationSessionRepository.findBySessionId(anyString()))
-                .thenReturn(java.util.Optional.empty());
-        when(qaRecordRepository.save(any())).thenReturn(null);
-        when(collectedParamRepository.findBySessionIdAndParamName(anyString(), anyString()))
-                .thenReturn(java.util.Optional.empty());
-        when(collectedParamRepository.save(any())).thenReturn(null);
-        lenient().when(recommendationResultRepository.saveAndFlush(any(RecommendationResult.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(conversationSessionMapper.findBySessionId(anyString())).thenReturn(null);
+        when(qaRecordMapper.insert(any(QaRecord.class))).thenReturn(1);
+        when(collectedParamMapper.findBySessionIdAndParamName(anyString(), anyString())).thenReturn(null);
+        when(collectedParamMapper.insert(any(CollectedParam.class))).thenReturn(1);
+        lenient().when(recommendationResultMapper.insert(any(RecommendationResult.class)))
+                .thenReturn(1);
         lenient().when(paramNormalizationService.normalizeCollectedParams(anyList())).thenReturn(List.of("time=night"));
         lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         // AI mock
@@ -287,8 +288,8 @@ class ConversationServiceTest {
             ConversationSession session = new ConversationSession();
             session.setSessionId("session-1");
             session.setUserId(1L);
-            when(conversationSessionRepository.findBySessionId("session-1"))
-                    .thenReturn(java.util.Optional.of(session));
+            when(conversationSessionMapper.findBySessionId("session-1"))
+                    .thenReturn(session);
             when(aiService.generateRecommendation(anyString()))
                     .thenReturn("{\"foodName\":\"火锅\",\"reason\":\"适合晚上\"}");
 
@@ -307,8 +308,8 @@ class ConversationServiceTest {
             ConversationSession session = new ConversationSession();
             session.setSessionId("session-1");
             session.setUserId(1L);
-            when(conversationSessionRepository.findBySessionId("session-1"))
-                    .thenReturn(java.util.Optional.of(session));
+            when(conversationSessionMapper.findBySessionId("session-1"))
+                    .thenReturn(session);
             for (String p : new String[]{"time", "location", "weather", "mood", "companion", "budget"}) {
                 state.saveParamValue(p, "test");
             }
@@ -330,16 +331,16 @@ class ConversationServiceTest {
             ConversationSession session = new ConversationSession();
             session.setSessionId("session-2");
             session.setUserId(1L);
-            when(conversationSessionRepository.findBySessionId("session-2"))
-                    .thenReturn(java.util.Optional.of(session));
+            when(conversationSessionMapper.findBySessionId("session-2"))
+                    .thenReturn(session);
             when(aiService.generateRecommendation(anyString()))
                     .thenReturn("{\"foodName\":\"火锅\",\"reason\":\"适合晚上\"}");
-            when(recommendationResultRepository.saveAndFlush(any(RecommendationResult.class)))
+            when(recommendationResultMapper.insert(any(RecommendationResult.class)))
                     .thenThrow(new RuntimeException("db down"));
 
             conversationService.generateRecommendationMessage("session-2", state);
 
-            verify(conversationSessionRepository, never()).save(argThat(s -> "completed".equals(s.getStatus())));
+            verify(conversationSessionMapper, never()).insert(any(ConversationSession.class));
         }
     }
 
@@ -391,18 +392,18 @@ class ConversationServiceTest {
             RecommendationResult result = new RecommendationResult();
             result.setId(34L);
 
-            when(conversationSessionRepository.findBySessionId("session-1"))
-                    .thenReturn(java.util.Optional.of(session));
-            when(recommendationResultRepository.findBySessionId("session-1"))
-                    .thenReturn(java.util.Optional.of(result));
+            when(conversationSessionMapper.findBySessionId("session-1"))
+                    .thenReturn(session);
+            when(recommendationResultMapper.findBySessionId("session-1"))
+                    .thenReturn(result);
 
             conversationService.cancelSession("session-1");
 
             verify(bloomFilterService).removeRecommendation(12L, "34", null);
-            verify(qaRecordRepository).softDeleteBySessionId("session-1");
-            verify(collectedParamRepository).softDeleteBySessionId("session-1");
-            verify(recommendationResultRepository).softDeleteBySessionId("session-1");
-            verify(conversationSessionRepository).softDeleteBySessionId("session-1");
+            verify(qaRecordMapper).softDeleteBySessionId("session-1");
+            verify(collectedParamMapper).softDeleteBySessionId("session-1");
+            verify(recommendationResultMapper).softDeleteBySessionId("session-1");
+            verify(conversationSessionMapper).softDeleteBySessionId("session-1");
         }
     }
 }

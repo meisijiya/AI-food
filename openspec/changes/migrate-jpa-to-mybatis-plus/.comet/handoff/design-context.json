@@ -1,0 +1,14 @@
+{
+  "change": "migrate-jpa-to-mybatis-plus",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "1d7b4474936ae79c9dde329f03270aeb038cf5d92fb1fa99550d2126588b9081",
+  "files": [
+    { "path": "openspec/changes/migrate-jpa-to-mybatis-plus/proposal.md", "sha256": "21ec90618d4d1eaa6dd6d594a9c4d06891739663c6a3e9a13c9c8a5689bb9ce4" },
+    { "path": "openspec/changes/migrate-jpa-to-mybatis-plus/design.md", "sha256": "9e634c71ff2b770bc8709ef3e332f2a82f3ca1edca60e1b14c88000ebb22cf49" },
+    { "path": "openspec/changes/migrate-jpa-to-mybatis-plus/tasks.md", "sha256": "cf65eb1a58e80281c4368acd602e83e30d2078b691a0da8a7b826fbf565900a0" },
+    { "path": "openspec/changes/migrate-jpa-to-mybatis-plus/specs/data-access-layer/spec.md", "sha256": "4fb154cdf6d2b1c8f538c746d06202edc241fc2ed54f060af70e3ca0722ea10c" }
+  ]
+}

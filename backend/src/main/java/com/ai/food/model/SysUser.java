@@ -1,46 +1,36 @@
 package com.ai.food.model;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Table(name = "sys_user")
+@TableName("sys_user")
 public class SysUser {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    @Column(unique = true, nullable = false, length = 50)
+    @TableField(value = "username", condition = "%s LIKE #{%s}")
     private String username;
 
-    @Column(nullable = false)
     private String password;
 
-    @Column(unique = true, nullable = false, length = 100)
     private String email;
 
-    @Column(length = 50)
     private String nickname;
 
-    @Column(length = 255)
     private String avatar;
 
-    @Column(updatable = false)
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
+    @TableField("is_deleted")
+    @TableLogic(value = "0", delval = "1")
+    private Integer isDeleted;
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    @TableField("version")
+    @Version
+    private Integer version;
 }

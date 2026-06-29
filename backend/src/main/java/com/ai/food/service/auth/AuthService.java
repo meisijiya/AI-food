@@ -4,8 +4,9 @@ import com.ai.food.dto.LoginRequest;
 import com.ai.food.dto.LoginResponse;
 import com.ai.food.dto.RegisterRequest;
 import com.ai.food.dto.SendCodeRequest;
+import com.ai.food.mapper.UserMapper;
 import com.ai.food.model.SysUser;
-import com.ai.food.repository.UserRepository;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.benmanes.caffeine.cache.Cache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,15 +15,19 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * 认证相关业务（发送验证码 / 注册 / 登录 / 登出 / token 续期）。
+ * <p>继承 {@link ServiceImpl}，{@code baseMapper} 由父类注入；Repository 层已被
+ * MyBatis-Plus Mapper 取代。
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AuthService {
+public class AuthService extends ServiceImpl<UserMapper, SysUser> {
 
-    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final EmailService emailService;
@@ -61,7 +66,7 @@ public class AuthService {
             throw new RuntimeException("验证码错误或已过期");
         }
 
-        if (userRepository.existsByEmail(req.getEmail())) {
+        if (baseMapper.existsByEmail(req.getEmail())) {
             throw new RuntimeException("邮箱已注册");
         }
 
@@ -74,7 +79,8 @@ public class AuthService {
         user.setEmail(req.getEmail());
         user.setNickname(req.getNickname() != null && !req.getNickname().isBlank()
                 ? req.getNickname() : username);
-        userRepository.save(user);
+        // ponytail: 显式 insert 语义清晰，避免 ServiceImpl.save 的 select-then-decide 行为
+        baseMapper.insert(user);
 
         redisTemplate.delete(redisKey);
 
@@ -92,7 +98,7 @@ public class AuthService {
         for (int i = 0; i < 10; i++) {
             String username = "user" + String.format("%08d",
                     ThreadLocalRandom.current().nextInt(0, 100_000_000));
-            if (!userRepository.existsByUsername(username)) {
+            if (!baseMapper.existsByUsername(username)) {
                 return username;
             }
         }
@@ -100,7 +106,7 @@ public class AuthService {
     }
 
     public LoginResponse login(LoginRequest req) {
-        SysUser user = userRepository.findByEmail(req.getEmail())
+        SysUser user = Optional.ofNullable(baseMapper.findByEmail(req.getEmail()))
                 .orElseThrow(() -> new RuntimeException("邮箱或密码错误"));
 
         if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {

@@ -1,11 +1,12 @@
 package com.ai.food.service.bloom.impl;
 
+import com.ai.food.mapper.BloomSyncLogMapper;
+import com.ai.food.mapper.UserBloomFilterMapper;
 import com.ai.food.model.BloomSyncLog;
 import com.ai.food.model.UserBloomFilter;
-import com.ai.food.repository.BloomSyncLogRepository;
-import com.ai.food.repository.UserBloomFilterRepository;
 import com.ai.food.service.bloom.BloomFilterRedisDao;
 import com.ai.food.service.bloom.BloomPersistenceService;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,13 +16,19 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * 布隆过滤器持久化服务（MyBatis-Plus 迁移版）。
+ * <p>
+ * 继承 {@link ServiceImpl} 后，{@code baseMapper} 指向 {@link UserBloomFilterMapper}；
+ * 同步日志走注入的 {@link BloomSyncLogMapper}。
+ * </p>
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class BloomPersistenceServiceImpl implements BloomPersistenceService {
+public class BloomPersistenceServiceImpl extends ServiceImpl<UserBloomFilterMapper, UserBloomFilter> implements BloomPersistenceService {
 
-    private final UserBloomFilterRepository userBloomFilterRepository;
-    private final BloomSyncLogRepository bloomSyncLogRepository;
+    private final BloomSyncLogMapper bloomSyncLogMapper;
     private final BloomFilterRedisDao redisDao;
 
     @Override
@@ -56,9 +63,8 @@ public class BloomPersistenceServiceImpl implements BloomPersistenceService {
     @Override
     @Transactional
     public void restoreRedisFromMySQL(Long userId) {
-        Optional<UserBloomFilter> optFilter = userBloomFilterRepository.findByUserId(userId);
-        if (optFilter.isPresent()) {
-            UserBloomFilter filter = optFilter.get();
+        UserBloomFilter filter = baseMapper.findByUserId(userId);
+        if (filter != null) {
             redisDao.setBitArray(userId, filter.getBitArray());
             List<String> queue = redisDao.getQueue(userId);
             if (queue != null && !queue.isEmpty()) {
@@ -74,7 +80,7 @@ public class BloomPersistenceServiceImpl implements BloomPersistenceService {
     @Override
     @Transactional
     public void restoreAllFromMySQL() {
-        List<UserBloomFilter> allFilters = userBloomFilterRepository.findAll();
+        List<UserBloomFilter> allFilters = baseMapper.selectList(null);
         log.info("Restoring {} bloom filters from MySQL", allFilters.size());
 
         for (UserBloomFilter filter : allFilters) {
@@ -94,27 +100,31 @@ public class BloomPersistenceServiceImpl implements BloomPersistenceService {
         List<String> queue = redisDao.getQueue(userId);
         String lastRecordId = (queue != null && !queue.isEmpty()) ? queue.get(queue.size() - 1) : null;
 
-        Optional<UserBloomFilter> optFilter = userBloomFilterRepository.findByUserId(userId);
+        UserBloomFilter existing = baseMapper.findByUserId(userId);
         UserBloomFilter filter;
 
-        if (optFilter.isPresent()) {
-            filter = optFilter.get();
+        if (existing != null) {
+            filter = existing;
             filter.setBitArray(bitArray);
             filter.setRecordCount(queueSize != null ? queueSize.intValue() : 0);
             filter.setLastRecordId(lastRecordId);
+            baseMapper.updateById(filter);
         } else {
             filter = new UserBloomFilter();
             filter.setUserId(userId);
             filter.setBitArray(bitArray);
             filter.setRecordCount(queueSize != null ? queueSize.intValue() : 0);
             filter.setLastRecordId(lastRecordId);
+            baseMapper.insert(filter);
         }
 
-        userBloomFilterRepository.save(filter);
         saveSyncLog(userId, "redis_to_mysql", "success", null);
         log.debug("Synced user {} to MySQL", userId);
     }
 
+    /**
+     * 写入一条同步日志（失败也不抛错，避免掩盖主流程异常）。
+     */
     private void saveSyncLog(Long userId, String syncType, String status, String errorMsg) {
         try {
             BloomSyncLog syncLog = new BloomSyncLog();
@@ -122,7 +132,7 @@ public class BloomPersistenceServiceImpl implements BloomPersistenceService {
             syncLog.setSyncType(syncType);
             syncLog.setStatus(status);
             syncLog.setErrorMsg(errorMsg);
-            bloomSyncLogRepository.save(syncLog);
+            bloomSyncLogMapper.insert(syncLog);
         } catch (Exception e) {
             log.error("Failed to save sync log: {}", e.getMessage());
         }

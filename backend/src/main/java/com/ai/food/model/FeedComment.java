@@ -1,43 +1,36 @@
 package com.ai.food.model;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Where(clause = "is_deleted = false")
-@Table(name = "feed_comment", indexes = {
-    @Index(name = "idx_fc_post_id", columnList = "post_id"),
-    @Index(name = "idx_fc_user_id", columnList = "user_id")
-})
+@TableName("feed_comment")
 public class FeedComment {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    @Column(name = "post_id", nullable = false)
+    @TableField("post_id")
     private Long postId;
 
-    @Column(name = "user_id", nullable = false)
+    @TableField("user_id")
     private Long userId;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @TableField("content")
     private String content;
 
-    @Column(name = "image_url")
+    @TableField("image_url")
     private String imageUrl;
 
-    @Column(name = "created_at")
+    @TableField("created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = false;
+    @TableField("is_deleted")
+    @TableLogic(value = "0", delval = "1")
+    private Integer isDeleted = 0;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    @TableField("version")
+    @Version
+    private Integer version;
 }

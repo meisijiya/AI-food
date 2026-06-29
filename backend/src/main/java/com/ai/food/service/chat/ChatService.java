@@ -1,26 +1,25 @@
 package com.ai.food.service.chat;
 
+import com.ai.food.exception.BusinessException;
 import com.ai.food.exception.PermissionDeniedException;
 import com.ai.food.exception.ResourceNotFoundException;
-import com.ai.food.exception.BusinessException;
+import com.ai.food.mapper.ChatConversationMapper;
+import com.ai.food.mapper.ChatFileMapper;
+import com.ai.food.mapper.ChatMessageMapper;
+import com.ai.food.mapper.ChatPhotoMapper;
+import com.ai.food.mapper.UserMapper;
 import com.ai.food.model.ChatConversation;
-import com.ai.food.model.ChatMessage;
-import com.ai.food.model.SysUser;
 import com.ai.food.model.ChatFile;
+import com.ai.food.model.ChatMessage;
 import com.ai.food.model.ChatPhoto;
-import com.ai.food.repository.ChatConversationRepository;
-import com.ai.food.repository.ChatFileRepository;
-import com.ai.food.repository.ChatMessageRepository;
-import com.ai.food.repository.ChatPhotoRepository;
-import com.ai.food.repository.UserRepository;
+import com.ai.food.model.SysUser;
 import com.ai.food.service.follow.FollowService;
 import com.ai.food.service.notification.NotificationService;
 import com.ai.food.service.upload.FileUploadService;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -28,18 +27,33 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
+/**
+ * 聊天服务（MyBatis-Plus 迁移版）。
+ * <p>
+ * 继承 {@link ServiceImpl} 后，{@code baseMapper} 指向 {@link ChatMessageMapper}；
+ * 其他实体的 CRUD 走注入的 Mapper 字段。
+ * </p>
+ * <p>
+ * 原 JPA {@code Pageable}/{@code Page} 在边界处转换为 MP 的 {@link Page}（1-based 分页）；
+ * 返回给前端的 {@code page} 编号仍维持 0-based。
+ * </p>
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ChatService {
+public class ChatService extends ServiceImpl<ChatMessageMapper, ChatMessage> {
 
-    private final ChatConversationRepository conversationRepository;
-    private final ChatMessageRepository messageRepository;
-    private final ChatPhotoRepository chatPhotoRepository;
-    private final ChatFileRepository chatFileRepository;
-    private final UserRepository userRepository;
+    private final ChatConversationMapper conversationMapper;
+    private final ChatPhotoMapper chatPhotoMapper;
+    private final ChatFileMapper chatFileMapper;
+    private final UserMapper userMapper;
     private final FollowService followService;
     private final NotificationService notificationService;
     private final StringRedisTemplate stringRedisTemplate;
@@ -102,6 +116,9 @@ public class ChatService {
         }
     }
 
+    /**
+     * 发送消息：写入消息记录、刷新会话预览、推送未读与通知、累计非互关注计数。
+     */
     @Transactional
     public ChatMessage sendMessage(Long senderId, Long receiverId, String content, String messageType, Long photoId, Long fileId) {
         String permission = checkSendPermission(senderId, receiverId);
@@ -126,14 +143,15 @@ public class ChatService {
         message.setPhotoId(photoId);
         message.setFileId(fileId);
         message.setIsRead(false);
-        ChatMessage saved = messageRepository.save(message);
+        // MP insert 会自动回填主键 + MetaObjectHandler 写入 createdAt/updatedAt
+        baseMapper.insert(message);
 
         // 更新 chat_photo 和 chat_file 的 conversationId
         if (photoId != null) {
-            chatPhotoRepository.updateConversationId(photoId, conversation.getId());
+            chatPhotoMapper.updateConversationId(photoId, conversation.getId());
         }
         if (fileId != null) {
-            chatFileRepository.updateConversationId(fileId, conversation.getId());
+            chatFileMapper.updateConversationId(fileId, conversation.getId());
         }
 
         // 根据消息类型设置 lastMessage
@@ -147,15 +165,15 @@ public class ChatService {
         }
         conversation.setLastMessage(lastMessagePreview);
         conversation.setLastMessageAt(LocalDateTime.now());
-        conversationRepository.save(conversation);
+        // getOrCreateConversation 已经 insert 过；此处必然有 id
+        conversationMapper.updateById(conversation);
 
         incrementUnread(receiverId, conversation.getId());
 
         String senderName = "匿名用户";
         String senderAvatar = null;
-        Optional<SysUser> senderOpt = userRepository.findById(senderId);
-        if (senderOpt.isPresent()) {
-            SysUser sender = senderOpt.get();
+        SysUser sender = userMapper.selectById(senderId);
+        if (sender != null) {
             senderName = sender.getNickname() != null ? sender.getNickname() : sender.getUsername();
             senderAvatar = sender.getAvatar();
         }
@@ -172,7 +190,7 @@ public class ChatService {
         }
 
         log.info("Message sent: from={} to={}, conversationId={}", senderId, receiverId, conversation.getId());
-        return saved;
+        return message;
     }
 
     /**
@@ -181,24 +199,29 @@ public class ChatService {
      */
     private void resetHiddenForReceiver(ChatConversation conversation, Long receiverId) {
         if (conversation.getUser1Id().equals(receiverId) && conversation.getHiddenAtUser1() != null) {
-            conversationRepository.resetHiddenAtUser1(conversation.getId());
+            conversationMapper.resetHiddenAtUser1(conversation.getId());
             conversation.setHiddenAtUser1(null);
         } else if (conversation.getUser2Id().equals(receiverId) && conversation.getHiddenAtUser2() != null) {
-            conversationRepository.resetHiddenAtUser2(conversation.getId());
+            conversationMapper.resetHiddenAtUser2(conversation.getId());
             conversation.setHiddenAtUser2(null);
         }
     }
 
+    /**
+     * 获取或创建两个用户之间的会话。
+     */
     public ChatConversation getOrCreateConversation(Long userId1, Long userId2) {
         String key = ChatConversation.generateKey(userId1, userId2);
-        return conversationRepository.findByConversationKey(key)
-                .orElseGet(() -> {
-                    ChatConversation conversation = new ChatConversation();
-                    conversation.setConversationKey(key);
-                    conversation.setUser1Id(Math.min(userId1, userId2));
-                    conversation.setUser2Id(Math.max(userId1, userId2));
-                    return conversationRepository.save(conversation);
-                });
+        ChatConversation existing = conversationMapper.findByConversationKey(key);
+        if (existing != null) {
+            return existing;
+        }
+        ChatConversation conversation = new ChatConversation();
+        conversation.setConversationKey(key);
+        conversation.setUser1Id(Math.min(userId1, userId2));
+        conversation.setUser2Id(Math.max(userId1, userId2));
+        conversationMapper.insert(conversation);
+        return conversation;
     }
 
     /**
@@ -210,16 +233,20 @@ public class ChatService {
         result.put("conversationId", conv.getId());
         result.put("userId", otherUserId);
 
-        userRepository.findById(otherUserId).ifPresent(user -> {
+        SysUser user = userMapper.selectById(otherUserId);
+        if (user != null) {
             result.put("nickname", user.getNickname() != null ? user.getNickname() : user.getUsername());
             result.put("avatar", user.getAvatar());
-        });
+        }
 
         return result;
     }
 
+    /**
+     * 获取用户的会话列表（按最近消息时间倒序）。
+     */
     public List<Map<String, Object>> getConversationList(Long userId) {
-        List<ChatConversation> conversations = conversationRepository.findByUserIdOrderByLastMessageAtDesc(userId);
+        List<ChatConversation> conversations = conversationMapper.findByUserIdOrderByLastMessageAtDesc(userId);
         List<Map<String, Object>> result = new ArrayList<>();
         Map<Long, Integer> unreadMap = getUnreadMap(userId);
 
@@ -229,7 +256,7 @@ public class ChatService {
             otherUserIds.add(conv.getUser1Id().equals(userId) ? conv.getUser2Id() : conv.getUser1Id());
         }
         Map<Long, SysUser> userMap = new LinkedHashMap<>();
-        for (SysUser user : userRepository.findByIdIn(otherUserIds)) {
+        for (SysUser user : userMapper.findByIdIn(otherUserIds)) {
             userMap.put(user.getId(), user);
         }
 
@@ -255,26 +282,26 @@ public class ChatService {
     /**
      * 获取聊天历史
      * - 使用 clearedAt 过滤消息（clearedAt 永不重置，确保旧消息永久对用户不可见）
-     * - @Where 注解自动排除 isDeleted=true 的消息
+     * - mapper SQL 显式过滤 is_deleted = 0，模拟原 @Where 注解语义
      */
     @Transactional
     public Map<String, Object> getChatHistory(Long conversationId, Long userId, int page, int size) {
-        ChatConversation conv = conversationRepository.findById(conversationId).orElse(null);
+        ChatConversation conv = conversationMapper.selectById(conversationId);
         assertConversationParticipant(conv, userId);
         LocalDateTime clearedAt = getClearedAtForUser(conv, userId);
 
-        Pageable pageable = PageRequest.of(page, size);
-        Page<ChatMessage> messagePage;
+        // MP 分页 1-based，控制器传 0-based 这里 +1
+        Page<ChatMessage> messagePage = new Page<>(page + 1, size);
 
         if (clearedAt != null) {
             // 只返回清除时间点之后的消息（clearedAt 永不重置）
-            messagePage = messageRepository.findByConversationIdAfterOrderByCreatedAtDesc(conversationId, clearedAt, pageable);
+            baseMapper.findByConversationIdAfterOrderByCreatedAtDesc(conversationId, clearedAt, messagePage);
         } else {
-            messagePage = messageRepository.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
+            baseMapper.findByConversationIdOrderByCreatedAtDesc(conversationId, messagePage);
         }
 
         List<Map<String, Object>> items = new ArrayList<>();
-        for (ChatMessage msg : messagePage.getContent()) {
+        for (ChatMessage msg : messagePage.getRecords()) {
             if (!shouldShowMessage(msg, userId)) {
                 continue;
             }
@@ -296,16 +323,19 @@ public class ChatService {
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("items", items);
-        result.put("page", messagePage.getNumber());
+        result.put("page", (int) messagePage.getCurrent() - 1);
         result.put("size", messagePage.getSize());
-        result.put("totalElements", messagePage.getTotalElements());
-        result.put("totalPages", messagePage.getTotalPages());
+        result.put("totalElements", messagePage.getTotal());
+        result.put("totalPages", (int) messagePage.getPages());
         return result;
     }
 
+    /**
+     * 根据消息的 photoId/fileId 关联判断对当前用户是否可见（双方删除标记任一为真即隐藏）。
+     */
     private boolean shouldShowMessage(ChatMessage msg, Long userId) {
         if ("image".equals(msg.getMessageType()) && msg.getPhotoId() != null) {
-            ChatPhoto photo = chatPhotoRepository.findById(msg.getPhotoId()).orElse(null);
+            ChatPhoto photo = chatPhotoMapper.selectById(msg.getPhotoId());
             if (photo == null) {
                 return false;
             }
@@ -318,7 +348,7 @@ public class ChatService {
         }
 
         if ("file".equals(msg.getMessageType()) && msg.getFileId() != null) {
-            ChatFile file = chatFileRepository.findById(msg.getFileId()).orElse(null);
+            ChatFile file = chatFileMapper.selectById(msg.getFileId());
             if (file == null) {
                 return false;
             }
@@ -333,9 +363,12 @@ public class ChatService {
         return true;
     }
 
+    /**
+     * 将某会话中接收方未读消息标记为已读，并同步递减 Redis / 通知中心未读计数。
+     */
     @Transactional
     public void markAsRead(Long userId, Long conversationId) {
-        int updated = messageRepository.markAsRead(conversationId, userId);
+        int updated = baseMapper.markAsRead(conversationId, userId);
         if (updated > 0) {
             clearUnread(userId, conversationId);
 
@@ -349,6 +382,9 @@ public class ChatService {
         }
     }
 
+    /**
+     * 获取用户总未读数（合并各会话未读）。
+     */
     public Map<String, Object> getUnreadCounts(Long userId) {
         Map<Long, Integer> unreadMap = getUnreadMap(userId);
         int totalUnread = unreadMap.values().stream().mapToInt(Integer::intValue).sum();
@@ -359,11 +395,17 @@ public class ChatService {
         return result;
     }
 
+    /**
+     * 获取用户总未读（直接从 Redis 全局 key 读取）。
+     */
     public int getTotalUnreadCount(Long userId) {
         String totalStr = stringRedisTemplate.opsForValue().get(UNREAD_TOTAL_KEY + userId);
         return totalStr != null ? Integer.parseInt(totalStr) : 0;
     }
 
+    /**
+     * 获取用户的互关好友列表（用于发起聊天时的联系人面板）。
+     */
     public List<Map<String, Object>> getContacts(Long userId) {
         List<Long> mutualFriendIds = followService.getMutualFriendIds(userId);
         List<Map<String, Object>> result = new ArrayList<>();
@@ -372,7 +414,7 @@ public class ChatService {
 
         // Batch fetch users
         Map<Long, SysUser> userMap = new LinkedHashMap<>();
-        for (SysUser user : userRepository.findByIdIn(mutualFriendIds)) {
+        for (SysUser user : userMapper.findByIdIn(mutualFriendIds)) {
             userMap.put(user.getId(), user);
         }
 
@@ -418,35 +460,38 @@ public class ChatService {
      */
     @Transactional
     public void clearConversation(Long userId, Long conversationId) {
-        ChatConversation conv = conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new ResourceNotFoundException("对话不存在"));
+        ChatConversation conv = conversationMapper.selectById(conversationId);
+        if (conv == null) {
+            throw new ResourceNotFoundException("对话不存在");
+        }
         assertConversationParticipant(conv, userId);
 
         LocalDateTime now = LocalDateTime.now();
 
         // 同时设置 clearedAt 和 hiddenAt
         if (conv.getUser1Id().equals(userId)) {
-            conversationRepository.setClearedAndHiddenAtUser1(conversationId, now);
+            conversationMapper.setClearedAndHiddenAtUser1(conversationId, now);
         } else {
-            conversationRepository.setClearedAndHiddenAtUser2(conversationId, now);
+            conversationMapper.setClearedAndHiddenAtUser2(conversationId, now);
         }
 
-        // 软删除清除时间点之前的消息（@Where 注解自动排除这些消息）
-        messageRepository.softDeleteByConversationIdBefore(conversationId, now);
-        chatPhotoRepository.softDeleteByConversationIdBefore(conversationId, now);
-        chatFileRepository.softDeleteByConversationIdBefore(conversationId, now);
+        // 软删除清除时间点之前的消息（mapper SQL 显式过滤 is_deleted = 0）
+        baseMapper.softDeleteByConversationIdBefore(conversationId, now);
+        chatPhotoMapper.softDeleteByConversationIdBefore(conversationId, now);
+        chatFileMapper.softDeleteByConversationIdBefore(conversationId, now);
 
         // 清理 Redis 未读计数
         clearUnread(userId, conversationId);
 
         // 更新 lastMessage（清除后应为空或仅显示新消息）
-        List<ChatMessage> remaining = messageRepository.findLastMessageByConversationId(conversationId, PageRequest.of(0, 1));
+        Page<ChatMessage> lastMsgPage = new Page<>(1, 1);
+        List<ChatMessage> remaining = baseMapper.findLastMessageByConversationId(conversationId, lastMsgPage);
         if (remaining.isEmpty()) {
-            conversationRepository.updateLastMessage(conversationId, null, conv.getLastMessageAt());
+            conversationMapper.updateLastMessage(conversationId, null, conv.getLastMessageAt());
         } else {
             ChatMessage last = remaining.get(0);
             String preview = last.getContent().length() > 50 ? last.getContent().substring(0, 50) + "..." : last.getContent();
-            conversationRepository.updateLastMessage(conversationId, preview, last.getCreatedAt());
+            conversationMapper.updateLastMessage(conversationId, preview, last.getCreatedAt());
         }
 
         log.info("Conversation {} cleared by user {} at {}", conversationId, userId, now);
@@ -457,13 +502,16 @@ public class ChatService {
      */
     @Transactional
     public void hardDeleteClearedMessages(Long conversationId) {
-        messageRepository.hardDeleteByConversationId(conversationId);
-        chatPhotoRepository.hardDeleteByConversationId(conversationId);
-        chatFileRepository.hardDeleteByConversationId(conversationId);
+        baseMapper.hardDeleteByConversationId(conversationId);
+        chatPhotoMapper.hardDeleteByConversationId(conversationId);
+        chatFileMapper.hardDeleteByConversationId(conversationId);
     }
 
     // ==================== Redis 操作 ====================
 
+    /**
+     * 接收方未读 +1（hash 按会话分桶 + 全局计数）。
+     */
     private void incrementUnread(Long userId, Long conversationId) {
         try {
             String key = UNREAD_KEY + userId;
@@ -474,6 +522,9 @@ public class ChatService {
         }
     }
 
+    /**
+     * 用户打开会话后清零该会话未读（同时扣减全局未读）。
+     */
     private void clearUnread(Long userId, Long conversationId) {
         try {
             String key = UNREAD_KEY + userId;
@@ -492,6 +543,9 @@ public class ChatService {
         }
     }
 
+    /**
+     * 读取用户各会话的未读 hash。
+     */
     private Map<Long, Integer> getUnreadMap(Long userId) {
         String key = UNREAD_KEY + userId;
         Map<Object, Object> entries = stringRedisTemplate.opsForHash().entries(key);
@@ -502,18 +556,30 @@ public class ChatService {
         return result;
     }
 
+    /**
+     * 标记用户在线（5 分钟 TTL，由前端定期续期）。
+     */
     public void setUserOnline(Long userId) {
         stringRedisTemplate.opsForValue().set(ONLINE_KEY + userId, "1", java.time.Duration.ofMinutes(5));
     }
 
+    /**
+     * 用户主动下线或服务下线时清除在线标记。
+     */
     public void setUserOffline(Long userId) {
         stringRedisTemplate.delete(ONLINE_KEY + userId);
     }
 
+    /**
+     * 判断用户是否在线（Redis 标记存在）。
+     */
     public boolean isOnline(Long userId) {
         return Boolean.TRUE.equals(stringRedisTemplate.hasKey(ONLINE_KEY + userId));
     }
 
+    /**
+     * 获取某用户在某会话上的 clearedAt，用于聊天历史过滤。
+     */
     private LocalDateTime getClearedAtForUser(ChatConversation conv, Long userId) {
         if (conv == null) return null;
         if (conv.getUser1Id().equals(userId)) {
@@ -547,18 +613,18 @@ public class ChatService {
      */
     @Transactional
     public void deleteChatFile(Long fileId, Long userId) {
-        ChatFile file = chatFileRepository.findById(fileId).orElse(null);
+        ChatFile file = chatFileMapper.selectById(fileId);
         if (file == null) {
             log.warn("ChatFile not found: id={}", fileId);
             return;
         }
 
-        ChatMessage message = messageRepository.findByFileId(fileId).orElse(null);
+        ChatMessage message = baseMapper.findByFileId(fileId);
         if (message == null) {
             if (!file.getSenderId().equals(userId)) {
                 throw new PermissionDeniedException("无权限删除该文件");
             }
-            chatFileRepository.markSoftDeleted(fileId);
+            chatFileMapper.markSoftDeleted(fileId);
             asyncDeleteFileAndRecord(fileId, file.getFilePath());
             log.info("Orphan chat file {} deleted by sender {}", fileId, userId);
             return;
@@ -571,17 +637,17 @@ public class ChatService {
         }
 
         if (isSender) {
-            chatFileRepository.markSenderDeleted(fileId);
+            chatFileMapper.markSenderDeleted(fileId);
             log.info("User {} marked sender_delete for file {}", userId, fileId);
         } else {
-            chatFileRepository.markReceiverDeleted(fileId);
+            chatFileMapper.markReceiverDeleted(fileId);
             log.info("User {} marked receiver_delete for file {}", userId, fileId);
         }
 
         boolean senderDeleted = isSender || Boolean.TRUE.equals(file.getIsSenderDelete());
         boolean receiverDeleted = isReceiver || Boolean.TRUE.equals(file.getIsReceiverDelete());
         if (senderDeleted && receiverDeleted) {
-            chatFileRepository.markSoftDeleted(fileId);
+            chatFileMapper.markSoftDeleted(fileId);
             asyncDeleteFileAndRecord(fileId, file.getFilePath());
             log.info("File {} marked soft deleted after both parties deleted", fileId);
         }
@@ -595,18 +661,18 @@ public class ChatService {
      */
     @Transactional
     public void deleteChatPhoto(Long photoId, Long userId) {
-        ChatPhoto photo = chatPhotoRepository.findById(photoId).orElse(null);
+        ChatPhoto photo = chatPhotoMapper.selectById(photoId);
         if (photo == null) {
             log.warn("ChatPhoto not found: id={}", photoId);
             return;
         }
 
-        ChatMessage message = messageRepository.findByPhotoId(photoId).orElse(null);
+        ChatMessage message = baseMapper.findByPhotoId(photoId);
         if (message == null) {
             if (!photo.getSenderId().equals(userId)) {
                 throw new PermissionDeniedException("无权限删除该照片");
             }
-            chatPhotoRepository.markSoftDeleted(photoId);
+            chatPhotoMapper.markSoftDeleted(photoId);
             asyncDeletePhotoAndRecord(photoId, photo.getOriginalPath(), photo.getThumbnailPath());
             log.info("Orphan chat photo {} deleted by sender {}", photoId, userId);
             return;
@@ -619,39 +685,45 @@ public class ChatService {
         }
 
         if (isSender) {
-            chatPhotoRepository.markSenderDeleted(photoId);
+            chatPhotoMapper.markSenderDeleted(photoId);
             log.info("User {} marked sender_delete for photo {}", userId, photoId);
         } else {
-            chatPhotoRepository.markReceiverDeleted(photoId);
+            chatPhotoMapper.markReceiverDeleted(photoId);
             log.info("User {} marked receiver_delete for photo {}", userId, photoId);
         }
 
         boolean senderDeleted = isSender || Boolean.TRUE.equals(photo.getIsSenderDelete());
         boolean receiverDeleted = isReceiver || Boolean.TRUE.equals(photo.getIsReceiverDelete());
         if (senderDeleted && receiverDeleted) {
-            chatPhotoRepository.markSoftDeleted(photoId);
+            chatPhotoMapper.markSoftDeleted(photoId);
             asyncDeletePhotoAndRecord(photoId, photo.getOriginalPath(), photo.getThumbnailPath());
             log.info("Photo {} marked soft deleted after both parties deleted", photoId);
         }
     }
 
+    /**
+     * 异步删除物理文件并硬删除数据库记录。
+     */
     @Async
     public void asyncDeleteFileAndRecord(Long fileId, String filePath) {
         try {
             fileUploadService.deletePhysicalFile(filePath);
-            chatFileRepository.hardDeleteById(fileId);
+            chatFileMapper.hardDeleteById(fileId);
             log.info("Async deleted file record and physical file: id={}, path={}", fileId, filePath);
         } catch (Exception e) {
             log.error("Failed to async delete file: id={}", fileId, e);
         }
     }
 
+    /**
+     * 异步删除原图 + 缩略图并硬删除数据库记录。
+     */
     @Async
     public void asyncDeletePhotoAndRecord(Long photoId, String originalPath, String thumbnailPath) {
         try {
             fileUploadService.deletePhysicalFile(originalPath);
             fileUploadService.deletePhysicalFile(thumbnailPath);
-            chatPhotoRepository.hardDeleteById(photoId);
+            chatPhotoMapper.hardDeleteById(photoId);
             log.info("Async deleted photo record and physical files: id={}, original={}, thumb={}", photoId, originalPath, thumbnailPath);
         } catch (Exception e) {
             log.error("Failed to async delete photo: id={}", photoId, e);
@@ -667,14 +739,14 @@ public class ChatService {
      */
     @Transactional
     public void deleteMessage(Long messageId, Long userId) {
-        ChatMessage message = messageRepository.findById(messageId).orElse(null);
+        ChatMessage message = baseMapper.selectById(messageId);
         if (message == null) {
             throw new ResourceNotFoundException("消息不存在");
         }
         if (!message.getSenderId().equals(userId)) {
             throw new PermissionDeniedException("无权限删除该消息");
         }
-        messageRepository.softDeleteById(messageId);
+        baseMapper.softDeleteById(messageId);
         log.info("Message {} deleted by user {}", messageId, userId);
     }
 }

@@ -1,9 +1,9 @@
 package com.ai.food.service.bloom;
 
-import com.ai.food.repository.CollectedParamRepository;
-import com.ai.food.repository.ConversationSessionRepository;
-import com.ai.food.repository.RecommendationResultRepository;
-import com.ai.food.repository.UserRepository;
+import com.ai.food.mapper.CollectedParamMapper;
+import com.ai.food.mapper.ConversationSessionMapper;
+import com.ai.food.mapper.RecommendationResultMapper;
+import com.ai.food.mapper.UserMapper;
 import com.ai.food.service.bloom.impl.BloomFilterServiceImpl;
 import com.ai.food.service.follow.FollowService;
 import org.junit.jupiter.api.DisplayName;
@@ -29,16 +29,16 @@ class BloomFilterServiceImplTest {
     private BloomFilterRedisDao redisDao;
 
     @Mock
-    private UserRepository userRepository;
+    private UserMapper userMapper;
 
     @Mock
-    private ConversationSessionRepository conversationSessionRepository;
+    private ConversationSessionMapper conversationSessionMapper;
 
     @Mock
-    private CollectedParamRepository collectedParamRepository;
+    private CollectedParamMapper collectedParamMapper;
 
     @Mock
-    private RecommendationResultRepository recommendationResultRepository;
+    private RecommendationResultMapper recommendationResultMapper;
 
     @Mock
     private FollowService followService;
@@ -48,10 +48,9 @@ class BloomFilterServiceImplTest {
     void removeRecommendation_rebuildsBitArrayFromRemainingValues() {
         BloomFilterServiceImpl service = new BloomFilterServiceImpl(
                 redisDao,
-                userRepository,
-                conversationSessionRepository,
-                collectedParamRepository,
-                recommendationResultRepository,
+                conversationSessionMapper,
+                collectedParamMapper,
+                recommendationResultMapper,
                 followService
         );
         when(redisDao.getQueue(1L)).thenReturn(List.of("r2"));

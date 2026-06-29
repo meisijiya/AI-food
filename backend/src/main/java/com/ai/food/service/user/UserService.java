@@ -1,33 +1,41 @@
 package com.ai.food.service.user;
 
+import com.ai.food.mapper.UserMapper;
 import com.ai.food.model.SysUser;
-import com.ai.food.repository.UserRepository;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.time.YearMonth;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
+/**
+ * 用户业务（签到 / 资料修改 / 搜索等）。
+ * <p>继承 {@link ServiceImpl}，{@code baseMapper} 由父类注入；分页参数由
+ * {@code IPage} 承载，原 Spring Data {@code Pageable} 已被移除。
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UserService {
+public class UserService extends ServiceImpl<UserMapper, SysUser> {
 
-    private final UserRepository userRepository;
     private final StringRedisTemplate redisTemplate;
     private final PasswordEncoder passwordEncoder;
 
     public SysUser getUserInfo(Long userId) {
-        return userRepository.findById(userId)
+        return Optional.ofNullable(baseMapper.selectById(userId))
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
     }
 
@@ -83,10 +91,11 @@ public class UserService {
     }
 
     public Map<String, Object> searchUsers(Long currentUserId, String keyword, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<SysUser> userPage = userRepository.searchUsers(keyword, currentUserId, pageable);
+        // ponytail: 控制器传入 0-based（Spring Data 习惯），MP Page 内部 1-based，外层 API 仍回显 0-based
+        IPage<SysUser> userPage =
+                baseMapper.searchUsers(new Page<>(page + 1, size), keyword, currentUserId);
 
-        List<SysUser> users = new ArrayList<>(userPage.getContent());
+        List<SysUser> users = new ArrayList<>(userPage.getRecords());
 
         // Batch compute continuous days
         Map<Long, Integer> continuousMap = new LinkedHashMap<>();
@@ -111,10 +120,10 @@ public class UserService {
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("items", items);
-        result.put("page", userPage.getNumber());
+        result.put("page", page);  // 回显 0-based，与原 Spring Data Page.getNumber() 等价
         result.put("size", userPage.getSize());
-        result.put("totalElements", userPage.getTotalElements());
-        result.put("totalPages", userPage.getTotalPages());
+        result.put("totalElements", userPage.getTotal());
+        result.put("totalPages", userPage.getPages());
         return result;
     }
 
@@ -127,7 +136,9 @@ public class UserService {
         }
         SysUser user = getUserInfo(userId);
         user.setNickname(nickname.trim());
-        return userRepository.save(user);
+        // ponytail: 显式 updateById 语义清晰，避免 ServiceImpl.save 的 select-then-decide
+        baseMapper.updateById(user);
+        return user;
     }
 
     public void updatePassword(Long userId, String oldPassword, String newPassword) {
@@ -142,13 +153,14 @@ public class UserService {
             throw new RuntimeException("旧密码不正确");
         }
         user.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
+        baseMapper.updateById(user);
     }
 
     public SysUser updateAvatar(Long userId, String avatarUrl) {
         SysUser user = getUserInfo(userId);
         user.setAvatar(avatarUrl);
-        return userRepository.save(user);
+        baseMapper.updateById(user);
+        return user;
     }
 
     private int calculateContinuousDays(Long userId, LocalDate date) {

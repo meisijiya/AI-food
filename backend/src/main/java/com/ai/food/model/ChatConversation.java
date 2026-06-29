@@ -1,59 +1,66 @@
 package com.ai.food.model;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import lombok.Data;
 import java.time.LocalDateTime;
 
+/**
+ * 聊天会话实体（MyBatis-Plus）
+ * <p>
+ * 表名 chat_conversation。索引由 Flyway 迁移脚本管理。
+ */
 @Data
-@Entity
-@Table(name = "chat_conversation", indexes = {
-    @Index(name = "idx_user1", columnList = "user1_id, last_message_at"),
-    @Index(name = "idx_user2", columnList = "user2_id, last_message_at")
-}, uniqueConstraints = {
-    @UniqueConstraint(name = "uk_conversation_key", columnNames = {"conversation_key"})
-})
+@TableName("chat_conversation")
 public class ChatConversation {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    @Column(name = "conversation_key", nullable = false, length = 128)
+    @TableField("conversation_key")
     private String conversationKey;
 
-    @Column(name = "user1_id", nullable = false)
+    @TableField("user1_id")
     private Long user1Id;
 
-    @Column(name = "user2_id", nullable = false)
+    @TableField("user2_id")
     private Long user2Id;
 
-    @Column(name = "last_message", columnDefinition = "TEXT")
+    @TableField("last_message")
     private String lastMessage;
 
-    @Column(name = "last_message_at")
+    @TableField("last_message_at")
     private LocalDateTime lastMessageAt;
 
-    @Column(name = "cleared_at_user1")
+    @TableField("cleared_at_user1")
     private LocalDateTime clearedAtUser1;
 
-    @Column(name = "cleared_at_user2")
+    @TableField("cleared_at_user2")
     private LocalDateTime clearedAtUser2;
 
-    @Column(name = "hidden_at_user1")
+    @TableField("hidden_at_user1")
     private LocalDateTime hiddenAtUser1;
 
-    @Column(name = "hidden_at_user2")
+    @TableField("hidden_at_user2")
     private LocalDateTime hiddenAtUser2;
 
-    @Column(name = "created_at", updatable = false)
+    @TableField("created_at")
     private LocalDateTime createdAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        lastMessageAt = LocalDateTime.now();
-    }
+    @Version
+    @TableField("version")
+    private Integer version;
 
+    /**
+     * 按两个 userId 排序生成会话唯一 key（smaller_larger）。
+     *
+     * @param userId1 任意一方 userId
+     * @param userId2 另一方 userId
+     * @return 形如 "smallerId_largerId" 的会话 key
+     */
     public static String generateKey(Long userId1, Long userId2) {
         long min = Math.min(userId1, userId2);
         long max = Math.max(userId1, userId2);

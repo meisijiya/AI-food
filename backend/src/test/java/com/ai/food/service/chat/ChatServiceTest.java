@@ -5,11 +5,11 @@ import com.ai.food.model.ChatFile;
 import com.ai.food.model.ChatMessage;
 import com.ai.food.model.ChatPhoto;
 import com.ai.food.exception.PermissionDeniedException;
-import com.ai.food.repository.ChatConversationRepository;
-import com.ai.food.repository.ChatFileRepository;
-import com.ai.food.repository.ChatMessageRepository;
-import com.ai.food.repository.ChatPhotoRepository;
-import com.ai.food.repository.UserRepository;
+import com.ai.food.mapper.ChatConversationMapper;
+import com.ai.food.mapper.ChatFileMapper;
+import com.ai.food.mapper.ChatMessageMapper;
+import com.ai.food.mapper.ChatPhotoMapper;
+import com.ai.food.mapper.UserMapper;
 import com.ai.food.service.follow.FollowService;
 import com.ai.food.service.notification.NotificationService;
 import com.ai.food.service.upload.FileUploadService;
@@ -27,7 +27,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -43,19 +42,19 @@ import static org.mockito.Mockito.when;
 class ChatServiceTest {
 
     @Mock
-    private ChatConversationRepository conversationRepository;
+    private ChatConversationMapper conversationMapper;
 
     @Mock
-    private ChatMessageRepository messageRepository;
+    private ChatMessageMapper messageMapper;
 
     @Mock
-    private ChatPhotoRepository chatPhotoRepository;
+    private ChatPhotoMapper chatPhotoMapper;
 
     @Mock
-    private ChatFileRepository chatFileRepository;
+    private ChatFileMapper chatFileMapper;
 
     @Mock
-    private UserRepository userRepository;
+    private UserMapper userMapper;
 
     @Mock
     private FollowService followService;
@@ -77,20 +76,22 @@ class ChatServiceTest {
     @BeforeEach
     void setUp() {
         chatService = new ChatService(
-                conversationRepository,
-                messageRepository,
-                chatPhotoRepository,
-                chatFileRepository,
-                userRepository,
+                conversationMapper,
+                chatPhotoMapper,
+                chatFileMapper,
+                userMapper,
                 followService,
                 notificationService,
                 stringRedisTemplate,
                 fileUploadService
         );
+        // ChatService 继承 ServiceImpl<ChatMessageMapper, ChatMessage>，baseMapper 由 Spring 注入；
+        // 测试手动 new，需把 messageMapper 挂到 baseMapper 上，否则 baseMapper.softDeleteByConversationIdBefore 等调用 NPE。
+        ReflectionTestUtils.setField(chatService, "baseMapper", messageMapper);
 
         when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
         when(hashOperations.get(any(), any())).thenReturn(null);
-        when(messageRepository.findLastMessageByConversationId(eq(100L), any())).thenReturn(List.of());
+        when(messageMapper.findLastMessageByConversationId(eq(100L), any())).thenReturn(List.of());
     }
 
     @Test
@@ -109,18 +110,18 @@ class ChatServiceTest {
         ReflectionTestUtils.setField(bothCleared, "clearedAtUser1", LocalDateTime.now().minusMinutes(2));
         ReflectionTestUtils.setField(bothCleared, "clearedAtUser2", LocalDateTime.now().minusMinutes(1));
 
-        when(conversationRepository.findById(100L))
-                .thenReturn(Optional.of(initial), Optional.of(bothCleared));
+        when(conversationMapper.selectById(100L))
+                .thenReturn(initial, bothCleared);
 
         chatService.clearConversation(1L, 100L);
 
-        verify(conversationRepository).setClearedAndHiddenAtUser1(eq(100L), any(LocalDateTime.class));
-        verify(messageRepository).softDeleteByConversationIdBefore(eq(100L), any(LocalDateTime.class));
-        verify(chatPhotoRepository).softDeleteByConversationIdBefore(eq(100L), any(LocalDateTime.class));
-        verify(chatFileRepository).softDeleteByConversationIdBefore(eq(100L), any(LocalDateTime.class));
-        verify(messageRepository, never()).hardDeleteByConversationId(100L);
-        verify(chatPhotoRepository, never()).hardDeleteByConversationId(100L);
-        verify(chatFileRepository, never()).hardDeleteByConversationId(100L);
+        verify(conversationMapper).setClearedAndHiddenAtUser1(eq(100L), any(LocalDateTime.class));
+        verify(messageMapper).softDeleteByConversationIdBefore(eq(100L), any(LocalDateTime.class));
+        verify(chatPhotoMapper).softDeleteByConversationIdBefore(eq(100L), any(LocalDateTime.class));
+        verify(chatFileMapper).softDeleteByConversationIdBefore(eq(100L), any(LocalDateTime.class));
+        verify(messageMapper, never()).hardDeleteByConversationId(100L);
+        verify(chatPhotoMapper, never()).hardDeleteByConversationId(100L);
+        verify(chatFileMapper, never()).hardDeleteByConversationId(100L);
     }
 
     @Test
@@ -130,7 +131,7 @@ class ChatServiceTest {
         ReflectionTestUtils.setField(conv, "id", 200L);
         ReflectionTestUtils.setField(conv, "user1Id", 1L);
         ReflectionTestUtils.setField(conv, "user2Id", 2L);
-        when(conversationRepository.findById(200L)).thenReturn(Optional.of(conv));
+        when(conversationMapper.selectById(200L)).thenReturn(conv);
 
         assertThrows(PermissionDeniedException.class, () -> chatService.getChatHistory(200L, 3L, 0, 20));
     }
@@ -142,7 +143,7 @@ class ChatServiceTest {
         ReflectionTestUtils.setField(conv, "id", 300L);
         ReflectionTestUtils.setField(conv, "user1Id", 1L);
         ReflectionTestUtils.setField(conv, "user2Id", 2L);
-        when(conversationRepository.findById(300L)).thenReturn(Optional.of(conv));
+        when(conversationMapper.selectById(300L)).thenReturn(conv);
 
         assertThrows(PermissionDeniedException.class, () -> chatService.clearConversation(4L, 300L));
     }
@@ -158,18 +159,18 @@ class ChatServiceTest {
         ReflectionTestUtils.setField(photo, "isReceiverDelete", true);
         ChatMessage message = new ChatMessage();
         ReflectionTestUtils.setField(message, "receiverId", 2L);
-        when(chatPhotoRepository.findById(10L)).thenReturn(Optional.of(photo));
-        when(messageRepository.findByPhotoId(10L)).thenReturn(Optional.of(message));
-        doNothing().when(chatPhotoRepository).markSenderDeleted(10L);
-        doNothing().when(chatPhotoRepository).markSoftDeleted(10L);
-        doNothing().when(chatPhotoRepository).hardDeleteById(10L);
+        when(chatPhotoMapper.selectById(10L)).thenReturn(photo);
+        when(messageMapper.findByPhotoId(10L)).thenReturn(message);
+        when(chatPhotoMapper.markSenderDeleted(10L)).thenReturn(1);
+        when(chatPhotoMapper.markSoftDeleted(10L)).thenReturn(1);
+        when(chatPhotoMapper.hardDeleteById(10L)).thenReturn(1);
 
         chatService.deleteChatPhoto(10L, 1L);
 
-        verify(chatPhotoRepository).markSoftDeleted(10L);
+        verify(chatPhotoMapper).markSoftDeleted(10L);
         verify(fileUploadService).deletePhysicalFile("/uploads/chat-photos/20260331/a.jpg");
         verify(fileUploadService).deletePhysicalFile("/uploads/chat-photos/20260331/a_thumb.jpg");
-        verify(chatPhotoRepository).hardDeleteById(10L);
+        verify(chatPhotoMapper).hardDeleteById(10L);
     }
 
     @Test
@@ -179,15 +180,15 @@ class ChatServiceTest {
         ReflectionTestUtils.setField(file, "id", 11L);
         ReflectionTestUtils.setField(file, "senderId", 1L);
         ReflectionTestUtils.setField(file, "filePath", "/uploads/chat-files/20260331/demo.pdf");
-        when(chatFileRepository.findById(11L)).thenReturn(Optional.of(file));
-        when(messageRepository.findByFileId(11L)).thenReturn(Optional.empty());
-        doNothing().when(chatFileRepository).markSoftDeleted(11L);
-        doNothing().when(chatFileRepository).hardDeleteById(11L);
+        when(chatFileMapper.selectById(11L)).thenReturn(file);
+        when(messageMapper.findByFileId(11L)).thenReturn(null);
+        when(chatFileMapper.markSoftDeleted(11L)).thenReturn(1);
+        when(chatFileMapper.hardDeleteById(11L)).thenReturn(1);
 
         chatService.deleteChatFile(11L, 1L);
 
-        verify(chatFileRepository).markSoftDeleted(11L);
+        verify(chatFileMapper).markSoftDeleted(11L);
         verify(fileUploadService).deletePhysicalFile("/uploads/chat-files/20260331/demo.pdf");
-        verify(chatFileRepository).hardDeleteById(11L);
+        verify(chatFileMapper).hardDeleteById(11L);
     }
 }
