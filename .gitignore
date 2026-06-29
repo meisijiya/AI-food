@@ -18,6 +18,7 @@ backend/.settings/
 
 # 后端Java项目相关
 backend/target/
+backend/*/target/
 backend/.mvn/
 backend/mvnw
 backend/mvnw.cmd
