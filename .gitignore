@@ -46,6 +46,9 @@ frontend/.env.production
 .env.local
 .env.*.local
 .env.production
+
+# 本地测试账号文档（真实凭据不在 git 里）
+TEST_ACCOUNTS.local.md
 # 日志文件
 logs/
 *.log
