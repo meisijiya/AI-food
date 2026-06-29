@@ -49,4 +49,16 @@ public class ApiResponse<T> {
     public static <T> ApiResponse<T> fail(ApiResponseCode code) {
         return new ApiResponse<>(code.getCode(), code.getMessage(), null);
     }
+
+    // ponytail: error() 别名 — 兼容 ai-food-app 原 dto/ApiResponse 的 API
+    // 删除 dto/ApiResponse 后,23 个 controller 调用点不需要改
+    /** 业务失败别名：默认 400 + message（兼容旧版 ApiResponse.error） */
+    public static <T> ApiResponse<T> error(String message) {
+        return fail(400, message);
+    }
+
+    /** 业务失败别名：自定义 code + message（兼容旧版 ApiResponse.error） */
+    public static <T> ApiResponse<T> error(int code, String message) {
+        return fail(code, message);
+    }
 }
