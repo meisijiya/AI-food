@@ -1,0 +1,72 @@
+server:
+  port: 8081
+  shutdown: graceful
+
+spring:
+  application:
+    name: admin-server
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/ai_food?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai}
+    username: ${DB_USER:aifood}
+    password: ${DB_PASSWORD:aifood123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    banner: false
+    db-config:
+      id-type: ASSIGN_ID
+      logic-delete-field: isDeleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.ai.food.common.model
+
+jwt:
+  secret: ${JWT_SECRET:YWktZm9vZC1kZXYtc2VjcmV0LXBsZWFzZS1yb3RhdGUtaW4tcHJvZA==}
+  expiration: ${JWT_EXPIRATION:604800000}
+
+spring.boot.admin:
+  context-path: /admin/sba
+  ui:
+    title: AI-Food Admin Monitor
+
+spring.datasource.druid:
+  stat-view-servlet:
+    enabled: true
+    url-pattern: /admin/druid/*
+    login-username: ${DRUID_USER:admin}
+    login-password: ${DRUID_PASSWORD:admin123}
+    allow:
+  web-stat-filter:
+    enabled: true
+    url-pattern: /*
+    exclusions: '*.js,*.gif,*.jpg,*.png,*.css,*.ico,/admin/druid/*'
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    com.aifood: INFO
+    com.ai.food: INFO

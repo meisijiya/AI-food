@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <!--
+        AI Food admin server module.
+        Hosts the @SpringBootAdminServer UI + management endpoints, plus any admin
+        controllers/services added later. Depends on ai-food-common for shared
+        infrastructure (entities, mappers, JWT, ratelimit, ApiResponse).
+
+        All versions are inherited from the parent POM
+        (com.ai.food:ai-food-backend:2.2.0) via dependencyManagement, including
+        ai-food-common, mybatis-plus, jjwt, druid, and the spring-boot-admin BOM.
+    -->
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.ai.food</groupId>
+        <artifactId>ai-food-backend</artifactId>
+        <version>2.2.0</version>
+    </parent>
+
+    <artifactId>admin-server</artifactId>
+    <packaging>jar</packaging>
+    <name>AI-Food Admin Server</name>
+    <description>AI Food admin backend (Spring Boot Admin UI + admin services)</description>
+
+    <dependencies>
+        <!-- 内部模块：共享基础设施（entity / mapper / jwt / ratelimit / ApiResponse） -->
+        <dependency>
+            <groupId>com.ai.food</groupId>
+            <artifactId>ai-food-common</artifactId>
+        </dependency>
+
+        <!-- Spring Boot starters -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- MyBatis-Plus（版本由父 POM 锁定） -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+
+        <!-- Druid 连接池 + 监控（artifactId 与父 POM dependencyManagement 一致，版本由父 POM 锁定） -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid-spring-boot-starter</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Admin Server（提供 /admin/sba 监控 UI，版本由父 POM 导入的 BOM 统一管理） -->
+        <dependency>
+            <groupId>de.codecentric</groupId>
+            <artifactId>spring-boot-admin-starter-server</artifactId>
+        </dependency>
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>admin-server</finalName>
+        <plugins>
+            <!--
+                spring-boot-maven-plugin with lombok excluded from the fat jar
+                (Lombok is annotation processor only, never ship it at runtime).
+            -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
