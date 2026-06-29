@@ -1,35 +1,36 @@
 package com.ai.food.model;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Table(name = "bloom_sync_log")
+@TableName("bloom_sync_log")
 public class BloomSyncLog {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
+    @TableField("user_id")
     private Long userId;
 
-    @Column(name = "sync_type", length = 20)
+    @TableField("sync_type")
     private String syncType;
 
-    @Column(name = "status", length = 20)
+    @TableField("status")
     private String status;
 
-    @Column(name = "error_msg", columnDefinition = "TEXT")
+    @TableField("error_msg")
     private String errorMsg;
 
-    @Column(name = "synced_at")
+    @TableField("synced_at")
     private LocalDateTime syncedAt;
 
-    @PrePersist
-    protected void onCreate() {
-        syncedAt = LocalDateTime.now();
-    }
+    @TableField("is_deleted")
+    @TableLogic(value = "0", delval = "1")
+    private Integer isDeleted;
+
+    @TableField("version")
+    @Version
+    private Integer version;
 }

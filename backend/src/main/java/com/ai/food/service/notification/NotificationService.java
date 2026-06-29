@@ -1,7 +1,8 @@
 package com.ai.food.service.notification;
 
+import com.ai.food.mapper.UserMapper;
 import com.ai.food.model.SysUser;
-import com.ai.food.repository.UserRepository;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,15 +12,25 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+/**
+ * 通知中心服务（MyBatis-Plus 迁移版）。
+ * <p>
+ * 继承 {@link ServiceImpl} 后，{@code baseMapper} 指向 {@link UserMapper}；
+ * 业务数据本身存放在 Redis（SortedSet + Hash），仅在补齐评论者头像时按 id 批量查用户表。
+ * </p>
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class NotificationService {
+public class NotificationService extends ServiceImpl<UserMapper, SysUser> {
 
     private final StringRedisTemplate redisTemplate;
-    private final UserRepository userRepository;
 
     private static final String LIST_KEY = "notification:list:";
     private static final String UNREAD_KEY = "notification:unread:";
@@ -29,6 +40,9 @@ public class NotificationService {
 
     // ==================== 评论通知 ====================
 
+    /**
+     * 写入一条评论通知到 ZSet（按时间戳打分），并递增全局未读计数。
+     */
     public void addCommentNotification(Long postOwnerId, Long commentId, Long postId,
                                         Long commenterId, String nickname, String content) {
         if (postOwnerId.equals(commenterId)) return;
@@ -54,6 +68,9 @@ public class NotificationService {
         }
     }
 
+    /**
+     * 按 id 匹配删除一条评论通知，并递减未读计数。
+     */
     public void removeCommentNotification(Long postOwnerId, Long commentId) {
         String listKey = LIST_KEY + postOwnerId;
         Set<String> allJsons = redisTemplate.opsForZSet().range(listKey, 0, -1);
@@ -80,6 +97,9 @@ public class NotificationService {
 
     // ==================== 聊天通知（聚合） ====================
 
+    /**
+     * 聊天通知聚合写入：同会话覆盖前一条并把 unreadCount +1。
+     */
     public void updateChatNotification(Long receiverId, Long conversationId,
                                         Long senderId, String nickname, String avatar, String message) {
         try {
@@ -120,6 +140,9 @@ public class NotificationService {
 
     // ==================== 查询通知列表 ====================
 
+    /**
+     * 通知中心首页：第一页合并 chat 聚合 + comment；后续页仅 comment。
+     */
     public Map<String, Object> getNotifications(Long userId, int page, int size) {
         String listKey = LIST_KEY + userId;
         String hashKey = CHAT_KEY + userId;
@@ -172,7 +195,7 @@ public class NotificationService {
         // Batch fetch user avatars
         if (!commenterIds.isEmpty()) {
             Map<Long, String> avatarMap = new LinkedHashMap<>();
-            for (SysUser user : userRepository.findByIdIn(commenterIds)) {
+            for (SysUser user : baseMapper.findByIdIn(commenterIds)) {
                 avatarMap.put(user.getId(), user.getAvatar());
             }
             for (Map<String, Object> item : commentNotifs) {
@@ -229,6 +252,9 @@ public class NotificationService {
         }
     }
 
+    /**
+     * 按 id 删除通知（comment_* 走 ZSet，chat_* 走 Hash）。
+     */
     public void deleteNotification(Long userId, String notificationId) {
         String listKey = LIST_KEY + userId;
 
@@ -273,6 +299,9 @@ public class NotificationService {
         }
     }
 
+    /**
+     * 清空用户所有通知（同时把 chat 聚合的未读从全局计数中扣减）。
+     */
     public void clearAllNotifications(Long userId) {
         // 清空前累加聊天通知的未读数，递减全局计数
         String chatKey = CHAT_KEY + userId;
@@ -298,15 +327,24 @@ public class NotificationService {
 
     // ==================== 未读计数 ====================
 
+    /**
+     * 读取全局未读计数（Redis String）。
+     */
     public int getUnreadCount(Long userId) {
         String val = redisTemplate.opsForValue().get(UNREAD_KEY + userId);
         return val != null ? Integer.parseInt(val) : 0;
     }
 
+    /**
+     * 递减全局未读 1。
+     */
     public void decrementUnread(Long userId) {
         decrementUnread(userId, 1);
     }
 
+    /**
+     * 递减全局未读 amount；小于 0 时回写 0。
+     */
     public void decrementUnread(Long userId, int amount) {
         if (amount <= 0) return;
         Long val = redisTemplate.opsForValue().decrement(UNREAD_KEY + userId, amount);
@@ -315,6 +353,9 @@ public class NotificationService {
         }
     }
 
+    /**
+     * 内部使用：递增全局未读 1。
+     */
     private void incrementUnread(Long userId) {
         redisTemplate.opsForValue().increment(UNREAD_KEY + userId);
         redisTemplate.expire(UNREAD_KEY + userId, TTL);

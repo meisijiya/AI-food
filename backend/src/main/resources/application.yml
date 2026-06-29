@@ -24,6 +24,31 @@ spring:
   # Spring DataSource（由 profile 覆盖）
   # Spring Data Redis（由 profile 覆盖）
 
+# ============================================
+# MyBatis-Plus 全局配置
+# ============================================
+mybatis-plus:
+  configuration:
+    # 驼峰命名映射下划线字段（实体 createdAt -> 表 created_at）
+    map-underscore-to-camel-case: true
+    # 日志实现：默认 stdout，生产可通过配置切换
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+    # 缓存开关（生产可调优）
+    cache-enabled: false
+  global-config:
+    banner: false
+    db-config:
+      # 主键策略：ASSIGN_ID 雪花算法（Long 类型 ID）
+      id-type: ASSIGN_ID
+      # 软删除字段：实体中 isDeleted 字段映射 is_deleted 列
+      logic-delete-field: isDeleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      # 乐观锁字段：实体中 version 字段
+      version-field: version
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.ai.food.model
+
 # 文件上传路径（容器内）
 app:
   upload:

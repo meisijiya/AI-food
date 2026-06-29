@@ -1,55 +1,54 @@
 package com.ai.food.model;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 
+/**
+ * 对话会话实体（MyBatis-Plus 迁移版）
+ * <p>
+ * 表名 conversation_session。索引/约束由 Flyway 迁移脚本管理。
+ */
 @Data
-@Entity
-@Where(clause = "is_deleted = false")
-@Table(name = "conversation_session")
+@TableName("conversation_session")
 public class ConversationSession {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    @Column(name = "session_id", unique = true, nullable = false, length = 64)
+    @TableField("session_id")
     private String sessionId;
 
-    @Column(name = "user_id")
+    @TableField("user_id")
     private Long userId;
 
-    @Column(name = "total_questions")
+    @TableField("total_questions")
     private Integer totalQuestions;
 
-    @Column(name = "current_question_count")
+    @TableField("current_question_count")
     private Integer currentQuestionCount = 0;
 
-    @Column(name = "interrupt_count")
+    @TableField("interrupt_count")
     private Integer interruptCount = 0;
 
-    @Column(length = 20)
     private String mode; // inertia/random
 
-    @Column(length = 20)
     private String status = "active";
 
-    @Column(name = "created_at")
+    @TableField("created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "completed_at")
+    @TableField("completed_at")
     private LocalDateTime completedAt;
 
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = false;
+    @TableField("is_deleted")
+    @TableLogic(value = "0", delval = "1")
+    private Integer isDeleted = 0;
 
-    @Column(name = "deleted_at")
+    @TableField("deleted_at")
     private LocalDateTime deletedAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    @TableField("version")
+    @Version
+    private Integer version;
 }

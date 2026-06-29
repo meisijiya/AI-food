@@ -1,62 +1,76 @@
 package com.ai.food.model;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import lombok.Data;
-import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 
+/**
+ * 聊天图片实体（MyBatis-Plus）
+ * <p>
+ * 表名 chat_photo。索引由 Flyway 迁移脚本管理。
+ * <p>
+ * 注意：{@code isReceiverDelete}/{@code isSenderDelete} 是接收方/发送方各自的"是否删除"业务标志，
+ *       分别是普通 boolean 字段，**不是**软删除字段；{@code isDeleted} 才是 {@link TableLogic} 软删除字段。
+ */
 @Data
-@Entity
-@Where(clause = "is_deleted = false")
-@Table(name = "chat_photo", indexes = {
-    @Index(name = "idx_cp_conversation", columnList = "conversation_id"),
-    @Index(name = "idx_cp_sender", columnList = "sender_id"),
-    @Index(name = "idx_cp_created", columnList = "created_at")
-})
+@TableName("chat_photo")
 public class ChatPhoto {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    @Column(name = "conversation_id")
+    @TableField("conversation_id")
     private Long conversationId;
 
-    @Column(name = "sender_id", nullable = false)
+    @TableField("sender_id")
     private Long senderId;
 
-    @Column(name = "original_path", nullable = false, length = 500)
+    @TableField("original_path")
     private String originalPath;
 
-    @Column(name = "thumbnail_path", length = 500)
+    @TableField("thumbnail_path")
     private String thumbnailPath;
 
-    @Column(name = "file_name", length = 255)
+    @TableField("file_name")
     private String fileName;
 
-    @Column(name = "original_size")
+    @TableField("original_size")
     private Long originalSize;
 
-    @Column(name = "thumbnail_size")
+    @TableField("thumbnail_size")
     private Long thumbnailSize;
 
-    @Column(name = "mime_type", length = 50)
+    @TableField("mime_type")
     private String mimeType;
 
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = false;
+    /**
+     * 软删除字段：0=未删，1=已删。{@link TableLogic} 自动处理 WHERE 与 delete 翻译。
+     */
+    @TableField("is_deleted")
+    @TableLogic(value = "0", delval = "1")
+    private Integer isDeleted = 0;
 
-    @Column(name = "is_receiver_delete")
+    /**
+     * 业务字段：接收方是否删除。普通 boolean，**非**软删除字段，不加 @TableLogic。
+     */
+    @TableField("is_receiver_delete")
     private Boolean isReceiverDelete = false;
 
-    @Column(name = "is_sender_delete")
+    /**
+     * 业务字段：发送方是否删除。普通 boolean，**非**软删除字段，不加 @TableLogic。
+     */
+    @TableField("is_sender_delete")
     private Boolean isSenderDelete = false;
 
-    @Column(name = "created_at")
+    @TableField("created_at")
     private LocalDateTime createdAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    @Version
+    @TableField("version")
+    private Integer version;
 }

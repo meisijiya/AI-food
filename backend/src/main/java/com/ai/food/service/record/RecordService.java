@@ -1,27 +1,27 @@
 package com.ai.food.service.record;
 
+import com.ai.food.mapper.CollectedParamMapper;
+import com.ai.food.mapper.ConversationSessionMapper;
+import com.ai.food.mapper.FeedCommentMapper;
+import com.ai.food.mapper.FeedPostMapper;
+import com.ai.food.mapper.PhotoMapper;
+import com.ai.food.mapper.QaRecordMapper;
+import com.ai.food.mapper.RecommendationResultMapper;
 import com.ai.food.model.CollectedParam;
 import com.ai.food.model.ConversationSession;
+import com.ai.food.model.FeedPost;
 import com.ai.food.model.Photo;
 import com.ai.food.model.QaRecord;
 import com.ai.food.model.RecommendationResult;
-import com.ai.food.repository.CollectedParamRepository;
-import com.ai.food.repository.ConversationSessionRepository;
-import com.ai.food.repository.FeedCommentRepository;
-import com.ai.food.repository.FeedPostRepository;
-import com.ai.food.repository.PhotoRepository;
-import com.ai.food.repository.QaRecordRepository;
-import com.ai.food.repository.RecommendationResultRepository;
 import com.ai.food.service.bloom.BloomFilterService;
 import com.ai.food.service.feed.FeedService;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,53 +33,72 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * 历史记录业务服务（MyBatis-Plus 迁移版）。
+ * <p>
+ * 继承 {@link ServiceImpl} 后，{@code baseMapper} 指向 {@link ConversationSessionMapper}；
+ * 其余实体走注入的 Mapper 字段。
+ * </p>
+ * <p>
+ * {@link #getRecordList} 保持返回 {@link Page}{@code <RecordListItem>}（spring-data 域）以兼容
+ * 上层 Controller；内部用 MP 的 {@link IPage} 查询，最终用 {@link PageImpl} 包装。
+ * </p>
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class RecordService {
+public class RecordService extends ServiceImpl<ConversationSessionMapper, ConversationSession> {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
-    private final ConversationSessionRepository conversationSessionRepository;
-    private final RecommendationResultRepository recommendationResultRepository;
-    private final CollectedParamRepository collectedParamRepository;
-    private final QaRecordRepository qaRecordRepository;
-    private final PhotoRepository photoRepository;
-    private final FeedPostRepository feedPostRepository;
-    private final FeedCommentRepository feedCommentRepository;
+    private final RecommendationResultMapper recommendationResultMapper;
+    private final CollectedParamMapper collectedParamMapper;
+    private final QaRecordMapper qaRecordMapper;
+    private final PhotoMapper photoMapper;
+    private final FeedPostMapper feedPostMapper;
+    private final FeedCommentMapper feedCommentMapper;
     private final FeedService feedService;
     private final StringRedisTemplate redisTemplate;
     private final BloomFilterService bloomFilterService;
 
+    /**
+     * 分页查询某用户的对话会话记录（含推荐结果、照片缩略图等聚合信息）。
+     * <p>
+     * 控制器传 0-based page/size；内部用 MP 的 1-based Page 查询。
+     * </p>
+     */
     public Page<RecordListItem> getRecordList(Long userId, int page, int size, String sort) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<ConversationSession> sessions;
+        IPage<ConversationSession> sessions = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page + 1, size);
         if ("asc".equalsIgnoreCase(sort)) {
-            sessions = conversationSessionRepository.findByUserIdOrderByCreatedAtAsc(userId, pageable);
+            sessions = baseMapper.selectByUserIdOrderByCreatedAtAsc(sessions, userId);
         } else {
-            sessions = conversationSessionRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+            sessions = baseMapper.selectByUserIdOrderByCreatedAtDesc(sessions, userId);
         }
 
         // Collect all sessionIds for batch fetching
         List<String> sessionIds = new ArrayList<>();
-        for (ConversationSession s : sessions.getContent()) {
+        for (ConversationSession s : sessions.getRecords()) {
             sessionIds.add(s.getSessionId());
         }
 
         // Batch fetch recommendation results
         Map<String, RecommendationResult> resultMap = new LinkedHashMap<>();
-        for (RecommendationResult r : recommendationResultRepository.findBySessionIdIn(sessionIds)) {
+        List<RecommendationResult> results =
+                sessionIds.isEmpty() ? List.of() : recommendationResultMapper.findBySessionIdIn(sessionIds);
+        for (RecommendationResult r : results) {
             resultMap.put(r.getSessionId(), r);
         }
 
         // Batch fetch latest photos (all photos for these sessions, pick latest per session)
         Map<String, Photo> photoMap = new LinkedHashMap<>();
-        List<Photo> allPhotos = photoRepository.findByRelatedSessionIdInOrderByCreatedAtDesc(sessionIds);
+        List<Photo> allPhotos = sessionIds.isEmpty()
+                ? List.of()
+                : photoMapper.findByRelatedSessionIdInOrderByCreatedAtDesc(sessionIds);
         for (Photo p : allPhotos) {
             photoMap.putIfAbsent(p.getRelatedSessionId(), p);
         }
 
-        return sessions.map(session -> {
+        // 转换为 RecordListItem 并保持 MP 的分页信息（包装为 spring-data Page 以兼容 controller）
+        List<RecordListItem> items = new ArrayList<>();
+        for (ConversationSession session : sessions.getRecords()) {
             RecordListItem item = new RecordListItem();
             item.setSessionId(session.getSessionId());
             item.setMode(session.getMode());
@@ -110,34 +129,45 @@ public class RecordService {
                 item.setReason("该会话暂无可展示的推荐说明");
             }
 
-            return item;
-        });
+            items.add(item);
+        }
+
+        return new PageImpl<>(items, org.springframework.data.domain.PageRequest.of(page, size),
+                sessions.getTotal());
     }
 
+    /**
+     * 软删除单条记录：清理 Bloom → 软删关联 FeedPost / 评论 / 物理文件 / QA / 参数 / 推荐 / 会话。
+     */
     @Transactional
     public void deleteRecord(String sessionId) {
         log.debug("Soft deleting record: {}", sessionId);
         removeBloomRecommendation(sessionId);
         // 删除关联的 FeedPost + 评论（通过 sessionId 查找）
-        feedPostRepository.findBySessionId(sessionId).ifPresent(post -> {
-            feedCommentRepository.softDeleteByPostId(post.getId());
-            feedPostRepository.softDeleteByPostId(post.getId());
+        FeedPost post = feedPostMapper.findBySessionId(sessionId);
+        if (post != null) {
+            feedCommentMapper.softDeleteByPostId(post.getId());
+            feedPostMapper.softDeleteByPostId(post.getId());
             feedService.cleanRedisForDeletedPost(post.getId(), post.getUserId());
             log.debug("Soft-deleted FeedPost and comments for session {}", sessionId);
-        });
+        }
         // 删除硬盘上的照片文件
-        photoRepository.findFirstByRelatedSessionIdOrderByCreatedAtDesc(sessionId).ifPresent(photo -> {
+        Photo photo = photoMapper.findFirstByRelatedSessionIdOrderByCreatedAtDesc(sessionId);
+        if (photo != null) {
             deletePhysicalFile(photo.getOriginalPath());
             deletePhysicalFile(photo.getThumbnailPath());
-            photo.setIsDeleted(true);
-            photoRepository.save(photo);
-        });
-        qaRecordRepository.softDeleteBySessionId(sessionId);
-        collectedParamRepository.softDeleteBySessionId(sessionId);
-        recommendationResultRepository.softDeleteBySessionId(sessionId);
-        conversationSessionRepository.softDeleteBySessionId(sessionId);
+            photo.setIsDeleted(1);
+            photoMapper.updateById(photo);
+        }
+        qaRecordMapper.softDeleteBySessionId(sessionId);
+        collectedParamMapper.softDeleteBySessionId(sessionId);
+        recommendationResultMapper.softDeleteBySessionId(sessionId);
+        baseMapper.softDeleteBySessionId(sessionId);
     }
 
+    /**
+     * 批量软删除：先批量查 FeedPost / Photo，再 fan-out 软删 + 物理文件清理。
+     */
     @Transactional
     public void batchDeleteRecords(List<String> sessionIds) {
         log.info("Batch soft deleting {} records", sessionIds.size());
@@ -146,82 +176,107 @@ public class RecordService {
         }
 
         // 1. Batch fetch all associated feed posts
-        List<com.ai.food.model.FeedPost> posts = feedPostRepository.findBySessionIdIn(sessionIds);
-        List<Long> postIds = posts.stream().map(com.ai.food.model.FeedPost::getId).toList();
+        List<FeedPost> posts = sessionIds.isEmpty() ? List.of() : feedPostMapper.findBySessionIdIn(sessionIds);
+        List<Long> postIds = posts.stream().map(FeedPost::getId).toList();
 
         // 2. Batch delete comments
         if (!postIds.isEmpty()) {
-            feedCommentRepository.softDeleteByPostIdIn(postIds);
+            feedCommentMapper.softDeleteByPostIdIn(postIds);
         }
 
         // 3. Batch delete feed posts
-        feedPostRepository.softDeleteBySessionIdIn(sessionIds);
+        if (!sessionIds.isEmpty()) {
+            feedPostMapper.softDeleteBySessionIdIn(sessionIds);
+        }
 
         // 4. Clean Redis for each post (per-post, but already pipelined internally)
-        for (com.ai.food.model.FeedPost post : posts) {
+        for (FeedPost post : posts) {
             feedService.cleanRedisForDeletedPost(post.getId(), post.getUserId());
         }
 
         // 5. Batch delete photos (soft delete + file cleanup)
-        List<Photo> photos = photoRepository.findByRelatedSessionIdInOrderByCreatedAtDesc(sessionIds);
+        List<Photo> photos = sessionIds.isEmpty()
+                ? List.of()
+                : photoMapper.findByRelatedSessionIdInOrderByCreatedAtDesc(sessionIds);
         for (Photo photo : photos) {
             deletePhysicalFile(photo.getOriginalPath());
             deletePhysicalFile(photo.getThumbnailPath());
-            photo.setIsDeleted(true);
-            photoRepository.save(photo);
+            photo.setIsDeleted(1);
+            photoMapper.updateById(photo);
         }
 
         // 6. Batch delete remaining entities
-        qaRecordRepository.softDeleteBySessionIdIn(sessionIds);
-        collectedParamRepository.softDeleteBySessionIdIn(sessionIds);
-        recommendationResultRepository.softDeleteBySessionIdIn(sessionIds);
-        conversationSessionRepository.softDeleteBySessionIdIn(sessionIds);
+        if (!sessionIds.isEmpty()) {
+            qaRecordMapper.softDeleteBySessionIdIn(sessionIds);
+            collectedParamMapper.softDeleteBySessionIdIn(sessionIds);
+            recommendationResultMapper.softDeleteBySessionIdIn(sessionIds);
+            baseMapper.softDeleteBySessionIdIn(sessionIds);
+        }
     }
 
+    /**
+     * 更新推荐结果的照片 URL，并清除该用户的 pending 推荐缓存。
+     */
     @Transactional
     public void updateRecommendationPhoto(String sessionId, String photoUrl) {
         log.debug("Updating photo for session: {}", sessionId);
-        recommendationResultRepository.findBySessionId(sessionId).ifPresent(r -> {
+        RecommendationResult r = recommendationResultMapper.findBySessionId(sessionId);
+        if (r != null) {
             r.setPhotoUrl(photoUrl);
-            recommendationResultRepository.save(r);
-        });
-        conversationSessionRepository.findBySessionId(sessionId).ifPresent(session -> {
+            recommendationResultMapper.updateById(r);
+        }
+        ConversationSession session = baseMapper.findBySessionId(sessionId);
+        if (session != null) {
             Long userId = session.getUserId();
             if (userId != null) {
                 redisTemplate.delete("pending:recommend:" + userId);
             }
-        });
+        }
     }
 
+    /**
+     * 删除推荐结果的照片：清空 photoUrl + 软删 photo 表记录 + 物理文件清理。
+     */
     @Transactional
     public void deleteRecommendationPhoto(String sessionId) {
         log.debug("Deleting photo for session: {}", sessionId);
         // 清除 recommendation_result 的 photo_url
-        recommendationResultRepository.findBySessionId(sessionId).ifPresent(r -> {
+        RecommendationResult r = recommendationResultMapper.findBySessionId(sessionId);
+        if (r != null) {
             r.setPhotoUrl(null);
-            recommendationResultRepository.save(r);
-        });
+            recommendationResultMapper.updateById(r);
+        }
         // 软删除 photo 表记录 + 删除硬盘文件
-        photoRepository.findFirstByRelatedSessionIdOrderByCreatedAtDesc(sessionId).ifPresent(photo -> {
+        Photo photo = photoMapper.findFirstByRelatedSessionIdOrderByCreatedAtDesc(sessionId);
+        if (photo != null) {
             deletePhysicalFile(photo.getOriginalPath());
             deletePhysicalFile(photo.getThumbnailPath());
-            photo.setIsDeleted(true);
-            photoRepository.save(photo);
-        });
+            photo.setIsDeleted(1);
+            photoMapper.updateById(photo);
+        }
     }
 
+    /**
+     * 更新推荐结果的用户评价。
+     */
     @Transactional
     public void updateComment(String sessionId, String comment) {
         log.info("Updating comment for session: {}", sessionId);
-        recommendationResultRepository.findBySessionId(sessionId).ifPresent(r -> {
+        RecommendationResult r = recommendationResultMapper.findBySessionId(sessionId);
+        if (r != null) {
             r.setComment(comment);
-            recommendationResultRepository.save(r);
-        });
+            recommendationResultMapper.updateById(r);
+        }
     }
 
+    /**
+     * 校验 session 归属与时效（超过 30 天的已完成会话不可读）。
+     */
     public void validateSessionOwnership(String sessionId, Long userId) {
-        ConversationSession session = conversationSessionRepository.findBySessionId(sessionId)
-                .orElseThrow(() -> new RuntimeException("会话不存在"));
+        ConversationSession session = baseMapper.findBySessionId(sessionId);
+        if (session == null) {
+            throw new RuntimeException("会话不存在");
+        }
         if (!userId.equals(session.getUserId())) {
             throw new RuntimeException("无权访问此会话");
         }
@@ -232,6 +287,9 @@ public class RecordService {
         }
     }
 
+    /**
+     * 删除物理文件（uploads 子目录）。
+     */
     private void deletePhysicalFile(String relativePath) {
         if (relativePath == null || relativePath.isBlank()) return;
         try {
@@ -251,29 +309,32 @@ public class RecordService {
      * 在软删除记录前同步移除该记录对应的 Bloom 画像条目。
      */
     private void removeBloomRecommendation(String sessionId) {
-        conversationSessionRepository.findBySessionId(sessionId).ifPresent(session -> {
-            Long userId = session.getUserId();
-            if (userId == null) {
-                return;
-            }
-
-            recommendationResultRepository.findBySessionId(sessionId).ifPresent(result -> {
-                if (result.getId() != null) {
-                    bloomFilterService.removeRecommendation(userId, result.getId().toString(), null);
-                }
-            });
-        });
+        ConversationSession session = baseMapper.findBySessionId(sessionId);
+        if (session == null || session.getUserId() == null) {
+            return;
+        }
+        Long userId = session.getUserId();
+        RecommendationResult result = recommendationResultMapper.findBySessionId(sessionId);
+        if (result != null && result.getId() != null) {
+            bloomFilterService.removeRecommendation(userId, result.getId().toString(), null);
+        }
     }
 
+    /**
+     * 查询某 session 的完整详情：会话 / 推荐 / 已收集参数 / 问答记录 / 照片。
+     */
     public RecordDetail getRecordDetail(String sessionId) {
-        ConversationSession session = conversationSessionRepository.findBySessionId(sessionId)
-                .orElseThrow(() -> new RuntimeException("会话不存在"));
+        ConversationSession session = baseMapper.findBySessionId(sessionId);
+        if (session == null) {
+            throw new RuntimeException("会话不存在");
+        }
 
         Optional<RecommendationResult> optResult =
-                recommendationResultRepository.findBySessionId(sessionId);
-        List<CollectedParam> params = collectedParamRepository.findBySessionId(sessionId);
-        List<QaRecord> qaRecords = qaRecordRepository.findBySessionIdOrderByQuestionOrderAsc(sessionId);
-        Optional<Photo> photo = photoRepository.findFirstByRelatedSessionIdOrderByCreatedAtDesc(sessionId);
+                Optional.ofNullable(recommendationResultMapper.findBySessionId(sessionId));
+        List<CollectedParam> params = collectedParamMapper.findBySessionId(sessionId);
+        List<QaRecord> qaRecords = qaRecordMapper.findBySessionIdOrderByQuestionOrderAsc(sessionId);
+        Optional<Photo> photo =
+                Optional.ofNullable(photoMapper.findFirstByRelatedSessionIdOrderByCreatedAtDesc(sessionId));
 
         RecordDetail detail = new RecordDetail();
         detail.setSession(session);
@@ -284,6 +345,9 @@ public class RecordService {
         return detail;
     }
 
+    /**
+     * 读取 Redis 中缓存的"待发布推荐"sessionId。
+     */
     public String getPendingSessionId(Long userId) {
         String cacheKey = "pending:recommend:" + userId;
         String cached = redisTemplate.opsForValue().get(cacheKey);

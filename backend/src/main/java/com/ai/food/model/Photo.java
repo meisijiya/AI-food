@@ -1,55 +1,48 @@
 package com.ai.food.model;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Where(clause = "is_deleted = false")
-@Table(name = "photo", indexes = {
-    @Index(name = "idx_user_id", columnList = "user_id"),
-    @Index(name = "idx_session", columnList = "related_session_id")
-})
+@TableName("photo")
 public class Photo {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
+    @TableField("user_id")
     private Long userId;
 
-    @Column(name = "original_path", nullable = false, length = 500)
+    @TableField("original_path")
     private String originalPath;
 
-    @Column(name = "thumbnail_path", length = 500)
+    @TableField("thumbnail_path")
     private String thumbnailPath;
 
-    @Column(name = "related_session_id", length = 64)
+    @TableField("related_session_id")
     private String relatedSessionId;
 
-    @Column(name = "file_name", length = 255)
+    @TableField("file_name")
     private String fileName;
 
-    @Column(name = "original_size")
+    @TableField("original_size")
     private Long originalSize;
 
-    @Column(name = "thumbnail_size")
+    @TableField("thumbnail_size")
     private Long thumbnailSize;
 
-    @Column(name = "mime_type", length = 50)
+    @TableField("mime_type")
     private String mimeType;
 
-    @Column(name = "created_at")
+    @TableField("created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = false;
+    @TableField("is_deleted")
+    @TableLogic(value = "0", delval = "1")
+    private Integer isDeleted = 0;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    @TableField("version")
+    @Version
+    private Integer version;
 }

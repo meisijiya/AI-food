@@ -1,43 +1,36 @@
 package com.ai.food.model;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Where(clause = "is_deleted = false")
-@Table(name = "share_record", indexes = {
-    @Index(name = "idx_share_token", columnList = "share_token"),
-    @Index(name = "idx_share_user_id", columnList = "user_id")
-})
+@TableName("share_record")
 public class ShareRecord {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    @Column(name = "share_token", unique = true, nullable = false, length = 64)
+    @TableField("share_token")
     private String shareToken;
 
-    @Column(name = "user_id", nullable = false)
+    @TableField("user_id")
     private Long userId;
 
-    @Column(name = "session_id", nullable = false, length = 64)
+    @TableField("session_id")
     private String sessionId;
 
-    @Column(name = "view_count")
+    @TableField("view_count")
     private Integer viewCount = 0;
 
-    @Column(name = "created_at")
+    @TableField("created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = false;
+    @TableField("is_deleted")
+    @TableLogic(value = "0", delval = "1")
+    private Integer isDeleted = 0;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    @TableField("version")
+    @Version
+    private Integer version;
 }

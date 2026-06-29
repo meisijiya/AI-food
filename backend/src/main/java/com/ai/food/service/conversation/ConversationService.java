@@ -2,20 +2,22 @@ package com.ai.food.service.conversation;
 
 import com.ai.food.dto.ConversationState;
 import com.ai.food.dto.WebSocketMessage;
+import com.ai.food.mapper.CollectedParamMapper;
+import com.ai.food.mapper.ConversationSessionMapper;
+import com.ai.food.mapper.QaRecordMapper;
+import com.ai.food.mapper.RecommendationResultMapper;
 import com.ai.food.model.CollectedParam;
 import com.ai.food.model.ConversationSession;
 import com.ai.food.model.QaRecord;
 import com.ai.food.model.RecommendationResult;
-import com.ai.food.repository.CollectedParamRepository;
-import com.ai.food.repository.ConversationSessionRepository;
-import com.ai.food.repository.QaRecordRepository;
-import com.ai.food.repository.RecommendationResultRepository;
 import com.ai.food.service.ai.AiService;
 import com.ai.food.service.bloom.BloomFilterService;
 import com.ai.food.service.match.ParamNormalizationService;
+import com.ai.food.service.conversation.MessageTagParser;
+import com.ai.food.validator.MessageValidator;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ai.food.validator.MessageValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,23 +26,33 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 对话会话业务服务（MyBatis-Plus 迁移版）。
+ * <p>
+ * 继承 {@link ServiceImpl} 后，{@code baseMapper} 指向 {@link ConversationSessionMapper}；
+ * 其余三张表（QA / 已收集参数 / 推荐结果）走注入的 Mapper 字段。
+ * </p>
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ConversationService {
+public class ConversationService extends ServiceImpl<ConversationSessionMapper, ConversationSession> {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final AiService aiService;
     private final MessageValidator messageValidator;
     private final MessageTagParser messageTagParser;
-    private final ConversationSessionRepository conversationSessionRepository;
-    private final QaRecordRepository qaRecordRepository;
-    private final CollectedParamRepository collectedParamRepository;
-    private final RecommendationResultRepository recommendationResultRepository;
+    private final QaRecordMapper qaRecordMapper;
+    private final CollectedParamMapper collectedParamMapper;
+    private final RecommendationResultMapper recommendationResultMapper;
     private final StringRedisTemplate redisTemplate;
     private final BloomFilterService bloomFilterService;
     private final ParamNormalizationService paramNormalizationService;
@@ -66,9 +78,14 @@ public class ConversationService {
 
     // ==================== 权限校验 ====================
 
+    /**
+     * 校验 session 是否属于当前用户，并拒绝读取超过 30 天的已完成会话。
+     */
     public void validateOwnership(String sessionId, Long userId) {
-        ConversationSession session = conversationSessionRepository.findBySessionId(sessionId)
-                .orElseThrow(() -> new RuntimeException("会话不存在"));
+        ConversationSession session = baseMapper.findBySessionId(sessionId);
+        if (session == null) {
+            throw new RuntimeException("会话不存在");
+        }
         if (!userId.equals(session.getUserId())) {
             throw new RuntimeException("无权访问此会话");
         }
@@ -81,6 +98,9 @@ public class ConversationService {
 
     // ==================== 初始化 ====================
 
+    /**
+     * 初始化会话：随机决定总题数，并（若已存在）刷新 totalQuestions 字段。
+     */
     public ConversationState initializeConversation(String sessionId) {
         int effectiveMin = Math.max(minQuestions, REQUIRED_PARAMS_COUNT);
         int effectiveMax = Math.max(maxQuestions, effectiveMin);
@@ -91,14 +111,18 @@ public class ConversationService {
         ConversationState state = new ConversationState(sessionId, totalQuestions, "inertia");
         state.setCurrentParam("time");
 
-        conversationSessionRepository.findBySessionId(sessionId).ifPresent(session -> {
+        ConversationSession session = baseMapper.findBySessionId(sessionId);
+        if (session != null) {
             session.setTotalQuestions(totalQuestions);
-            conversationSessionRepository.save(session);
-        });
+            baseMapper.updateById(session);
+        }
 
         return state;
     }
 
+    /**
+     * 推第一道题（time 参数），并把题号 +1 持久化。
+     */
     public WebSocketMessage getFirstQuestion(ConversationState state) {
         state.incrementQuestionCount();
         state.setCurrentParam("time");
@@ -110,6 +134,9 @@ public class ConversationService {
     // ==================== 核心：处理用户回答 ====================
     // 返回 List：第一条 = AI 确认/追问，第二条(可选) = 下一个问题
 
+    /**
+     * 处理一轮用户回答：参数校验 / 重试逻辑 / AI 确认 / 推进 / 推荐触发。
+     */
     public List<WebSocketMessage> processAnswer(String sessionId, String answer, ConversationState state) {
         log.info("[{}] processAnswer: '{}' (param={}, q={}/{})",
                 sessionId, answer, state.getCurrentParam(),
@@ -181,6 +208,9 @@ public class ConversationService {
 
     // ==================== 处理打断消息 ====================
 
+    /**
+     * 用户连续发送多条消息时，使用 AI 统一回复"你说话太快啦"等打断响应。
+     */
     public WebSocketMessage handleInterrupt(String combinedMessage, ConversationState state) {
         log.info("[{}] handleInterrupt: '{}'", state.getSessionId(), combinedMessage);
 
@@ -207,6 +237,9 @@ public class ConversationService {
 
     // ==================== 推荐 ====================
 
+    /**
+     * 触发推荐：调用 AI 生成结果 → 持久化 → 写 Bloom 画像 → 标记会话完成 → 缓存 pending。
+     */
     public WebSocketMessage generateRecommendationMessage(String sessionId, ConversationState state) {
         StringBuilder paramsSummary = new StringBuilder();
         state.getParamValues().forEach((key, value) ->
@@ -243,11 +276,12 @@ public class ConversationService {
             log.warn("Failed to cache pending recommendation to Redis for session {}", sessionId, e);
         }
 
-        conversationSessionRepository.findBySessionId(sessionId).ifPresent(session -> {
+        ConversationSession session = baseMapper.findBySessionId(sessionId);
+        if (session != null) {
             session.setStatus("completed");
             session.setCompletedAt(LocalDateTime.now());
-            conversationSessionRepository.save(session);
-        });
+            baseMapper.updateById(session);
+        }
 
         WebSocketMessage msg = new WebSocketMessage();
         msg.setType("recommend");
@@ -258,6 +292,9 @@ public class ConversationService {
 
     // ==================== AI 调用 ====================
 
+    /**
+     * 根据当前收集进度切换 prompt：必选参数未收齐走"简短确认"，收齐后走"自由对话"prompt。
+     */
     private String generateAiResponse(String param, String answer, ConversationState state) {
         String displayName = messageTagParser.getParamDisplayName(param);
         String context = buildParamsContext(state);
@@ -294,11 +331,17 @@ public class ConversationService {
 
     // ==================== 工具方法 ====================
 
+    /**
+     * 是否所有必选 + 可选参数都已收集。
+     */
     private boolean allParamsCollected(ConversationState state) {
         return requiredParams.stream().allMatch(state::isParamCollected)
                 && optionalParams.stream().allMatch(state::isParamCollected);
     }
 
+    /**
+     * 决定下一个待收集的参数（必选优先，自由发挥阶段后补可选参数）。
+     */
     private String determineNextParam(ConversationState state) {
         for (String param : requiredParams) {
             if (!state.isParamCollected(param)) return param;
@@ -311,6 +354,9 @@ public class ConversationService {
         return null;
     }
 
+    /**
+     * 把已收集参数拼成自然语言上下文，供 AI prompt 使用。
+     */
     private String buildParamsContext(ConversationState state) {
         StringBuilder sb = new StringBuilder();
         state.getParamValues().forEach((key, value) ->
@@ -319,6 +365,9 @@ public class ConversationService {
         return sb.toString();
     }
 
+    /**
+     * 从 AI 原始响应中抽取 JSON：支持 ```json 包裹 / 裸 JSON / 纯文本降级。
+     */
     private String extractJsonFromResponse(String response) {
         if (response == null) return "{\"foodName\":\"暂无推荐\",\"reason\":\"无法生成推荐\"}";
         String trimmed = response.trim();
@@ -331,32 +380,40 @@ public class ConversationService {
         return "{\"foodName\":\"" + trimmed.replace("\"", "\\\"") + "\",\"reason\":\"根据您的需求为您推荐\"}";
     }
 
+    /**
+     * 持久化推荐结果（新增 or 更新），并把对应 entry 写入用户 Bloom 画像。
+     */
     private boolean saveRecommendationResult(String sessionId, ConversationState state, String recommendationJson) {
         try {
-            RecommendationResult result = recommendationResultRepository.findBySessionId(sessionId)
-                    .orElseGet(RecommendationResult::new);
+            RecommendationResult existing = recommendationResultMapper.findBySessionId(sessionId);
+            RecommendationResult result = existing != null ? existing : new RecommendationResult();
             Map<String, String> payload = parseRecommendationPayload(recommendationJson);
             result.setSessionId(sessionId);
             result.setMode(state.getMode());
             result.setFoodName(payload.getOrDefault("foodName", "暂无推荐结果"));
             result.setReason(payload.getOrDefault("reason", "该会话暂无可展示的推荐说明"));
-            RecommendationResult saved = recommendationResultRepository.saveAndFlush(result);
-            log.debug("Saved recommendation result: foodName={}", saved.getFoodName());
+            if (existing == null) {
+                recommendationResultMapper.insert(result);
+            } else {
+                recommendationResultMapper.updateById(result);
+            }
+            log.debug("Saved recommendation result: foodName={}", result.getFoodName());
 
-            conversationSessionRepository.findBySessionId(sessionId).ifPresent(session -> {
+            ConversationSession session = baseMapper.findBySessionId(sessionId);
+            if (session != null) {
                 Long userId = session.getUserId();
                 if (userId != null) {
                     try {
-                        List<CollectedParam> params = collectedParamRepository.findBySessionId(sessionId);
+                        List<CollectedParam> params = collectedParamMapper.findBySessionId(sessionId);
                         List<String> normalizedTokens = paramNormalizationService.normalizeCollectedParams(params);
                         log.debug("[{}] normalized match tokens: {}", sessionId, normalizedTokens);
                         String paramValue = String.join("|", normalizedTokens);
-                        bloomFilterService.addRecommendation(userId, saved.getId().toString(), paramValue);
+                        bloomFilterService.addRecommendation(userId, result.getId().toString(), paramValue);
                     } catch (Exception bloomEx) {
                         log.warn("Failed to update bloom filter for user {}: {}", userId, bloomEx.getMessage());
                     }
                 }
-            });
+            }
             return true;
         } catch (Exception e) {
             log.error("Failed to save recommendation result", e);
@@ -364,6 +421,9 @@ public class ConversationService {
         }
     }
 
+    /**
+     * 解析 AI 返回的 JSON；失败回退为 foodName=原文。
+     */
     private Map<String, String> parseRecommendationPayload(String json) {
         if (json == null || json.isBlank()) {
             return Map.of();
@@ -376,6 +436,9 @@ public class ConversationService {
         }
     }
 
+    /**
+     * 构造 WebSocket 消息体（含进度条）。
+     */
     private WebSocketMessage createMessage(String type, String param, String content, ConversationState state) {
         WebSocketMessage msg = new WebSocketMessage();
         msg.setType(type);
@@ -385,6 +448,9 @@ public class ConversationService {
         return msg;
     }
 
+    /**
+     * 构造当前进度。
+     */
     private WebSocketMessage.Progress createProgress(ConversationState state) {
         return new WebSocketMessage.Progress(
                 state.getCurrentQuestionCount(),
@@ -393,6 +459,9 @@ public class ConversationService {
         );
     }
 
+    /**
+     * 写入一轮问答记录。
+     */
     private void saveQaRecord(String sessionId, String questionType, String paramName,
                               String aiQuestion, String userAnswer, boolean isValid, int questionOrder) {
         try {
@@ -404,35 +473,45 @@ public class ConversationService {
             record.setUserAnswer(userAnswer);
             record.setIsValid(isValid);
             record.setQuestionOrder(questionOrder);
-            qaRecordRepository.save(record);
+            qaRecordMapper.insert(record);
         } catch (Exception e) {
             log.error("Failed to save QaRecord", e);
         }
     }
 
+    /**
+     * 写入/更新一个已收集参数（按 sessionId+paramName 唯一）。
+     */
     private void saveCollectedParam(String sessionId, String paramName, String paramValue) {
         try {
-            var existing = collectedParamRepository.findBySessionIdAndParamName(sessionId, paramName);
-            CollectedParam param = existing.orElseGet(() -> {
-                CollectedParam p = new CollectedParam();
-                p.setSessionId(sessionId);
-                p.setParamName(paramName);
-                p.setParamType(requiredParams.contains(paramName) ? "required" : "optional");
-                return p;
-            });
+            CollectedParam existing = collectedParamMapper.findBySessionIdAndParamName(sessionId, paramName);
+            CollectedParam param = existing != null ? existing : new CollectedParam();
+            if (existing == null) {
+                param.setSessionId(sessionId);
+                param.setParamName(paramName);
+                param.setParamType(requiredParams.contains(paramName) ? "required" : "optional");
+            }
             param.setParamValue(paramValue);
-            collectedParamRepository.save(param);
+            if (existing == null) {
+                collectedParamMapper.insert(param);
+            } else {
+                collectedParamMapper.updateById(param);
+            }
         } catch (Exception e) {
             log.error("Failed to save CollectedParam", e);
         }
     }
 
+    /**
+     * 把 state 里的题号回写 session 表。
+     */
     private void updateSessionQuestionCount(ConversationState state) {
         try {
-            conversationSessionRepository.findBySessionId(state.getSessionId()).ifPresent(session -> {
+            ConversationSession session = baseMapper.findBySessionId(state.getSessionId());
+            if (session != null) {
                 session.setCurrentQuestionCount(state.getCurrentQuestionCount());
-                conversationSessionRepository.save(session);
-            });
+                baseMapper.updateById(session);
+            }
         } catch (Exception e) {
             log.error("Failed to update session question count", e);
         }
@@ -441,10 +520,15 @@ public class ConversationService {
     public List<String> getRequiredParams() { return requiredParams; }
     public List<String> getOptionalParams() { return optionalParams; }
 
+    /**
+     * 从 session 表反查 userId（取不到则抛错）。
+     */
     private Long getUserIdFromSession(String sessionId) {
-        return conversationSessionRepository.findBySessionId(sessionId)
-                .map(ConversationSession::getUserId)
-                .orElseThrow(() -> new RuntimeException("Session not found: " + sessionId));
+        ConversationSession session = baseMapper.findBySessionId(sessionId);
+        if (session == null) {
+            throw new RuntimeException("Session not found: " + sessionId);
+        }
+        return session.getUserId();
     }
 
     private String parseFoodName(String response) {
@@ -498,24 +582,25 @@ public class ConversationService {
         return (int) requiredParams.stream().filter(p -> !state.isParamCollected(p)).count();
     }
 
+    /**
+     * 取消会话：清理 Bloom 画像 + 软删除所有关联表数据。
+     */
     @Transactional
     public void cancelSession(String sessionId) {
         log.info("[{}] canceling session - soft deleting all related data", sessionId);
         try {
-            conversationSessionRepository.findBySessionId(sessionId).ifPresent(session -> {
-                if (session.getUserId() == null) {
-                    return;
+            ConversationSession session = baseMapper.findBySessionId(sessionId);
+            if (session != null && session.getUserId() != null) {
+                Long userId = session.getUserId();
+                RecommendationResult result = recommendationResultMapper.findBySessionId(sessionId);
+                if (result != null && result.getId() != null) {
+                    bloomFilterService.removeRecommendation(userId, result.getId().toString(), null);
                 }
-                recommendationResultRepository.findBySessionId(sessionId).ifPresent(result -> {
-                    if (result.getId() != null) {
-                        bloomFilterService.removeRecommendation(session.getUserId(), result.getId().toString(), null);
-                    }
-                });
-            });
-            qaRecordRepository.softDeleteBySessionId(sessionId);
-            collectedParamRepository.softDeleteBySessionId(sessionId);
-            recommendationResultRepository.softDeleteBySessionId(sessionId);
-            conversationSessionRepository.softDeleteBySessionId(sessionId);
+            }
+            qaRecordMapper.softDeleteBySessionId(sessionId);
+            collectedParamMapper.softDeleteBySessionId(sessionId);
+            recommendationResultMapper.softDeleteBySessionId(sessionId);
+            baseMapper.softDeleteBySessionId(sessionId);
             log.info("[{}] session soft deleted", sessionId);
         } catch (Exception e) {
             log.error("[{}] failed to cancel session", sessionId, e);

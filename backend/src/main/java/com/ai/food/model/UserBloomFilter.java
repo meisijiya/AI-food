@@ -1,44 +1,39 @@
 package com.ai.food.model;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Table(name = "user_bloom_filter")
+@TableName("user_bloom_filter")
 public class UserBloomFilter {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    @Column(name = "user_id", nullable = false, unique = true)
+    @TableField("user_id")
     private Long userId;
 
-    @Column(name = "bit_array", nullable = false, columnDefinition = "VARBINARY(32)")
+    @TableField("bit_array")
     private byte[] bitArray;
 
-    @Column(name = "record_count")
+    @TableField("record_count")
     private Integer recordCount = 0;
 
-    @Column(name = "last_record_id", length = 64)
+    @TableField("last_record_id")
     private String lastRecordId;
 
-    @Column(name = "updated_at")
+    @TableField("updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "created_at")
+    @TableField("created_at")
     private LocalDateTime createdAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
+    @TableField("is_deleted")
+    @TableLogic(value = "0", delval = "1")
+    private Integer isDeleted;
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    @TableField("version")
+    @Version
+    private Integer version;
 }

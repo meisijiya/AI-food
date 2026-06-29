@@ -5,7 +5,17 @@ import com.ai.food.model.ChatPhoto;
 import com.ai.food.model.FeedPost;
 import com.ai.food.model.FeedComment;
 import com.ai.food.model.Photo;
-import com.ai.food.repository.*;
+import com.ai.food.mapper.ChatConversationMapper;
+import com.ai.food.mapper.ChatFileMapper;
+import com.ai.food.mapper.ChatMessageMapper;
+import com.ai.food.mapper.ChatPhotoMapper;
+import com.ai.food.mapper.CollectedParamMapper;
+import com.ai.food.mapper.ConversationSessionMapper;
+import com.ai.food.mapper.FeedCommentMapper;
+import com.ai.food.mapper.FeedPostMapper;
+import com.ai.food.mapper.PhotoMapper;
+import com.ai.food.mapper.QaRecordMapper;
+import com.ai.food.mapper.RecommendationResultMapper;
 import com.ai.food.service.chat.ChatService;
 import com.ai.food.service.upload.FileUploadService;
 import lombok.RequiredArgsConstructor;
@@ -27,18 +37,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CleanupSoftDeletedJob extends QuartzJobBean {
 
-    private final FeedCommentRepository feedCommentRepository;
-    private final FeedPostRepository feedPostRepository;
-    private final PhotoRepository photoRepository;
-    private final ChatPhotoRepository chatPhotoRepository;
-    private final ChatFileRepository chatFileRepository;
-    private final ChatMessageRepository chatMessageRepository;
-    private final ChatConversationRepository chatConversationRepository;
+    private final FeedCommentMapper feedCommentMapper;
+    private final FeedPostMapper feedPostMapper;
+    private final PhotoMapper photoMapper;
+    private final ChatPhotoMapper chatPhotoMapper;
+    private final ChatFileMapper chatFileMapper;
+    private final ChatMessageMapper chatMessageMapper;
+    private final ChatConversationMapper chatConversationMapper;
     private final ChatService chatService;
-    private final QaRecordRepository qaRecordRepository;
-    private final CollectedParamRepository collectedParamRepository;
-    private final RecommendationResultRepository recommendationResultRepository;
-    private final ConversationSessionRepository conversationSessionRepository;
+    private final QaRecordMapper qaRecordMapper;
+    private final CollectedParamMapper collectedParamMapper;
+    private final RecommendationResultMapper recommendationResultMapper;
+    private final ConversationSessionMapper conversationSessionMapper;
     private final FileUploadService fileUploadService;
 
     private static final int CHAT_MEDIA_TTL_DAYS = 30;
@@ -52,7 +62,7 @@ public class CleanupSoftDeletedJob extends QuartzJobBean {
         // 1. 先清理评论（依赖 feed_post 的外键）
         total += cleanupCommentImages();
         log.info("清理 feed_comment 图片文件");
-        total += feedCommentRepository.hardDeleteAllSoftDeleted();
+        total += feedCommentMapper.hardDeleteAllSoftDeleted();
         log.info("清理 feed_comment");
 
         // 1.5 清理动态嵌入的照片文件（thumbnailUrl / originalPhotoUrl）
@@ -60,7 +70,7 @@ public class CleanupSoftDeletedJob extends QuartzJobBean {
         log.info("清理 feed_post 嵌入照片文件");
 
         // 2. 清理动态
-        total += feedPostRepository.hardDeleteAllSoftDeleted();
+        total += feedPostMapper.hardDeleteAllSoftDeleted();
         log.info("清理 feed_post");
 
         // 3. 清理照片（先删物理文件，再删数据库记录）
@@ -68,10 +78,10 @@ public class CleanupSoftDeletedJob extends QuartzJobBean {
         log.info("清理 photo（含物理文件）");
 
         // 4. 清理推荐相关子表
-        total += qaRecordRepository.hardDeleteAllSoftDeleted();
-        total += collectedParamRepository.hardDeleteAllSoftDeleted();
-        total += recommendationResultRepository.hardDeleteAllSoftDeleted();
-        total += conversationSessionRepository.hardDeleteAllSoftDeleted();
+        total += qaRecordMapper.hardDeleteAllSoftDeleted();
+        total += collectedParamMapper.hardDeleteAllSoftDeleted();
+        total += recommendationResultMapper.hardDeleteAllSoftDeleted();
+        total += conversationSessionMapper.hardDeleteAllSoftDeleted();
         log.info("清理推荐相关子表");
 
         // 5. 清理聊天 — 双方都已清除的对话，硬删除软删除记录
@@ -94,17 +104,17 @@ public class CleanupSoftDeletedJob extends QuartzJobBean {
     }
 
     private int cleanupPhotos() {
-        List<Photo> photos = photoRepository.findAllByIsDeletedTrue();
+        List<Photo> photos = photoMapper.findAllByIsDeletedTrue();
         Path uploadRoot = getUploadRoot();
         for (Photo photo : photos) {
             deletePhysicalFile(uploadRoot, photo.getOriginalPath());
             deletePhysicalFile(uploadRoot, photo.getThumbnailPath());
         }
-        return photoRepository.hardDeleteAllSoftDeleted();
+        return photoMapper.hardDeleteAllSoftDeleted();
     }
 
     private int cleanupCommentImages() {
-        List<FeedComment> comments = feedCommentRepository.findAllByIsDeletedTrue();
+        List<FeedComment> comments = feedCommentMapper.findAllByIsDeletedTrue();
         for (FeedComment comment : comments) {
             fileUploadService.deletePhysicalFile(comment.getImageUrl());
         }
@@ -112,7 +122,7 @@ public class CleanupSoftDeletedJob extends QuartzJobBean {
     }
 
     private int cleanupFeedPostPhotos() {
-        List<FeedPost> posts = feedPostRepository.findAllByIsDeletedTrue();
+        List<FeedPost> posts = feedPostMapper.findAllByIsDeletedTrue();
         Path uploadRoot = getUploadRoot();
         for (FeedPost post : posts) {
             deletePhysicalFile(uploadRoot, post.getThumbnailUrl());
@@ -126,16 +136,16 @@ public class CleanupSoftDeletedJob extends QuartzJobBean {
 
         // 先软删除过期的（30天前创建的）
         LocalDateTime cutoff = LocalDateTime.now().minusDays(CHAT_MEDIA_TTL_DAYS);
-        chatPhotoRepository.softDeleteExpired(cutoff);
-        chatFileRepository.softDeleteExpired(cutoff);
+        chatPhotoMapper.softDeleteExpired(cutoff);
+        chatFileMapper.softDeleteExpired(cutoff);
 
         // 再硬删除所有软删除的（含刚软删除的过期记录）
-        List<ChatPhoto> photos = chatPhotoRepository.findAllByIsDeletedTrue();
+        List<ChatPhoto> photos = chatPhotoMapper.findAllByIsDeletedTrue();
         for (ChatPhoto photo : photos) {
             deletePhysicalFile(uploadRoot, photo.getOriginalPath());
             deletePhysicalFile(uploadRoot, photo.getThumbnailPath());
         }
-        return chatPhotoRepository.hardDeleteAllSoftDeleted();
+        return chatPhotoMapper.hardDeleteAllSoftDeleted();
     }
 
     private int cleanupChatFiles() {
@@ -143,11 +153,11 @@ public class CleanupSoftDeletedJob extends QuartzJobBean {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(CHAT_MEDIA_TTL_DAYS);
 
         // 过期的已在 cleanupChatPhotos 中软删除，这里硬删除
-        List<ChatFile> files = chatFileRepository.findAllByIsDeletedTrue();
+        List<ChatFile> files = chatFileMapper.findAllByIsDeletedTrue();
         for (ChatFile file : files) {
             deletePhysicalFile(uploadRoot, file.getFilePath());
         }
-        return chatFileRepository.hardDeleteAllSoftDeleted();
+        return chatFileMapper.hardDeleteAllSoftDeleted();
     }
 
     /**
@@ -155,7 +165,7 @@ public class CleanupSoftDeletedJob extends QuartzJobBean {
      */
     private int cleanupBothClearedConversations() {
         int total = 0;
-        var conversations = chatConversationRepository.findAllBothCleared();
+        var conversations = chatConversationMapper.findAllBothCleared();
         for (var conv : conversations) {
             chatService.hardDeleteClearedMessages(conv.getId());
             total++;
@@ -168,7 +178,7 @@ public class CleanupSoftDeletedJob extends QuartzJobBean {
      */
     private int cleanupOldChatMessages() {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(CHAT_MEDIA_TTL_DAYS);
-        return chatMessageRepository.hardDeleteOldSoftDeleted(cutoff);
+        return chatMessageMapper.hardDeleteOldSoftDeleted(cutoff);
     }
 
     private Path getUploadRoot() {

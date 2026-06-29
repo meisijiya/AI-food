@@ -1,55 +1,51 @@
 package com.ai.food.model;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import org.hibernate.annotations.Where;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * 推荐结果实体（MyBatis-Plus 迁移版）
+ * <p>
+ * 表名 recommendation_result。索引 idx_session 由 Flyway 迁移脚本管理。
+ */
 @Data
-@Entity
-@Where(clause = "is_deleted = false")
-@Table(name = "recommendation_result", indexes = {
-    @Index(name = "idx_session", columnList = "session_id")
-})
+@TableName("recommendation_result")
 public class RecommendationResult {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    @Column(name = "session_id", nullable = false, length = 64)
+    @TableField("session_id")
     private String sessionId;
 
-    @Column(length = 20)
     private String mode;
 
-    @Column(name = "food_name", length = 100)
+    @TableField("food_name")
     private String foodName;
 
-    @Column(name = "old_food", length = 100)
+    @TableField("old_food")
     private String oldFood; // 随机模式的旧值
 
-    @Column(name = "similarity_score", precision = 3, scale = 2)
+    @TableField("similarity_score")
     private BigDecimal similarityScore;
 
-    @Column(columnDefinition = "TEXT")
     private String reason;
 
-    @Column(name = "photo_url", length = 500)
+    @TableField("photo_url")
     private String photoUrl;
 
-    @Column(columnDefinition = "TEXT")
     private String comment;
 
-    @Column(name = "created_at")
+    @TableField("created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = false;
+    @TableField("is_deleted")
+    @TableLogic(value = "0", delval = "1")
+    private Integer isDeleted = 0;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    @TableField("version")
+    @Version
+    private Integer version;
 }

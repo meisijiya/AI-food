@@ -1,11 +1,11 @@
 package com.ai.food.controller;
 
+import com.ai.food.mapper.CollectedParamMapper;
+import com.ai.food.mapper.ConversationSessionMapper;
+import com.ai.food.mapper.QaRecordMapper;
 import com.ai.food.model.ConversationSession;
 import com.ai.food.model.CollectedParam;
 import com.ai.food.model.QaRecord;
-import com.ai.food.repository.ConversationSessionRepository;
-import com.ai.food.repository.CollectedParamRepository;
-import com.ai.food.repository.QaRecordRepository;
 import com.ai.food.service.conversation.ConversationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -31,9 +32,9 @@ import java.util.stream.Collectors;
 @Tag(name = "对话管理", description = "对话会话相关接口")
 public class ConversationController {
 
-    private final ConversationSessionRepository conversationSessionRepository;
-    private final CollectedParamRepository collectedParamRepository;
-    private final QaRecordRepository qaRecordRepository;
+    private final ConversationSessionMapper conversationSessionMapper;
+    private final CollectedParamMapper collectedParamMapper;
+    private final QaRecordMapper qaRecordMapper;
     private final ConversationService conversationService;
 
     @PostMapping("/start")
@@ -50,7 +51,7 @@ public class ConversationController {
         session.setUserId(userId);
         session.setStatus("active");
         session.setMode("inertia");
-        conversationSessionRepository.save(session);
+        conversationSessionMapper.insert(session);
 
         log.info("Conversation session created for user: {}", userId);
 
@@ -70,13 +71,13 @@ public class ConversationController {
         Long userId = getCurrentUserId();
         conversationService.validateOwnership(sessionId, userId);
 
-        var optSession = conversationSessionRepository.findBySessionId(sessionId);
+        var optSession = Optional.ofNullable(conversationSessionMapper.findBySessionId(sessionId));
         if (optSession.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
         ConversationSession session = optSession.get();
-        List<CollectedParam> params = collectedParamRepository.findBySessionId(sessionId);
+        List<CollectedParam> params = collectedParamMapper.findBySessionId(sessionId);
 
         Map<String, String> paramMap = params.stream()
                 .collect(Collectors.toMap(CollectedParam::getParamName, CollectedParam::getParamValue, (a, b) -> a));
@@ -99,12 +100,12 @@ public class ConversationController {
         Long userId = getCurrentUserId();
         conversationService.validateOwnership(sessionId, userId);
 
-        var optSession = conversationSessionRepository.findBySessionId(sessionId);
+        var optSession = Optional.ofNullable(conversationSessionMapper.findBySessionId(sessionId));
         if (optSession.isPresent()) {
             ConversationSession session = optSession.get();
             session.setStatus("completed");
             session.setCompletedAt(LocalDateTime.now());
-            conversationSessionRepository.save(session);
+            conversationSessionMapper.updateById(session);
         }
 
         return ResponseEntity.ok(Map.of(
@@ -140,7 +141,7 @@ public class ConversationController {
         Long userId = getCurrentUserId();
         conversationService.validateOwnership(sessionId, userId);
 
-        List<QaRecord> records = qaRecordRepository.findBySessionIdOrderByQuestionOrderAsc(sessionId);
+        List<QaRecord> records = qaRecordMapper.findBySessionIdOrderByQuestionOrderAsc(sessionId);
 
         List<Map<String, Object>> messages = records.stream().map(record -> {
             Map<String, Object> msg = new LinkedHashMap<>();

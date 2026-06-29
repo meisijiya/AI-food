@@ -1,69 +1,60 @@
 package com.ai.food.model;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Where(clause = "is_deleted = false")
-@Table(name = "feed_post", indexes = {
-    @Index(name = "idx_feed_user_id", columnList = "user_id"),
-    @Index(name = "idx_feed_session_id", columnList = "session_id"),
-    @Index(name = "idx_feed_published_at", columnList = "published_at"),
-    @Index(name = "idx_feed_food_name", columnList = "food_name")
-})
+@TableName("feed_post")
 public class FeedPost {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
+    @TableField("user_id")
     private Long userId;
 
-    @Column(name = "session_id", nullable = false, length = 64)
+    @TableField("session_id")
     private String sessionId;
 
-    @Column(name = "food_name", length = 100)
+    @TableField("food_name")
     private String foodName;
 
-    @Column(name = "comment_preview", length = 100)
+    @TableField("comment_preview")
     private String commentPreview;
 
-    @Column(name = "thumbnail_url", length = 500)
+    @TableField("thumbnail_url")
     private String thumbnailUrl;
 
-    @Column(name = "original_photo_url", length = 500)
+    @TableField("original_photo_url")
     private String originalPhotoUrl;
 
-    @Column(columnDefinition = "TEXT")
+    @TableField("reason")
     private String reason;
 
-    @Column(name = "collected_params", columnDefinition = "JSON")
+    @TableField("collected_params")
     private String collectedParams;
 
-    @Column(name = "like_count")
+    @TableField("like_count")
     private Integer likeCount = 0;
 
-    @Column(name = "comment_count")
+    @TableField("comment_count")
     private Integer commentCount = 0;
 
-    @Column(name = "view_count")
+    @TableField("view_count")
     private Integer viewCount = 0;
 
-    @Column(name = "visibility", length = 20)
+    @TableField("visibility")
     private String visibility = "public";
 
-    @Column(name = "published_at")
+    @TableField("published_at")
     private LocalDateTime publishedAt;
 
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = false;
+    @TableField("is_deleted")
+    @TableLogic(value = "0", delval = "1")
+    private Integer isDeleted = 0;
 
-    @PrePersist
-    protected void onCreate() {
-        publishedAt = LocalDateTime.now();
-    }
+    @TableField("version")
+    @Version
+    private Integer version;
 }

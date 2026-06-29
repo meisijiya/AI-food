@@ -1,11 +1,12 @@
 package com.ai.food.service.upload;
 
+import com.ai.food.mapper.ChatFileMapper;
+import com.ai.food.mapper.ChatPhotoMapper;
+import com.ai.food.mapper.PhotoMapper;
 import com.ai.food.model.ChatFile;
 import com.ai.food.model.ChatPhoto;
 import com.ai.food.model.Photo;
-import com.ai.food.repository.ChatFileRepository;
-import com.ai.food.repository.ChatPhotoRepository;
-import com.ai.food.repository.PhotoRepository;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
@@ -23,16 +24,21 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * 上传服务：照片、头像、聊天图片、聊天文件。
+ * <p>主实体选 {@link Photo}（业务量最大），{@code baseMapper} 由 ServiceImpl 父类注入；
+ * 聊天侧两个相关实体（{@link ChatPhoto} / {@link ChatFile}）通过构造函数注入各自的 Mapper。
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class FileUploadService {
+public class FileUploadService extends ServiceImpl<PhotoMapper, Photo> {
 
-    private final PhotoRepository photoRepository;
-    private final ChatPhotoRepository chatPhotoRepository;
-    private final ChatFileRepository chatFileRepository;
+    private final ChatPhotoMapper chatPhotoMapper;
+    private final ChatFileMapper chatFileMapper;
 
     @Value("${app.upload.base-url:/uploads}")
     private String baseUrl;
@@ -72,16 +78,17 @@ public class FileUploadService {
         if (oldPhotoUrl == null || oldPhotoUrl.isBlank()) return;
         try {
             // 尝试通过 originalPath 或 thumbnailPath 查找 Photo 记录
-            var optPhoto = photoRepository.findByUserIdAndOriginalPath(userId, oldPhotoUrl);
+            Optional<Photo> optPhoto = Optional.ofNullable(
+                    baseMapper.findByUserIdAndOriginalPath(userId, oldPhotoUrl));
             if (optPhoto.isEmpty()) {
-                optPhoto = photoRepository.findByThumbnailPath(oldPhotoUrl);
+                optPhoto = Optional.ofNullable(baseMapper.findByThumbnailPath(oldPhotoUrl));
             }
             if (optPhoto.isPresent()) {
                 Photo photo = optPhoto.get();
                 deletePhysicalFile(photo.getOriginalPath());
                 deletePhysicalFile(photo.getThumbnailPath());
-                photo.setIsDeleted(true);
-                photoRepository.save(photo);
+                // ponytail: 显式 updateById，@TableLogic 软删字段自动写入；version 自增
+                baseMapper.updateById(photo);
                 log.info("Soft-deleted old photo id={} for user {}", photo.getId(), userId);
             } else {
                 log.warn("Skip deleting old photo without owned database record: userId={}, path={}", userId, oldPhotoUrl);
@@ -206,7 +213,9 @@ public class FileUploadService {
         photo.setOriginalSize((long) originalBytes.length);
         photo.setThumbnailSize(thumbSize);
         photo.setMimeType(contentType);
-        Photo saved = photoRepository.save(photo);
+        // ponytail: 显式 insert，@TableId AssignId 自动回填 id 到 photo 对象
+        baseMapper.insert(photo);
+        Photo saved = photo;
 
         log.info("Photo uploaded: original={}B, thumb={}B", originalBytes.length, thumbSize);
 
@@ -329,7 +338,9 @@ public class FileUploadService {
         chatPhoto.setOriginalSize((long) originalBytes.length);
         chatPhoto.setThumbnailSize(thumbSize);
         chatPhoto.setMimeType(contentType);
-        ChatPhoto saved = chatPhotoRepository.save(chatPhoto);
+        // ponytail: 显式 insert；ChatPhoto 是新实体，@TableId AssignId 自动回填
+        chatPhotoMapper.insert(chatPhoto);
+        ChatPhoto saved = chatPhoto;
 
         log.info("Chat photo uploaded: id={}, original={}B, thumb={}B", saved.getId(), originalBytes.length, thumbSize);
 
@@ -376,7 +387,9 @@ public class FileUploadService {
         chatFile.setOriginalName(originalName != null ? originalName : fileName);
         chatFile.setFileSize((long) fileBytes.length);
         chatFile.setMimeType(file.getContentType() != null ? file.getContentType() : "application/octet-stream");
-        ChatFile saved = chatFileRepository.save(chatFile);
+        // ponytail: 显式 insert；@TableId AssignId 自动回填
+        chatFileMapper.insert(chatFile);
+        ChatFile saved = chatFile;
 
         log.info("Chat file uploaded: id={}, name={}, size={}B", saved.getId(), originalName, fileBytes.length);
 

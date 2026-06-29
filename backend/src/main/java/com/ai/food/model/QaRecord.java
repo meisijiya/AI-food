@@ -1,51 +1,56 @@
 package com.ai.food.model;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 
+/**
+ * QA 问答记录实体（MyBatis-Plus 迁移版）
+ * <p>
+ * 表名 qa_record。索引 idx_session 由 Flyway 迁移脚本管理。
+ * <p>
+ * 注意：{@code isValid} 是普通业务字段（问答是否有效），不是软删除标志；
+ *       {@code isDeleted} 才是软删除字段，配合 MP {@link TableLogic} 自动生成 WHERE 子句。
+ */
 @Data
-@Entity
-@Where(clause = "is_deleted = false")
-@Table(name = "qa_record", indexes = {
-    @Index(name = "idx_session", columnList = "session_id")
-})
+@TableName("qa_record")
 public class QaRecord {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    @Column(name = "session_id", nullable = false, length = 64)
+    @TableField("session_id")
     private String sessionId;
 
-    @Column(name = "question_type", length = 20)
+    @TableField("question_type")
     private String questionType; // question/chat/2question/interrupt
 
-    @Column(name = "param_name", length = 50)
+    @TableField("param_name")
     private String paramName;
 
-    @Column(name = "ai_question", columnDefinition = "TEXT")
+    @TableField("ai_question")
     private String aiQuestion;
 
-    @Column(name = "user_answer", columnDefinition = "TEXT")
+    @TableField("user_answer")
     private String userAnswer;
 
-    @Column(name = "is_valid")
+    /**
+     * 业务字段：问答是否有效。普通 boolean，**非**软删除字段，不加 @TableLogic。
+     */
+    @TableField("is_valid")
     private Boolean isValid = true;
 
-    @Column(name = "question_order")
+    @TableField("question_order")
     private Integer questionOrder;
 
-    @Column(name = "created_at")
+    @TableField("created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = false;
+    @TableField("is_deleted")
+    @TableLogic(value = "0", delval = "1")
+    private Integer isDeleted = 0;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    @TableField("version")
+    @Version
+    private Integer version;
 }

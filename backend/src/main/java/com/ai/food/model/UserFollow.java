@@ -1,34 +1,30 @@
 package com.ai.food.model;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Table(name = "user_follow", indexes = {
-    @Index(name = "idx_follower", columnList = "follower_id"),
-    @Index(name = "idx_following", columnList = "following_id")
-}, uniqueConstraints = {
-    @UniqueConstraint(name = "uk_follow", columnNames = {"follower_id", "following_id"})
-})
+@TableName("user_follow")
 public class UserFollow {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    @Column(name = "follower_id", nullable = false)
+    @TableField("follower_id")
     private Long followerId;
 
-    @Column(name = "following_id", nullable = false)
+    @TableField("following_id")
     private Long followingId;
 
-    @Column(name = "created_at", updatable = false)
+    @TableField("created_at")
     private LocalDateTime createdAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    @TableField("is_deleted")
+    @TableLogic(value = "0", delval = "1")
+    private Integer isDeleted;
+
+    @TableField("version")
+    @Version
+    private Integer version;
 }
