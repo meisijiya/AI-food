@@ -49,17 +49,19 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout() {
-    // 先通知后端删除 Redis token
-    try {
-      const { authApi } = await import('@/api')
-      await authApi.logout()
-    } catch {
-      // 忽略网络错误
-    }
+    // 清本地状态优先,再 best-effort 通知后端 — 这样 /auth/logout 不会带着
+    // 失效的 Authorization 头出发;即便被 interceptor 抓到 401,新的 URL guard
+    // 也不会再触发 logout,死循环被打断(详情见 api/index.ts 拦截器注释)
     token.value = ''
     userInfo.value = null
     // 安全修复（M2）：不再清理 localStorage['token'] / document.cookie（写入已被禁用）
     localStorage.removeItem(CACHE_KEY)
+    try {
+      const { authApi } = await import('@/api')
+      await authApi.logout()
+    } catch {
+      // 忽略网络错误 — 本地状态已干净
+    }
   }
 
   // 清除过期的 token

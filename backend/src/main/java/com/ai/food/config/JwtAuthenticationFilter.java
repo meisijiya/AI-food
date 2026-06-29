@@ -27,6 +27,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final StringRedisTemplate redisTemplate;
 
+    /**
+     * ponytail: /api/auth/* (login/register/send-code/logout) 全部 permitAll,
+     * filter 不要再跑 — 否则 logout 即使 stale token 也会被 filter 写 401,
+     * 导致拦截器递归调用 /auth/logout(2026-06-29 401 死循环事故根因之一)。
+     * 这是后端 logout 幂等的服务端保证:无论 token 是否有效,logout 都返回 200。
+     */
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path != null && path.startsWith("/api/auth/");
+    }
+
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,

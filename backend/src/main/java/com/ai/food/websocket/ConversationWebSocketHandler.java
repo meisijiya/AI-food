@@ -235,7 +235,12 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
     public void handleTransportError(WebSocketSession session, Throwable exception) {
         String sessionId = extractSessionId(session);
         log.error("Transport error for session {}: {}", sessionId, exception.getMessage());
-        if (sessionId != null) sessions.remove(sessionId);
+        // ponytail: 跟 afterConnectionClosed 一致,transportError 时 conversationStates
+        // 也要清 — 否则连接异常断开的会话 state 会持续在 Map 里堆,几天后 OOM
+        if (sessionId != null) {
+            sessions.remove(sessionId);
+            conversationStates.remove(sessionId);
+        }
     }
 
     // ==================== 工具方法 ====================

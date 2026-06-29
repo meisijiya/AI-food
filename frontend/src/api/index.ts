@@ -3,6 +3,39 @@ import type { AxiosInstance, AxiosResponse } from 'axios'
 import { useAuthStore } from '@/stores/auth'
 import router from '@/router'
 
+// re-entrance guard:防止并发 401 同时触发多次 logout 流程
+let isHandlingAuthError = false
+
+// ponytail: 裸 axios 实例 — 仅用于 logout / login 这种"无论 token 状态如何
+// 都应自然处理"的端点。无 interceptor,意味着:
+//   (1) 这个实例发出的请求失败,不会触发 isHandlingAuthError 路径;
+//   (2) 即便有人未来改了 logout 路径名(比如 /api/user/logout),它也不会再
+//       走到主 api 的拦截器,URL guard 也就没有"失效路径";
+//   (3) 跟主 api 共享 withCredentials/timeout,只是不要 interceptor。
+const bareApi: AxiosInstance = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE || '/api',
+  timeout: 10000,
+  withCredentials: true,
+  headers: { 'Content-Type': 'application/json' }
+})
+
+// ponytail: 裸 axios 实例 — 用于 auth 类端点。无 401 interceptor,只保留响应解包,
+// 这样:logout 即使收到 401/403 也不会触发死循环;login/register/send-code 拿到的
+// 仍是 unwrapped data,跟原来 request() 行为一致
+bareApi.interceptors.response.use(
+  (response) => {
+    const body = response.data
+    if (body && typeof body === 'object' && 'code' in body && 'data' in body) {
+      if (body.code !== 200) {
+        return Promise.reject(new Error(body.message || '请求失败'))
+      }
+      return body.data
+    }
+    return body
+  },
+  (error) => Promise.reject(error)  // 不做任何 401 处理 — 让调用方决定
+)
+
 const api: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE || '/api',
   timeout: 30000,
@@ -48,11 +81,25 @@ api.interceptors.response.use(
   },
   (error) => {
     const status = error.response?.status
-    if (status === 401 || status === 403) {
-      const authStore = useAuthStore()
-      authStore.logout()
-      if (router.currentRoute.value.path !== '/login') {
-        router.push('/login')
+    const url: string = error.config?.url || ''
+    // 401/403 on auth endpoints (login / logout / register / send-code) must NOT
+    // trigger the logout flow — that would call /auth/logout, which itself returns
+    // 401, looping the interceptor until the browser/service exhausts. Login is
+    // wrong-creds (not expired), logout is expected-on-stale-token.
+    const isAuthEndpoint = url.startsWith('/auth/')
+    // ponytail: re-entrance guard — 并发 5 个 401 进来也只触发 1 次 logout + 1 次跳转,
+    // 防止"一个 401 触发 logout → logout 期间其他 401 又触发 logout" 的 cascade
+    if ((status === 401 || status === 403) && !isAuthEndpoint && !isHandlingAuthError) {
+      isHandlingAuthError = true
+      try {
+        const authStore = useAuthStore()
+        authStore.logout()
+        if (router.currentRoute.value.path !== '/login') {
+          router.push('/login')
+        }
+      } finally {
+        // 下一轮微任务再复位 — 同步 finally 太早会让本批次其他 401 误闯
+        Promise.resolve().then(() => { isHandlingAuthError = false })
       }
     }
     const msg = error.response?.data?.message || error.message || '请求失败'
@@ -73,12 +120,15 @@ function request<T = any>(method: string, url: string, data?: any, config?: any)
 }
 
 // 认证相关接口
+// ponytail: logout/login/register/send-code 用裸 axios 实例 — 即便主实例的拦截器有 bug,
+// 这些端点自身 401 也不会触发死循环(`as any` 是因为 TS 看到的是 AxiosResponse,
+// 实际运行时拦截器已解包成 data — 跟 request() 行为一致)
 export const authApi = {
-  sendCode: (email: string) => request('post', '/auth/send-code', { email }),
+  sendCode: (email: string) => bareApi.post('/auth/send-code', { email }) as any,
   register: (data: { password: string; email: string; code: string }) =>
-    request('post', '/auth/register', data),
-  login: (data: { email: string; password: string }) => request('post', '/auth/login', data),
-  logout: () => request('post', '/auth/logout')
+    bareApi.post('/auth/register', data) as any,
+  login: (data: { email: string; password: string }) => bareApi.post('/auth/login', data) as any,
+  logout: () => bareApi.post('/auth/logout') as any
 }
 
 // 游客相关接口

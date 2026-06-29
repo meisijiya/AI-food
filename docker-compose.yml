@@ -25,6 +25,12 @@ services:
     mem_limit: 128m
     memswap_limit: 128m
     cpus: '0.5'
+    # [PHS-6] 日志上限
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - aifood-net
 
@@ -85,8 +91,9 @@ services:
       APP_UPLOAD_BASE_URL: /uploads
       APP_UPLOAD_DIR: /app/uploads
 
-      # JVM
-      JAVA_OPTS: -Xms256m -Xmx512m
+      # [PHS-1] JVM 容器感知 — 不写死 -Xmx,让 JVM 按容器内存自动算 75%
+      # 写死 -Xmx512m 在 32GB 主机上直接 OOMKill
+      JAVA_OPTS: -XX:MaxRAMPercentage=75.0 -XX:MinRAMPercentage=50.0 -XX:+UseContainerSupport -XX:+ExitOnOutOfMemoryError
     volumes:
       - backend_uploads:/app/uploads
       - backend_logs:/app/logs
@@ -94,6 +101,14 @@ services:
     mem_limit: 768m
     memswap_limit: 768m
     cpus: '1.0'
+    # [PHS-3] 配合 server.shutdown=graceful,给 in-flight 请求 30s 收尾窗口
+    stop_grace_period: 30s
+    # [PHS-6] 单服务日志上限 10m*3=30MB,4 服务总 120MB,云盘 50GB 不会被打爆
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     image: nginx:1.27-alpine
@@ -109,6 +124,12 @@ services:
       - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     mem_limit: 64m
     memswap_limit: 64m
+    # [PHS-6] 日志上限
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   redis_data:

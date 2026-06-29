@@ -20,12 +20,28 @@ spring:
     default-property-inclusion: non_null
 
   # Servlet 上传文件大小
+  # [PHS-5] 100MB 单次上传会吃光 768MB 容器内存,改 10MB
   servlet:
     multipart:
-      max-file-size: 50MB
-      max-request-size: 100MB
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  # [PHS-3] 防止 controller 渲染时仍持 DB 连接导致泄漏
+  jpa:
+    open-in-view: false
 
   # Spring DataSource（由 profile 覆盖）
+  # [PHS-1] HikariCP 配置 — 50 连接在 768MB 容器下是定时炸弹
+  # 公式:(cores * 2) + spindles,1.7GB cloud MySQL 单实例保守 15
+  datasource:
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 5
+      connection-timeout: 5000      # 默认 30s 太长,pool 耗尽时阻塞
+      leak-detection-threshold: 10000  # staging 5s,prod 30s;触发会打印堆栈
+      max-lifetime: 1800000          # 30min,小于 MySQL wait_timeout
+      idle-timeout: 600000           # 10min
+      pool-name: aifood-hikari
   # Spring Data Redis（由 profile 覆盖）
 
 # ============================================
@@ -89,8 +105,10 @@ server:
     enabled: true
     mime-types: application/json,text/html,text/xml,text/plain
   tomcat:
+    # [PHS-1] 200 线程在 768MB 容器下是定时炸弹 — 200 thread stack ≈ 200MB,
+    # 留 100MB 给 heap,实际可用 < 512MB。降到 50
     threads:
-      max: 200
+      max: 50
 
 # ================== Springdoc / Knife4j ==================
 springdoc:
@@ -156,8 +174,9 @@ management:
 # ================== Logging ==================
 logging:
   level:
+    # [PHS-6] 生产关闭 DEBUG — DEBUG 日志每条带完整 SQL + 变量,768MB 容器扛不住
     root: INFO
-    com.ai.food: DEBUG
+    com.ai.food: INFO
     org.springframework.security: INFO
     org.hibernate.SQL: WARN
   pattern:
