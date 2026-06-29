@@ -66,6 +66,13 @@
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
         </dependency>
 
+        <!-- MySQL 驱动（admin 需要查 ai_food 库,必须带） -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- Druid 连接池 + 监控（artifactId 与父 POM dependencyManagement 一致，版本由父 POM 锁定） -->
         <dependency>
             <groupId>com.alibaba</groupId>
