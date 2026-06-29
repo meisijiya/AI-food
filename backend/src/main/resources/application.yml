@@ -105,7 +105,8 @@ springdoc:
   default-flat-param-object: true
   show-actuator: false
   group-configs:
-    - group: 0-所有接口
+    # group 名 (key for springdoc) 不能跟 springdoc 自动生成的默认组重名
+    - group: all-apis
       paths-to-match: /api/**
       display-name: 0-所有接口
 

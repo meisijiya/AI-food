@@ -47,6 +47,8 @@ public class SecurityConfig {
                 .requestMatchers("/uploads/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/**", "/swagger-resources/**", "/webjars/**").permitAll()
                 .requestMatchers("/doc.html", "/favicon.ico").permitAll()
+                // [PHS-1] docker healthcheck 需要 /actuator/health 公开 — 容器内 wget 不带 auth
+                .requestMatchers("/actuator/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
