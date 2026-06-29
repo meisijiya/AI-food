@@ -22,6 +22,9 @@ public class SysUser {
 
     private String avatar;
 
+    /** 用户角色：USER | ADMIN。由 V4 migration 添加,默认 USER。 */
+    private String role;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
