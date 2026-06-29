@@ -1,7 +1,7 @@
 package com.ai.food.controller;
 
 import com.ai.food.dto.ApiResponse;
-import com.ai.food.model.SysUser;
+import com.ai.food.common.model.SysUser;
 import com.ai.food.service.upload.FileUploadService;
 import com.ai.food.service.user.UserService;
 import lombok.RequiredArgsConstructor;

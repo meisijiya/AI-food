@@ -1,11 +1,11 @@
 package com.ai.food.controller;
 
-import com.ai.food.mapper.CollectedParamMapper;
-import com.ai.food.mapper.ConversationSessionMapper;
-import com.ai.food.mapper.QaRecordMapper;
-import com.ai.food.model.ConversationSession;
-import com.ai.food.model.CollectedParam;
-import com.ai.food.model.QaRecord;
+import com.ai.food.common.mapper.CollectedParamMapper;
+import com.ai.food.common.mapper.ConversationSessionMapper;
+import com.ai.food.common.mapper.QaRecordMapper;
+import com.ai.food.common.model.ConversationSession;
+import com.ai.food.common.model.CollectedParam;
+import com.ai.food.common.model.QaRecord;
 import com.ai.food.service.conversation.ConversationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

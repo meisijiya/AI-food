@@ -1,7 +1,7 @@
 package com.ai.food.service.like;
 
-import com.ai.food.mapper.FeedPostMapper;
-import com.ai.food.model.FeedPost;
+import com.ai.food.common.mapper.FeedPostMapper;
+import com.ai.food.common.model.FeedPost;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.stream.*;

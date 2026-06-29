@@ -1,9 +1,9 @@
 package com.ai.food.service.follow;
 
-import com.ai.food.mapper.UserFollowMapper;
-import com.ai.food.mapper.UserMapper;
-import com.ai.food.model.SysUser;
-import com.ai.food.model.UserFollow;
+import com.ai.food.common.mapper.UserFollowMapper;
+import com.ai.food.common.mapper.UserMapper;
+import com.ai.food.common.model.SysUser;
+import com.ai.food.common.model.UserFollow;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

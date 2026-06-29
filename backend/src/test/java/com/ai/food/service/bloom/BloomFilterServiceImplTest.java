@@ -1,9 +1,9 @@
 package com.ai.food.service.bloom;
 
-import com.ai.food.mapper.CollectedParamMapper;
-import com.ai.food.mapper.ConversationSessionMapper;
-import com.ai.food.mapper.RecommendationResultMapper;
-import com.ai.food.mapper.UserMapper;
+import com.ai.food.common.mapper.CollectedParamMapper;
+import com.ai.food.common.mapper.ConversationSessionMapper;
+import com.ai.food.common.mapper.RecommendationResultMapper;
+import com.ai.food.common.mapper.UserMapper;
 import com.ai.food.service.bloom.impl.BloomFilterServiceImpl;
 import com.ai.food.service.follow.FollowService;
 import org.junit.jupiter.api.DisplayName;

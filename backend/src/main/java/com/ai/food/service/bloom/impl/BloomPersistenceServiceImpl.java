@@ -1,9 +1,9 @@
 package com.ai.food.service.bloom.impl;
 
-import com.ai.food.mapper.BloomSyncLogMapper;
-import com.ai.food.mapper.UserBloomFilterMapper;
-import com.ai.food.model.BloomSyncLog;
-import com.ai.food.model.UserBloomFilter;
+import com.ai.food.common.mapper.BloomSyncLogMapper;
+import com.ai.food.common.mapper.UserBloomFilterMapper;
+import com.ai.food.common.model.BloomSyncLog;
+import com.ai.food.common.model.UserBloomFilter;
 import com.ai.food.service.bloom.BloomFilterRedisDao;
 import com.ai.food.service.bloom.BloomPersistenceService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;

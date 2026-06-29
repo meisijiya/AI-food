@@ -1,14 +1,14 @@
 package com.ai.food.service.record;
 
-import com.ai.food.mapper.CollectedParamMapper;
-import com.ai.food.mapper.ConversationSessionMapper;
-import com.ai.food.mapper.FeedCommentMapper;
-import com.ai.food.mapper.FeedPostMapper;
-import com.ai.food.mapper.PhotoMapper;
-import com.ai.food.mapper.QaRecordMapper;
-import com.ai.food.mapper.RecommendationResultMapper;
-import com.ai.food.model.ConversationSession;
-import com.ai.food.model.RecommendationResult;
+import com.ai.food.common.mapper.CollectedParamMapper;
+import com.ai.food.common.mapper.ConversationSessionMapper;
+import com.ai.food.common.mapper.FeedCommentMapper;
+import com.ai.food.common.mapper.FeedPostMapper;
+import com.ai.food.common.mapper.PhotoMapper;
+import com.ai.food.common.mapper.QaRecordMapper;
+import com.ai.food.common.mapper.RecommendationResultMapper;
+import com.ai.food.common.model.ConversationSession;
+import com.ai.food.common.model.RecommendationResult;
 import com.ai.food.service.bloom.BloomFilterService;
 import com.ai.food.service.feed.FeedService;
 import org.junit.jupiter.api.DisplayName;

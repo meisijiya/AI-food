@@ -1,6 +1,6 @@
 package com.ai.food.service.match;
 
-import com.ai.food.model.CollectedParam;
+import com.ai.food.common.model.CollectedParam;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 

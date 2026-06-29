@@ -1,15 +1,15 @@
 package com.ai.food.service.chat;
 
-import com.ai.food.model.ChatConversation;
-import com.ai.food.model.ChatFile;
-import com.ai.food.model.ChatMessage;
-import com.ai.food.model.ChatPhoto;
+import com.ai.food.common.model.ChatConversation;
+import com.ai.food.common.model.ChatFile;
+import com.ai.food.common.model.ChatMessage;
+import com.ai.food.common.model.ChatPhoto;
 import com.ai.food.exception.PermissionDeniedException;
-import com.ai.food.mapper.ChatConversationMapper;
-import com.ai.food.mapper.ChatFileMapper;
-import com.ai.food.mapper.ChatMessageMapper;
-import com.ai.food.mapper.ChatPhotoMapper;
-import com.ai.food.mapper.UserMapper;
+import com.ai.food.common.mapper.ChatConversationMapper;
+import com.ai.food.common.mapper.ChatFileMapper;
+import com.ai.food.common.mapper.ChatMessageMapper;
+import com.ai.food.common.mapper.ChatPhotoMapper;
+import com.ai.food.common.mapper.UserMapper;
 import com.ai.food.service.follow.FollowService;
 import com.ai.food.service.notification.NotificationService;
 import com.ai.food.service.upload.FileUploadService;

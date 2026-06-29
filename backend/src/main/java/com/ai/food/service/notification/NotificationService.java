@@ -1,7 +1,7 @@
 package com.ai.food.service.notification;
 
-import com.ai.food.mapper.UserMapper;
-import com.ai.food.model.SysUser;
+import com.ai.food.common.mapper.UserMapper;
+import com.ai.food.common.model.SysUser;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;

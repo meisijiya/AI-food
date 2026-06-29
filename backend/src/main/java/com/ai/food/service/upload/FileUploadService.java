@@ -2,12 +2,12 @@ package com.ai.food.service.upload;
 
 import com.ai.food.config.UploadPathProperties;
 import com.ai.food.exception.BusinessException;
-import com.ai.food.mapper.ChatFileMapper;
-import com.ai.food.mapper.ChatPhotoMapper;
-import com.ai.food.mapper.PhotoMapper;
-import com.ai.food.model.ChatFile;
-import com.ai.food.model.ChatPhoto;
-import com.ai.food.model.Photo;
+import com.ai.food.common.mapper.ChatFileMapper;
+import com.ai.food.common.mapper.ChatPhotoMapper;
+import com.ai.food.common.mapper.PhotoMapper;
+import com.ai.food.common.model.ChatFile;
+import com.ai.food.common.model.ChatPhoto;
+import com.ai.food.common.model.Photo;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
