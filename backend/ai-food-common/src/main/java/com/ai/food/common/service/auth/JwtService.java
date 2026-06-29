@@ -1,4 +1,4 @@
-package com.ai.food.service.auth;
+package com.ai.food.common.service.auth;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

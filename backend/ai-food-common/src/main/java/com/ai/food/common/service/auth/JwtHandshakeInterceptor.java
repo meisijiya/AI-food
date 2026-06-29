@@ -1,6 +1,6 @@
-package com.ai.food.config;
+package com.ai.food.common.service.auth;
 
-import com.ai.food.service.auth.JwtService;
+import com.ai.food.common.service.auth.JwtService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,7 @@
 package com.ai.food.websocket;
 
 import com.ai.food.common.model.ChatMessage;
-import com.ai.food.service.auth.JwtService;
+import com.ai.food.common.service.auth.JwtService;
 import com.ai.food.service.chat.ChatService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;

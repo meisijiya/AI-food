@@ -1,5 +1,6 @@
 package com.ai.food.config;
 
+import com.ai.food.common.service.auth.JwtHandshakeInterceptor;
 import com.ai.food.websocket.ChatWebSocketHandler;
 import com.ai.food.websocket.ConversationWebSocketHandler;
 import lombok.RequiredArgsConstructor;
