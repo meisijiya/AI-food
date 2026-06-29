@@ -65,6 +65,14 @@
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
         </dependency>
+        <!--
+            mybatis-plus-jsqlparser 提供 PaginationInnerInterceptor / BlockAttackInnerInterceptor,
+            starter 不会传递依赖,admin-server 自带的 MybatisPlusConfig 需要它们,故显式引入。
+        -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
+        </dependency>
 
         <!-- MySQL 驱动（admin 需要查 ai_food 库,必须带） -->
         <dependency>
