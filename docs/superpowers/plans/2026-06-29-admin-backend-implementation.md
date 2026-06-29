@@ -143,13 +143,15 @@ cp -r backend backend.bak.$(date +%Y%m%d)
 
 父 POM 内容：groupId=com.ai.food, artifactId=ai-food-backend, version=2.2.0, packaging=pom；parent=spring-boot-starter-parent 3.4.0；modules=ai-food-common,ai-food-app,admin-server；properties=java.version=21, mybatis-plus.version=3.5.9, jjwt.version=0.12.6, druid.version=1.2.23, spring-boot-admin.version=3.4.0；dependencyManagement 锁定 ai-food-common 内部依赖和以上 4 个第三方依赖版本。
 
-- [ ] **Step 3: 验证**
+⚠️ **Task 6 需迁移业务依赖**：原 `backend/pom.xml` 的 `<dependencies>` 块（spring-ai-starter-model-openai / aliyun-sdk-oss / lombok / spring-boot-starter-websocket 等）必须整体搬到 `ai-food-app/pom.xml`，不要漏。
+
+- [ ] **Step 3: 验证（必须加 -N 跳过 reactor 模块扫描）**
 
 ```bash
-cd backend && mvn help:effective-pom -q
+cd backend && JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 mvn help:effective-pom -N -q
 ```
 
-Expected: BUILD SUCCESS
+Expected: BUILD SUCCESS（`-N` = --non-recursive，避免因模块目录不存在导致 reactor 加载失败）
 
 - [ ] **Step 4: Commit**
 
@@ -157,6 +159,8 @@ Expected: BUILD SUCCESS
 git add backend/pom.xml
 git commit -m "refactor(backend): add multi-module parent pom"
 ```
+
+> **⚠️ 已知风险**：从 Task 1 commit 到 Task 7 完成，mvn build 会失败（预期）。**不要在这一期间跑 CI**。
 
 ---
 
