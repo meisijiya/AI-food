@@ -30,7 +30,7 @@ public class AiController {
         log.debug("AI chat request - systemPrompt length: {}, message: {}",
                 systemPrompt.length(), message);
 
-        String response = aiService.chat(systemPrompt, message);
+        String response = aiService.chat(systemPrompt, message).getText();
 
         return ResponseEntity.ok(Map.of(
                 "success", true,

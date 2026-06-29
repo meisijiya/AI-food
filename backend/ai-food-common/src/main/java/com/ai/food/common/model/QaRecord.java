@@ -53,4 +53,20 @@ public class QaRecord {
     @TableField("version")
     @Version
     private Integer version;
+
+    /** LLM 提示词 token 数（仅 LLM 生成问答时填写，intake Q&A 留 null） */
+    @TableField("prompt_tokens")
+    private Integer promptTokens;
+
+    /** LLM 完成 token 数（仅 LLM 生成问答时填写，intake Q&A 留 null） */
+    @TableField("completion_tokens")
+    private Integer completionTokens;
+
+    /** 总 token 数（仅 LLM 生成问答时填写，intake Q&A 留 null） */
+    @TableField("total_tokens")
+    private Integer totalTokens;
+
+    /** 调用的模型名（如 qwen-turbo / gpt-4o-mini） */
+    @TableField("model")
+    private String model;
 }

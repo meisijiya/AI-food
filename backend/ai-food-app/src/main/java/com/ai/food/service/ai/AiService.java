@@ -1,11 +1,15 @@
 package com.ai.food.service.ai;
 
+import com.ai.food.common.ai.ChatResult;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -51,17 +55,49 @@ public class AiService {
         }
     }
 
-    public String chat(String systemPrompt, String userMessage) {
+    /**
+     * 调用 LLM 生成文本，并把 token 用量 + 模型名一并返回（用于记账到 qa_record）。
+     *
+     * @param systemPrompt 系统 prompt
+     * @param userMessage  用户消息
+     * @return ChatResult，包含 text + 三个 token 计数 + model；失败兜底 text 也带在 result 里
+     */
+    public ChatResult chat(String systemPrompt, String userMessage) {
         try {
             Message system = new SystemMessage(systemPrompt);
             Message user = new UserMessage(userMessage);
             Prompt prompt = new Prompt(List.of(system, user));
 
-            var response = chatModel.call(prompt);
-            return response.getResult().getOutput().getText();
+            ChatResponse response = chatModel.call(prompt);
+            String text = response.getResult().getOutput().getText();
+
+            // ponytail: 捕获 token 用量。usage/metadata 缺失或异常只 log,不影响文本返回。
+            Long promptTokens = null;
+            Long completionTokens = null;
+            Long totalTokens = null;
+            String model = null;
+            try {
+                ChatResponseMetadata metadata = response.getMetadata();
+                if (metadata != null) {
+                    Usage usage = metadata.getUsage();
+                    if (usage != null) {
+                        Integer pt = usage.getPromptTokens();
+                        Integer ct = usage.getCompletionTokens();
+                        Integer tt = usage.getTotalTokens();
+                        promptTokens = pt != null ? pt.longValue() : null;
+                        completionTokens = ct != null ? ct.longValue() : null;
+                        totalTokens = tt != null ? tt.longValue() : null;
+                    }
+                    model = metadata.getModel();
+                }
+            } catch (Exception usageEx) {
+                log.warn("Failed to read token usage from ChatResponse: {}", usageEx.getMessage());
+            }
+
+            return new ChatResult(text, promptTokens, completionTokens, totalTokens, model);
         } catch (Exception e) {
             log.error("Error calling AI service", e);
-            return "抱歉，AI服务暂时不可用，请稍后重试";
+            return ChatResult.of("抱歉，AI服务暂时不可用，请稍后重试");
         }
     }
 
@@ -77,7 +113,7 @@ public class AiService {
                 .replace("{param}", param != null ? param : "")
                 .replace("{context}", context != null ? context : "");
 
-        return chat("你是一个友好的美食推荐助手。", prompt);
+        return chat("你是一个友好的美食推荐助手。", prompt).getText();
     }
 
     /**
@@ -94,7 +130,7 @@ public class AiService {
                 .replace("{question}", question != null ? question : "")
                 .replace("{answer}", answer != null ? answer : "");
 
-        String result = chat("你是一个回答验证助手。", prompt);
+        String result = chat("你是一个回答验证助手。", prompt).getText();
         return "true".equalsIgnoreCase(result.trim());
     }
 
@@ -108,7 +144,7 @@ public class AiService {
         String prompt = recommendationPrompt
                 .replace("{params}", collectedParams != null ? collectedParams : "");
 
-        return chat("你是一个专业的美食推荐助手。", prompt);
+        return chat("你是一个专业的美食推荐助手。", prompt).getText();
     }
 
     /**
@@ -124,7 +160,7 @@ public class AiService {
                 .replace("{food2}", food2 != null ? food2 : "");
 
         try {
-            String result = chat("你是一个食物相似度评估助手。", prompt);
+            String result = chat("你是一个食物相似度评估助手。", prompt).getText();
             return Double.parseDouble(result.trim());
         } catch (NumberFormatException e) {
             log.error("Error parsing similarity score", e);

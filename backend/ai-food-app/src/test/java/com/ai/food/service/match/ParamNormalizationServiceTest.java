@@ -1,5 +1,6 @@
 package com.ai.food.service.match;
 
+import com.ai.food.common.ai.ChatResult;
 import com.ai.food.service.ai.AiService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,7 +44,7 @@ class ParamNormalizationServiceTest {
                 new AiParamNormalizer(aiService)
         );
         when(aiService.chat(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString()))
-                .thenReturn("taste=spicy,taste=hotpot,taste=free_text");
+                .thenReturn(ChatResult.of("taste=spicy,taste=hotpot,taste=free_text"));
 
         List<String> tokens = service.normalize("taste", "想吃点刺激又带汤的");
 

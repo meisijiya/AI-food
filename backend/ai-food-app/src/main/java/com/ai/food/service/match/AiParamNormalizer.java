@@ -63,7 +63,7 @@ public class AiParamNormalizer {
                     String.join(",", allowedValues.stream().sorted().toList()),
                     cleanedParam
             );
-            String result = aiService.chat(systemPrompt, userPrompt);
+            String result = aiService.chat(systemPrompt, userPrompt).getText();
             return extractAllowedTokens(cleanedParam, result, allowedValues);
         } catch (Exception ex) {
             log.warn("AI param normalization failed: paramName={}, error={}", cleanedParam, ex.getMessage());

@@ -1,5 +1,6 @@
 package com.ai.food.service.conversation;
 
+import com.ai.food.common.ai.ChatResult;
 import com.ai.food.dto.ConversationState;
 import com.ai.food.dto.WebSocketMessage;
 import com.ai.food.common.model.CollectedParam;
@@ -92,7 +93,7 @@ class ConversationServiceTest {
         lenient().when(paramNormalizationService.normalizeCollectedParams(anyList())).thenReturn(List.of("time=night"));
         lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         // AI mock
-        when(aiService.chat(anyString(), anyString())).thenReturn("好的，记下了！");
+        when(aiService.chat(anyString(), anyString())).thenReturn(ChatResult.of("好的，记下了！"));
     }
 
     @Nested

@@ -153,8 +153,8 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
             if (state.canRetryParam(currentParam, maxParamRetry)) {
                 // 追问
                 saveQaRecord(sessionId, "2question", currentParam,
-                        messageTagParser.getQuestionContent(currentParam, state), answer, false,
-                        state.getCurrentQuestionCount());
+                        messageTagParser.getQuestionContent(currentParam, state), answer,
+                        state.getCurrentQuestionCount(), null, null, null, null);
                 result.add(createMessage("2question", currentParam,
                         messageTagParser.getRetryContent(currentParam, validation.getMessage()), state));
                 return result;
@@ -168,8 +168,8 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
             // 校验通过，保存参数
             state.saveParamValue(currentParam, answer);
             saveQaRecord(sessionId, "question", currentParam,
-                    messageTagParser.getQuestionContent(currentParam, state), answer, true,
-                    state.getCurrentQuestionCount());
+                    messageTagParser.getQuestionContent(currentParam, state), answer,
+                    state.getCurrentQuestionCount(), null, null, null, null);
             saveCollectedParam(sessionId, currentParam, answer);
         }
 
@@ -224,7 +224,7 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
 
         String aiReply;
         try {
-            aiReply = aiService.chat("你是一个友好的美食推荐助手。", prompt);
+            aiReply = aiService.chat("你是一个友好的美食推荐助手。", prompt).getText();
             if (aiReply == null || aiReply.isBlank() || aiReply.startsWith("抱歉")) {
                 aiReply = "你说话太快啦，让我先想想~";
             }
@@ -318,7 +318,7 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
         }
 
         try {
-            String response = aiService.chat(systemPrompt, userPrompt);
+            String response = aiService.chat(systemPrompt, userPrompt).getText();
             if (response != null && !response.isBlank() && !response.startsWith("抱歉")) {
                 return response.trim();
             }
@@ -461,9 +461,15 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
 
     /**
      * 写入一轮问答记录。
+     * <p>
+     * token / model 字段由 LLM 生成问答的调用方填值；intake Q&A（question/2question）的调用方传 null。
+     * 移除了旧的 {@code isValid} 入参——{@code question_type} 已经能区分 valid ("question") 与
+     * retry ("2question")，业务字段冗余且与新增的 token 字段叠加后超过 MP 默认 INSERT 列数也易踩坑。
+     * </p>
      */
     private void saveQaRecord(String sessionId, String questionType, String paramName,
-                              String aiQuestion, String userAnswer, boolean isValid, int questionOrder) {
+                              String aiQuestion, String userAnswer, Integer questionOrder,
+                              Long promptTokens, Long completionTokens, Long totalTokens, String model) {
         try {
             QaRecord record = new QaRecord();
             record.setSessionId(sessionId);
@@ -471,8 +477,11 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
             record.setParamName(paramName);
             record.setAiQuestion(aiQuestion);
             record.setUserAnswer(userAnswer);
-            record.setIsValid(isValid);
             record.setQuestionOrder(questionOrder);
+            record.setPromptTokens(promptTokens != null ? promptTokens.intValue() : null);
+            record.setCompletionTokens(completionTokens != null ? completionTokens.intValue() : null);
+            record.setTotalTokens(totalTokens != null ? totalTokens.intValue() : null);
+            record.setModel(model);
             qaRecordMapper.insert(record);
         } catch (Exception e) {
             log.error("Failed to save QaRecord", e);
