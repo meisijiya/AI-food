@@ -31,6 +31,41 @@
 - 敏感信息：JWT_SECRET/DB_PASSWORD/DEEPSEEK_API_KEY 全部 env var
 - commit：`<scope>: <description>`，scope `feat`/`fix`/`refactor`/`docs`/`chore`
 
+## 实际环境（本分支起点）
+
+| 项 | 值 |
+|---|---|
+| 分支 | `feature/admin-backend`（基于 master `579489f` 之后） |
+| 当前 master | `579489f fix(fullstack): P0 hardening — 401 logout loop zygote + container survival` |
+| 现有容器（**已停**） | aifood-backend / aifood-frontend / aifood-redis |
+| 现有隧道（**已停**） | `aifood-ssh-tunnel@L13306:...` + `aifood-ssh-tunnel@R3000:...` |
+| **MySQL 连接** | `mysql -uaifood -p<aifood_password> -h 127.0.0.1 -P 13306 ai_food`（**走 SSH 隧道**） |
+| 凭据来源 | `.env`（chmod 600，**不要在 chat/日志/handoff 复述**） |
+| **Redis** | `127.0.0.1:6379`（无密码） |
+| **Admin 账号** | `smoke@aifood.local` / `testpass123`（user_id=1，**V4 迁移后 role=ADMIN**） |
+| **V3 已存在** | `V3__add_is_deleted_to_sys_user.sql`（不能动），本 plan 用 V4 |
+| **现有 5 轮 polish** | commit `09684ce` 等保留，不要 revert |
+| 公网入口（**当前断**） | `http://119.29.52.111/`（本分支不修公网，只本地跑） |
+
+## Subagent 启动前置（每个 task 必做）
+
+```bash
+# 1. 验证分支
+git branch --show-current  # 应是 feature/admin-backend
+
+# 2. 验证 MySQL 可达（需要 SSH 隧道起来）
+sudo systemctl start aifood-ssh-tunnel@L13306:127.0.0.1:3306.service
+mysql -uaifood -paifood123 -h 127.0.0.1 -P 13306 -e "SELECT 1;" ai_food
+
+# 3. 验证 .env
+cat .env | grep -E "^(DB_|JWT_|REDIS_|DEEPSEEK_)" | sed 's/=.*/=<redacted>/'
+
+# 4. JAVA_HOME
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+```
+
+**⚠️ 如果 MySQL 不可达 → BLOCKED，不要硬扛**
+
 ---
 
 ## File Structure
@@ -373,30 +408,31 @@ git commit -m "feat(admin): scaffold admin-server module"
 
 ---
 
-## Task 8：Flyway 数据库迁移
+## Task 8：Flyway 数据库迁移（V4 而非 V3）
 
-**Files:** Create V2__add_token_usage.sql + V3__add_role_and_audit.sql
+**⚠️ V3 已被占用**（`V3__add_is_deleted_to_sys_user.sql`，commit `ff9a838`），本任务用 **V4**。
 
-- [ ] **Step 1: 写 V2**
+**Files:**
+- Create `backend/ai-food-app/src/main/resources/db/migration/V4__add_token_and_role_audit.sql`
+- MySQL 走 SSH 隧道：`127.0.0.1:13306`（sandbox 端）→ cloud `:3306`（参考 handoff §2.1）
 
-`backend/ai-food-app/src/main/resources/db/migration/V2__add_token_usage.sql`
+- [ ] **Step 1: 写 V4 迁移**（合并 token + role + audit_log 三件事）
+
+`backend/ai-food-app/src/main/resources/db/migration/V4__add_token_and_role_audit.sql`
 
 ```sql
+-- 1. qa_record 加 token 用量字段
 ALTER TABLE qa_record
     ADD COLUMN prompt_tokens INT NULL,
     ADD COLUMN completion_tokens INT NULL,
     ADD COLUMN total_tokens INT NULL,
     ADD COLUMN model VARCHAR(32) NULL;
 CREATE INDEX idx_qa_created_user ON qa_record(created_at, user_id);
-```
 
-- [ ] **Step 2: 写 V3**
-
-`backend/ai-food-app/src/main/resources/db/migration/V3__add_role_and_audit.sql`
-
-```sql
+-- 2. sys_user 加 role 字段（admin 鉴权用）
 ALTER TABLE sys_user ADD COLUMN role VARCHAR(16) NOT NULL DEFAULT 'USER';
 
+-- 3. admin_audit_log 表
 CREATE TABLE admin_audit_log (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     actor_id BIGINT NOT NULL,
@@ -415,30 +451,36 @@ CREATE TABLE admin_audit_log (
     INDEX idx_audit_action (action, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-UPDATE sys_user SET role = 'ADMIN' WHERE id = (SELECT MIN(id) FROM (SELECT id FROM sys_user) t);
+-- 4. 把现有唯一用户 smokeuser 提权为 ADMIN（user_id=1）
+UPDATE sys_user SET role = 'ADMIN' WHERE id = 1;
 ```
 
-- [ ] **Step 3: 启动 ai-food-app 触发迁移**
+- [ ] **Step 2: 备份 DB + 启动 ai-food-app 触发迁移**
 
 ```bash
-mysqldump -u root -p ai_food > /tmp/ai_food_backup_$(date +%Y%m%d).sql
+mysqldump -uaifood -paifood123 -h 127.0.0.1 -P 13306 ai_food > /tmp/ai_food_backup_$(date +%Y%m%d).sql
 mvn -pl ai-food-app spring-boot:run
-# 观察日志: Successfully applied 2 migrations
+# 观察日志: Successfully applied 1 migration (V4)
 ```
 
-- [ ] **Step 4: 验证表结构**
+- [ ] **Step 3: 验证表结构**
 
 ```bash
-mysql -u root -p ai_food -e "DESCRIBE qa_record; DESCRIBE sys_user; SHOW TABLES LIKE 'admin_audit_log'; SELECT id, username, role FROM sys_user LIMIT 5;"
+mysql -uaifood -paifood123 -h 127.0.0.1 -P 13306 ai_food -e "
+  DESCRIBE qa_record;
+  DESCRIBE sys_user;
+  SHOW TABLES LIKE 'admin_audit_log';
+  SELECT id, username, role FROM sys_user;
+"
 ```
 
-Expected: 字段存在 + 至少一个用户 role=ADMIN
+Expected: qa_record 有 token 字段 / sys_user 有 role 字段 / admin_audit_log 存在 / smokeuser role=ADMIN
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add backend/
-git commit -m "feat(db): add V2 token fields and V3 role+audit migrations"
+git commit -m "feat(db): V4 add token fields + sys_user.role + admin_audit_log"
 ```
 
 ---
@@ -2649,7 +2691,7 @@ git tag v2.3.0-admin-v1
 | §2 ADR-006 只读 + 业务 CRUD | ✅ Task 13-17 (无 SQL 控制台) |
 | §3 架构图 | ✅ Task 1-7 实现 |
 | §4.1 Maven 多模块 | ✅ Task 1-6 |
-| §4.2 Flyway V2/V3 | ✅ Task 8 |
+| §4.2 Flyway V4 (V3 已占用) | ✅ Task 8 |
 | §4.3 20 个 API | ✅ Task 12 (Auth 3) + 13 (User 5) + 14 (Dashboard 2) + 15 (Conv 4) + 16 (Token 1) + 17 (Model 1 / Rec 1 / Audit 1 / Monitor 2) = 20 ✅ |
 | §4.4 admin-web 结构 | ✅ Task 19-30 |
 | §5 安全设计 | ✅ Task 10, 11 |
