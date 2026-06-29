@@ -20,7 +20,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableAspectJAutoProxy
 @EnableScheduling
 @SpringBootApplication(scanBasePackages = {"com.aifood.admin", "com.ai.food.common"})
-@MapperScan({"com.ai.food.common.mapper"})
+@MapperScan({"com.ai.food.common.mapper", "com.aifood.admin.common.audit"})
 public class AdminApplication {
 
     /**
