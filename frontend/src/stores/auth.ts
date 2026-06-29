@@ -37,9 +37,10 @@ export const useAuthStore = defineStore('auth', () => {
   const isGuest = computed(() => !token.value)
 
   function setToken(newToken: string) {
+    // 安全修复（M2）：不再写入 localStorage / document.cookie，避免 XSS 一把抓走 token
+    // token 仅保留在内存中（Pinia state），用于本次会话内的 Authorization header 和 WebSocket 子协议
+    // 持久化由后端 HttpOnly cookie 承担（前端 JS 无法读取，但浏览器自动随请求带上）
     token.value = newToken
-    localStorage.setItem('token', newToken)
-    document.cookie = `auth_token=${newToken}; path=/; max-age=604800; SameSite=Strict`
   }
 
   function setUserInfo(info: UserInfo) {
@@ -57,17 +58,14 @@ export const useAuthStore = defineStore('auth', () => {
     }
     token.value = ''
     userInfo.value = null
-    localStorage.removeItem('token')
+    // 安全修复（M2）：不再清理 localStorage['token'] / document.cookie（写入已被禁用）
     localStorage.removeItem(CACHE_KEY)
-    document.cookie = 'auth_token=; path=/; max-age=0'
   }
 
   // 清除过期的 token
   function clearStale() {
-    const t = safeGetItem('token')
-    if (!t) {
-      token.value = ''
-      localStorage.removeItem('token')
+    // 安全修复（M2）：不再从 localStorage 读取 token；内存中的 token 由 setToken / logout 管理
+    if (!token.value) {
       userInfo.value = null
       localStorage.removeItem(CACHE_KEY)
     }

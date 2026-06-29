@@ -1,5 +1,6 @@
 package com.ai.food.job;
 
+import com.ai.food.config.UploadPathProperties;
 import com.ai.food.model.ChatFile;
 import com.ai.food.model.ChatPhoto;
 import com.ai.food.model.FeedPost;
@@ -50,6 +51,7 @@ public class CleanupSoftDeletedJob extends QuartzJobBean {
     private final RecommendationResultMapper recommendationResultMapper;
     private final ConversationSessionMapper conversationSessionMapper;
     private final FileUploadService fileUploadService;
+    private final UploadPathProperties uploadPathProperties;
 
     private static final int CHAT_MEDIA_TTL_DAYS = 30;
 
@@ -182,7 +184,7 @@ public class CleanupSoftDeletedJob extends QuartzJobBean {
     }
 
     private Path getUploadRoot() {
-        return Paths.get(System.getProperty("user.dir"), "uploads").toAbsolutePath();
+        return Paths.get(uploadPathProperties.getDir()).toAbsolutePath();
     }
 
     private void deletePhysicalFile(Path uploadRoot, String relativePath) {

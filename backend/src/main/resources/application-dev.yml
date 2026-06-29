@@ -42,6 +42,7 @@ spring:
 app:
   upload:
     base-url: ${APP_UPLOAD_BASE_URL:./uploads}
+    dir: ${APP_UPLOAD_DIR:./uploads}
 
 # 开发环境日志更详细
 logging:

@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -124,7 +125,9 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
-  const token = localStorage.getItem('token')
+  // 安全修复（M2-前端）：从 store 读取，不读 localStorage（token 已不再写 localStorage）
+  const authStore = useAuthStore()
+  const token = authStore.token
 
   if (to.meta.requiresAuth !== false && !token) {
     return { path: '/login' }

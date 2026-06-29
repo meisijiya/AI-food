@@ -1,6 +1,7 @@
 package com.ai.food.controller;
 
 import com.ai.food.dto.ApiResponse;
+import com.ai.food.exception.BusinessException;
 import com.ai.food.service.feed.FeedService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -81,7 +82,8 @@ public class FeedController {
                 log.warn("Invalid user ID format in authentication: {}", authentication.getName());
             }
         }
-        return 0L;
+        // [L10] 不再返 0L —— 0L 会穿透到下游业务把"未登录"误当成 userId=0
+        throw new BusinessException("用户未登录");
     }
 
     private Long getCurrentUserIdOrNull() {

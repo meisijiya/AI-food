@@ -7,6 +7,8 @@ import com.ai.food.service.conversation.ConversationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
@@ -15,6 +17,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 
 @Slf4j
 @Component
@@ -22,7 +25,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ConversationWebSocketHandler extends TextWebSocketHandler {
 
     private final ConversationService conversationService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
+
+    @Autowired
+    @Qualifier("aiExecutor")
+    private Executor aiExecutor;
 
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
     private final Map<String, ConversationState> conversationStates = new ConcurrentHashMap<>();
@@ -114,7 +121,7 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
         state.setAiProcessing(true);
 
         // 异步调用 AI
-        new Thread(() -> {
+        aiExecutor.execute(() -> {
             try {
                 // 检查是否已取消
                 if (state.isCancelled()) {
@@ -170,7 +177,7 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
                 state.setAiProcessing(false);
                 safeSendError(session, "处理出错，请重试");
             }
-        }).start();
+        });
     }
 
     // ==================== 手动结束 ====================

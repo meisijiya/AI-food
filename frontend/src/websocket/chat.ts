@@ -22,10 +22,11 @@ class ChatWebSocketClient {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const wsHost = import.meta.env.VITE_WS_HOST || window.location.host
     const url = wsHost.startsWith('/')
-      ? `${protocol}//${window.location.host}${wsHost}/chat?token=${encodeURIComponent(authStore.token)}`
-      : `${protocol}//${wsHost}/ws/chat?token=${encodeURIComponent(authStore.token)}`
+      ? `${protocol}//${window.location.host}${wsHost}/chat`
+      : `${protocol}//${wsHost}/ws/chat`
 
-    this.ws = new WebSocket(url)
+    // 安全修复（M1）：token 走 Sec-WebSocket-Protocol 子协议，不再拼到 URL（避免 access log 泄漏）
+    this.ws = new WebSocket(url, ['jwt.' + authStore.token])
 
     this.ws.onopen = () => {
       console.log('Chat WebSocket connected')

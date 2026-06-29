@@ -9,6 +9,10 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
+  # [L11] Graceful shutdown — 给 WebSocket / in-flight 请求一个收尾窗口
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
   # Jackson
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
@@ -53,6 +57,10 @@ mybatis-plus:
 app:
   upload:
     base-url: ${APP_UPLOAD_BASE_URL:/uploads}
+    dir: ${APP_UPLOAD_DIR:./uploads}
+  # [L17] CORS 白名单走 env 注入；生产域名通过 APP_CORS_ALLOWED_ORIGINS 覆盖
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:8080}
 
 # ================== JWT ==================
 # 开发默认值：base64('ai-food-dev-secret-please-rotate-in-prod')
@@ -73,6 +81,8 @@ spring.ai.openai:
 # ================== 服务端口 ==================
 server:
   port: 8080
+  # [L11] graceful: deploy 时先停接收新连接、让 in-flight（WebSocket 推送等）跑完再退出
+  shutdown: graceful
   servlet:
     context-path: /
   compression:
@@ -125,7 +135,9 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        # [L16] prometheus 加入白名单；当前 /actuator/prometheus 仍 404（缺 micrometer-registry-prometheus 依赖），
+        # 依赖加进 pom 后端点自动可用。依赖添加暂列 backlog，本次不引入。
+        include: health,info,metrics,prometheus
       base-path: /actuator
   endpoint:
     health:

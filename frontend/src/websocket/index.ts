@@ -1,3 +1,5 @@
+import { useAuthStore } from '@/stores/auth'
+
 export interface WebSocketMessage {
   type: 'question' | '2question' | 'chat' | 'interrupt' | 'recommend' | 'system' | 'error'
   param?: string
@@ -41,19 +43,26 @@ export class WebSocketClient {
   connect(): void {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const wsHost = import.meta.env.VITE_WS_HOST || window.location.host
-    const token = localStorage.getItem('token') || ''
+    // 安全修复（M1）：token 通过 Sec-WebSocket-Protocol 子协议传递，不再写入 URL query
+    // ——避免 token 出现在 nginx access log / 浏览器 history / 网络抓包
+    const authStore = useAuthStore()
+    const token = authStore.token || ''
 
     let wsUrl: string
     if (wsHost.startsWith('/')) {
       // 相对路径配置，直接拼接
-      wsUrl = `${protocol}//${window.location.host}${wsHost}/conversation/${this.sessionId}?token=${encodeURIComponent(token)}`
+      wsUrl = `${protocol}//${window.location.host}${wsHost}/conversation/${this.sessionId}`
     } else {
       // 完整主机名配置
-      wsUrl = `${protocol}//${wsHost}/ws/conversation/${this.sessionId}?token=${encodeURIComponent(token)}`
+      wsUrl = `${protocol}//${wsHost}/ws/conversation/${this.sessionId}`
     }
 
     try {
-      this.ws = new WebSocket(wsUrl)
+      // 子协议格式："jwt." + token（如 "jwt.eyJhbGciOiJIUzI1NiJ9..."）
+      // 后端 JwtHandshakeInterceptor 从 Sec-WebSocket-Protocol 请求头读取
+      this.ws = token
+        ? new WebSocket(wsUrl, ['jwt.' + token])
+        : new WebSocket(wsUrl)
 
       this.ws.onopen = () => {
         this.reconnectAttempts = 0

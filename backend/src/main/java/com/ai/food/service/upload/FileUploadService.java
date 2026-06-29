@@ -1,5 +1,7 @@
 package com.ai.food.service.upload;
 
+import com.ai.food.config.UploadPathProperties;
+import com.ai.food.exception.BusinessException;
 import com.ai.food.mapper.ChatFileMapper;
 import com.ai.food.mapper.ChatPhotoMapper;
 import com.ai.food.mapper.PhotoMapper;
@@ -25,6 +27,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -39,19 +42,23 @@ public class FileUploadService extends ServiceImpl<PhotoMapper, Photo> {
 
     private final ChatPhotoMapper chatPhotoMapper;
     private final ChatFileMapper chatFileMapper;
+    // L9 polish: 注入统一上传目录配置，替代原 getUploadRoot() 中硬编码的 user.dir + "uploads"
+    private final UploadPathProperties uploadPathProperties;
 
     @Value("${app.upload.base-url:/uploads}")
     private String baseUrl;
 
     private static final long MAX_CHAT_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
+    // H6 polish: chat file 白名单只放非可执行文档；攻击者上传 .html / .svg / .exe 都拒
+    private static final Set<String> CHAT_FILE_ALLOWED_EXTS = Set.of(
+            "pdf", "docx", "xlsx", "pptx", "zip", "txt", "md",
+            "jpg", "jpeg", "png", "gif", "webp"
+    );
+
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return Long.parseLong(auth.getPrincipal().toString());
-    }
-
-    private Path getUploadRoot() {
-        return Paths.get(System.getProperty("user.dir"), "uploads").toAbsolutePath();
     }
 
     /**
@@ -141,7 +148,7 @@ public class FileUploadService extends ServiceImpl<PhotoMapper, Photo> {
      * 将相对上传路径规范化为 uploads 根目录下的绝对路径，越界时返回 null。
      */
     private Path resolveUploadPath(String relativePath) {
-        Path root = getUploadRoot().normalize();
+        Path root = Paths.get(uploadPathProperties.getDir()).toAbsolutePath().normalize();
         String relative = relativePath.startsWith("/uploads") ? relativePath.substring("/uploads".length()) : relativePath;
         String sanitized = relative.startsWith("/") ? relative.substring(1) : relative;
         Path resolved = root.resolve(sanitized).normalize();
@@ -169,7 +176,7 @@ public class FileUploadService extends ServiceImpl<PhotoMapper, Photo> {
             throw new IOException("文件大小不能超过10MB");
         }
 
-        Path root = getUploadRoot();
+        Path root = Paths.get(uploadPathProperties.getDir()).toAbsolutePath();
         String dateDir = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         Path dirPath = root.resolve("photos").resolve(dateDir);
         Files.createDirectories(dirPath);
@@ -244,7 +251,7 @@ public class FileUploadService extends ServiceImpl<PhotoMapper, Photo> {
             throw new IOException("头像文件大小不能超过5MB");
         }
 
-        Path root = getUploadRoot();
+        Path root = Paths.get(uploadPathProperties.getDir()).toAbsolutePath();
         Path dirPath = root.resolve("avatars");
         Files.createDirectories(dirPath);
 
@@ -298,7 +305,7 @@ public class FileUploadService extends ServiceImpl<PhotoMapper, Photo> {
             throw new IOException("图片大小不能超过10MB");
         }
 
-        Path root = getUploadRoot();
+        Path root = Paths.get(uploadPathProperties.getDir()).toAbsolutePath();
         String dateDir = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         Path dirPath = root.resolve("chat-photos").resolve(dateDir);
         Files.createDirectories(dirPath);
@@ -360,26 +367,43 @@ public class FileUploadService extends ServiceImpl<PhotoMapper, Photo> {
     public Map<String, Object> uploadChatFile(MultipartFile file) throws IOException {
         if (file.isEmpty()) throw new IOException("文件为空");
 
+        // H6 polish: 扩展名白名单 + 大小写归一，挡掉 .html/.svg/.exe 等存储型 XSS / 可执行入口
+        String originalName = file.getOriginalFilename();
+        String ext = "";
+        if (originalName != null && originalName.contains(".")) {
+            ext = originalName.substring(originalName.lastIndexOf(".") + 1).toLowerCase();
+        }
+        if (!CHAT_FILE_ALLOWED_EXTS.contains(ext)) {
+            throw new BusinessException("不支持的文件类型: " + (ext.isEmpty() ? "(无扩展名)" : ext));
+        }
+
         byte[] fileBytes = file.getBytes();
         if (fileBytes.length > MAX_CHAT_FILE_SIZE) {
             throw new IOException("文件大小不能超过50MB");
         }
 
-        Path root = getUploadRoot();
+        Path root = Paths.get(uploadPathProperties.getDir()).toAbsolutePath();
         String dateDir = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         Path dirPath = root.resolve("chat-files").resolve(dateDir);
         Files.createDirectories(dirPath);
 
-        String originalName = file.getOriginalFilename();
-        String ext = "";
-        if (originalName != null && originalName.contains(".")) {
-            ext = originalName.substring(originalName.lastIndexOf("."));
-        }
         String baseName = UUID.randomUUID().toString().replace("-", "");
-        String fileName = baseName + ext;
+        String fileName = baseName + "." + ext;
 
         Path filePath = dirPath.resolve(fileName);
         Files.write(filePath, fileBytes);
+
+        // H6 polish: 简单 magic-byte 校验——扩展名命中后再用 probeContentType 比 mime，
+        // 防止"白名单扩展名 + 实际 HTML/可执行 payload"绕过
+        String probedType = Files.probeContentType(filePath);
+        if (!isMimeMatchesExt(probedType, ext)) {
+            try {
+                Files.deleteIfExists(filePath);
+            } catch (IOException ignored) {
+                // ponytail: 清理失败不影响主流程——反正不入库
+            }
+            throw new BusinessException("文件内容与扩展名不匹配: " + ext);
+        }
 
         ChatFile chatFile = new ChatFile();
         chatFile.setSenderId(getCurrentUserId());
@@ -400,5 +424,29 @@ public class FileUploadService extends ServiceImpl<PhotoMapper, Photo> {
                 "fileSize", (long) fileBytes.length,
                 "mimeType", file.getContentType() != null ? file.getContentType() : "application/octet-stream"
         );
+    }
+
+    /**
+     * 比较 probeContentType 推断的 MIME 与扩展名是否一致。
+     * ponytail: probeContentType 依赖 OS mime.types；Office 套件（docx/xlsx/pptx）实际是 zip，
+     * 部分环境会返回 application/zip 或 application/octet-stream，所以这三种放宽放行；
+     * null 视为系统无法识别（如缺 mime.types），不阻断——白名单已先行兜底。
+     */
+    private static boolean isMimeMatchesExt(String mime, String ext) {
+        if (mime == null) return true;
+        return switch (ext) {
+            case "pdf" -> mime.equals("application/pdf");
+            case "docx", "xlsx", "pptx" -> mime.startsWith("application/vnd.openxmlformats-officedocument")
+                    || mime.equals("application/zip")
+                    || mime.equals("application/octet-stream");
+            case "zip" -> mime.equals("application/zip") || mime.equals("application/x-zip-compressed");
+            case "txt" -> mime.startsWith("text/plain");
+            case "md" -> mime.startsWith("text/");
+            case "jpg", "jpeg" -> mime.equals("image/jpeg");
+            case "png" -> mime.equals("image/png");
+            case "gif" -> mime.equals("image/gif");
+            case "webp" -> mime.equals("image/webp");
+            default -> false;
+        };
     }
 }

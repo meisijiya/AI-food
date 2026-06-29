@@ -82,18 +82,29 @@ public class HeavyKeeperService {
             }
 
             long now = System.currentTimeMillis();
-            List<ZSetOperations.TypedTuple<String>> toUpdate = new ArrayList<>();
             List<String> toRemove = new ArrayList<>();
 
+            // ponytail: 先收集所有 timestamp key，一次 MGET 替换 N 次 GET
+            List<ZSetOperations.TypedTuple<String>> validTuples = new ArrayList<>();
+            List<String> timestampKeys = new ArrayList<>();
             for (ZSetOperations.TypedTuple<String> tuple : all) {
                 if (tuple.getValue() == null || tuple.getScore() == null) {
                     continue;
                 }
+                validTuples.add(tuple);
+                timestampKeys.add(HK_LIKE_TIMESTAMP_KEY + ":" + tuple.getValue());
+            }
+
+            List<String> timestamps = timestampKeys.isEmpty()
+                    ? Collections.emptyList()
+                    : stringRedisTemplate.opsForValue().multiGet(timestampKeys);
+
+            for (int i = 0; i < validTuples.size(); i++) {
+                ZSetOperations.TypedTuple<String> tuple = validTuples.get(i);
                 String postIdStr = tuple.getValue();
                 double score = tuple.getScore();
 
-                String timestampStr = stringRedisTemplate.opsForValue()
-                        .get(HK_LIKE_TIMESTAMP_KEY + ":" + postIdStr);
+                String timestampStr = timestamps.get(i);
                 if (timestampStr != null) {
                     long lastUpdate = Long.parseLong(timestampStr);
                     if (now - lastUpdate > DECAY_INTERVAL_MS) {
@@ -101,10 +112,8 @@ public class HeavyKeeperService {
                         if (newScore < 0.1) {
                             toRemove.add(postIdStr);
                         } else {
-                            toUpdate.add(
-                                stringRedisTemplate.opsForZSet().add(HK_LIKE_DECAY_KEY, postIdStr, newScore) ?
-                                tuple : null
-                            );
+                            // 实际写入在 add() 调用本身完成；原代码先 add 再收集到 toUpdate 收集后未使用，纯死代码
+                            stringRedisTemplate.opsForZSet().add(HK_LIKE_DECAY_KEY, postIdStr, newScore);
                         }
                     }
                 }

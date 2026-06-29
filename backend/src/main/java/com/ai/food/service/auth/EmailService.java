@@ -22,7 +22,7 @@ public class EmailService {
     }
 
     public void sendVerificationCode(String email, String code) {
-        log.info("发送验证码 - email: {}, code: {}", email, code);
+        log.info("发送验证码 - email: {}, code: {}", email, "***REDACTED***");
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");

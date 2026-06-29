@@ -47,3 +47,11 @@ logging:
     root: WARN
   file:
     name: /app/logs/ai-food.log
+
+# Knife4j 生产加固：关闭公开文档 + 开启 Basic Auth
+knife4j:
+  production: true
+  basic:
+    enable: true
+    username: ${KNIFE4J_USER:admin}
+    password: ${KNIFE4J_PASSWORD:please-change-in-prod}

@@ -6,8 +6,6 @@
 # - Frontend：Vue 3 + Vite 静态构建（端口 3000）
 # ============================================
 
-version: "3.8"
-
 services:
   mysql:
     image: mysql:8.0
@@ -80,6 +78,7 @@ services:
       JWT_EXPIRATION: ${JWT_EXPIRATION:-604800000}
       # 文件上传（容器内路径）
       APP_UPLOAD_BASE_URL: /uploads
+      APP_UPLOAD_DIR: /app/uploads
       # JVM
       JAVA_OPTS: -Xms256m -Xmx768m
       SPRING_PROFILES_ACTIVE: dev
@@ -88,6 +87,11 @@ services:
     volumes:
       - backend_uploads:/app/uploads
       - backend_logs:/app/logs
+    # [L15] 资源硬上限：4GB host 容量下防止单容器吃光内存拖死 mysql/redis
+    # mem_limit == memswap_limit 禁 swap（JVM 在 swap 上会显著拖慢 GC）
+    mem_limit: 768m
+    memswap_limit: 768m
+    cpus: '1.0'
     networks:
       - aifood-net
 

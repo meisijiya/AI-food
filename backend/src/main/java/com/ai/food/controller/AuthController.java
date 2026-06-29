@@ -12,12 +12,17 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.Duration;
 
 @Slf4j
 @RestController
@@ -64,14 +69,33 @@ public class AuthController {
     })
     public ApiResponse<LoginResponse> login(
             @Parameter(description = "登录信息（邮箱+密码）", required = true)
-            @Valid @RequestBody LoginRequest req) {
-        LoginResponse response = authService.login(req);
-        return ApiResponse.success("登录成功", response);
+            @Valid @RequestBody LoginRequest req,
+            HttpServletResponse response) {
+        LoginResponse loginResponse = authService.login(req);
+        // 安全修复（M2-后端）：将 JWT 写入 HttpOnly cookie，浏览器自动随请求带上，前端 JS 无法读取
+        ResponseCookie cookie = ResponseCookie.from("auth_token", loginResponse.getToken())
+                .httpOnly(true)
+                .secure(false) // ponytail: dev=false；生产改 ${COOKIE_SECURE:true}
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(Duration.ofDays(7))
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        return ApiResponse.success("登录成功", loginResponse);
     }
 
     @PostMapping("/logout")
     @Operation(summary = "退出登录", description = "使当前 token 失效，删除 Redis 中的 session")
-    public ApiResponse<Void> logout() {
+    public ApiResponse<Void> logout(HttpServletResponse response) {
+        // 安全修复（M2-后端）：清空 HttpOnly cookie，使浏览器不再带上旧 token
+        ResponseCookie cookie = ResponseCookie.from("auth_token", "")
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(0)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication != null && authentication.getPrincipal() instanceof Long userId) {

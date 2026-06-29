@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -36,14 +37,14 @@ public class LikeStreamConsumer {
     private static final String CONSUMER_GROUP = "cg:like:consumers";
     private static final String CONSUMER_NAME = "consumer-1";
     private static final int BATCH_SIZE = 100;
-    private static final long MAX_BLOCK_MS = 100;
+    private static final long MAX_BLOCK_MS = 500;
 
-    private final Map<Long, Integer> likeCountDelta = new LinkedHashMap<>();
-    private final Map<Long, Set<Long>> postLikedUsers = new LinkedHashMap<>();
+    private final Map<Long, Integer> likeCountDelta = new ConcurrentHashMap<>();
+    private final Map<Long, Set<Long>> postLikedUsers = new ConcurrentHashMap<>();
     private long lastFlushTime = System.currentTimeMillis();
     private static final long FLUSH_INTERVAL_MS = 100;
 
-    @Scheduled(fixedDelay = 100)
+    @Scheduled(fixedDelay = 1000)
     public void consumeLikeEvents() {
         try {
             StreamReadOptions options = StreamReadOptions.empty()

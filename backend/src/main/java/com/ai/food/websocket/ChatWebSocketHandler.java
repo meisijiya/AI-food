@@ -21,7 +21,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final ChatService chatService;
     private final JwtService jwtService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     // userId -> WebSocketSession
     private final Map<Long, WebSocketSession> userSessions = new ConcurrentHashMap<>();

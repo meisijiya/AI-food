@@ -6,6 +6,9 @@ import router from '@/router'
 const api: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE || '/api',
   timeout: 30000,
+  // 安全修复（M2）：让浏览器自动带上 HttpOnly cookie（auth_token），
+  // ——这样 XSS 拿不到 token，浏览器请求仍然携带认证凭据
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
   }

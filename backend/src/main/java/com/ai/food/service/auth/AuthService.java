@@ -56,7 +56,7 @@ public class AuthService extends ServiceImpl<UserMapper, SysUser> {
         redisTemplate.opsForValue().set(redisKey, code, Duration.ofMinutes(5));
 
         emailService.sendVerificationCode(req.getEmail(), code);
-        log.info("验证码已生成 - email: {}, code: {}", req.getEmail(), code);
+        log.info("验证码已生成 - email: {}, code: {}", req.getEmail(), "***REDACTED***");
     }
 
     public LoginResponse register(RegisterRequest req) {

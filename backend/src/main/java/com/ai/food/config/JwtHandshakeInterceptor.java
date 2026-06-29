@@ -45,7 +45,40 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
                                WebSocketHandler wsHandler, Exception exception) {
     }
 
+    private static final String SUB_PROTOCOL_PREFIX = "jwt.";
+
+    /**
+     * 从 Sec-WebSocket-Protocol 请求头解析 JWT。
+     * 前端通过 `new WebSocket(url, ['jwt.' + token])` 传入，
+     * token 不再出现在 URL query / nginx access log / 浏览器 history 中。
+     *
+     * 注意：{@code ServerHttpRequest.getHeaders()} 返回基类 {@link org.springframework.http.HttpHeaders}，
+     * 不暴露 {@code getSecWebSocketProtocol()}，所以直接按 header 名取。
+     */
+    private String extractTokenFromSubProtocol(ServerHttpRequest request) {
+        String header = request.getHeaders().getFirst("Sec-WebSocket-Protocol");
+        if (header == null || header.isBlank()) {
+            return null;
+        }
+        // 多个子协议用逗号分隔；只取第一个以 jwt. 开头的
+        for (String proto : header.split(",")) {
+            String trimmed = proto.trim();
+            if (trimmed.startsWith(SUB_PROTOCOL_PREFIX)) {
+                String token = trimmed.substring(SUB_PROTOCOL_PREFIX.length());
+                return token.isEmpty() ? null : token;
+            }
+        }
+        return null;
+    }
+
     private String extractToken(ServerHttpRequest request) {
+        // 1) 子协议（优先 — 不写 URL，不进 access log）
+        String token = extractTokenFromSubProtocol(request);
+        if (token != null) {
+            return token;
+        }
+
+        // 2) Cookie 兜底（保留入口供后续 HttpOnly cookie 迁移使用）
         if (request instanceof ServletServerHttpRequest servletRequest) {
             HttpServletRequest httpRequest = servletRequest.getServletRequest();
             Cookie[] cookies = httpRequest.getCookies();
@@ -58,15 +91,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             }
         }
 
-        String query = request.getURI().getQuery();
-        if (query != null) {
-            for (String param : query.split("&")) {
-                String[] kv = param.split("=", 2);
-                if (kv.length == 2 && "token".equals(kv[0])) {
-                    return kv[1];
-                }
-            }
-        }
+        // 不再支持 URL query 中的 ?token= 参数（修复：避免 token 出现在 nginx access log / 浏览器 history）
         return null;
     }
 }
