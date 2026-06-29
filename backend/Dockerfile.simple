@@ -1,0 +1,28 @@
+# AI-food backend 单阶段 Dockerfile（精简版）
+# 4GB sandbox build 用；jar 由 mvn 预编
+FROM eclipse-temurin:21-jre-jammy
+WORKDIR /app
+
+# 时区 + 中文 locale + JVM + Spring profile
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    TZ=Asia/Shanghai \
+    JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom" \
+    SPRING_PROFILES_ACTIVE=prod
+
+# 非 root 用户 + uploads/logs 目录
+RUN groupadd -r aifood && useradd -r -g aifood aifood \
+    && mkdir -p /app/uploads /app/logs \
+    && chown -R aifood:aifood /app
+
+# 预编译 jar（build context 是项目根，路径带 backend/ 前缀；ai-food-*.jar 排除 .jar.original）
+COPY --chown=aifood:aifood backend/target/ai-food-*.jar /app/app.jar
+
+USER aifood
+EXPOSE 8080
+
+# 健康检查：Flyway + Hikari 启动慢，给 40s start-period
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
+
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar --spring.profiles.active=${SPRING_PROFILES_ACTIVE:-prod}"]
