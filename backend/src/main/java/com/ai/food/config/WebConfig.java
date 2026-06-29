@@ -1,5 +1,6 @@
 package com.ai.food.config;
 
+import com.ai.food.common.config.RateLimitInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;

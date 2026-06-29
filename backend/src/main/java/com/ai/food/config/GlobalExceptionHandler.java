@@ -1,6 +1,6 @@
 package com.ai.food.config;
 
-import com.ai.food.dto.ApiResponse;
+import com.ai.food.common.util.ApiResponse;
 import com.ai.food.exception.PermissionDeniedException;
 import com.ai.food.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;

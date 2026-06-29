@@ -1,6 +1,6 @@
 package com.ai.food.controller;
 
-import com.ai.food.dto.ApiResponse;
+import com.ai.food.common.util.ApiResponse;
 import com.ai.food.dto.SendMessageRequest;
 import com.ai.food.common.model.ChatMessage;
 import com.ai.food.service.chat.ChatService;

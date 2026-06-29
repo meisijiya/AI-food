@@ -1,6 +1,6 @@
 package com.ai.food.controller;
 
-import com.ai.food.dto.ApiResponse;
+import com.ai.food.common.util.ApiResponse;
 import com.ai.food.dto.LoginRequest;
 import com.ai.food.dto.LoginResponse;
 import com.ai.food.dto.RegisterRequest;

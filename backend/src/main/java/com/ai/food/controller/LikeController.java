@@ -1,6 +1,6 @@
 package com.ai.food.controller;
 
-import com.ai.food.dto.ApiResponse;
+import com.ai.food.common.util.ApiResponse;
 import com.ai.food.service.like.LikeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

@@ -1,6 +1,6 @@
 package com.ai.food.controller;
 
-import com.ai.food.dto.ApiResponse;
+import com.ai.food.common.util.ApiResponse;
 import com.ai.food.dto.MatchUserDetailDTO;
 import com.ai.food.dto.UserSimilarityDTO;
 import com.ai.food.service.bloom.BloomFilterService;
