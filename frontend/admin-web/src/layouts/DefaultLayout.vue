@@ -1,40 +1,83 @@
 <script setup lang="ts">
-// ponytail: 占位 Layout — 后续 Task 21+ 接入侧边栏 + 头部 + 菜单
+import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { useRouter } from 'vue-router'
 
-const user = useUserStore()
 const router = useRouter()
+const route = useRoute()
+const userStore = useUserStore()
 
-// 退出登录：清 store 并跳登录页
-function handleLogout() {
-  user.logout()
+const menus = [
+  { path: '/dashboard', title: 'Dashboard', icon: 'DataLine' },
+  { path: '/user', title: '用户管理', icon: 'User' },
+  { path: '/conversation', title: 'AI 对话', icon: 'ChatDotRound' },
+  { path: '/token-usage', title: 'Token 用量', icon: 'Coin' },
+  { path: '/model', title: '模型管理', icon: 'Cpu' },
+  { path: '/recommendation', title: '推荐记录', icon: 'List' },
+  { path: '/monitor', title: '系统监控', icon: 'Monitor' },
+  { path: '/audit-log', title: '操作日志', icon: 'Document' }
+]
+
+function onLogout() {
+  userStore.logout()
   router.push('/login')
 }
 </script>
 
 <template>
-  <div class="layout">
-    <header class="layout-header">
-      <span class="brand">AI-Food Admin</span>
-      <div class="user-area">
-        <span>{{ user.adminUser?.username || 'admin' }}</span>
-        <el-button link type="primary" @click="handleLogout">退出</el-button>
-      </div>
-    </header>
-    <main class="layout-main">
-      <router-view />
-    </main>
-  </div>
+  <el-container class="layout">
+    <el-aside width="220px" class="sidebar">
+      <div class="logo">🍜 AI-Food Admin</div>
+      <el-menu :default-active="route.path" router>
+        <el-menu-item v-for="m in menus" :key="m.path" :index="m.path">
+          <el-icon><component :is="m.icon" /></el-icon>
+          <span>{{ m.title }}</span>
+        </el-menu-item>
+      </el-menu>
+    </el-aside>
+    <el-container>
+      <el-header class="header">
+        <div class="header-title">{{ route.meta.title || 'Admin' }}</div>
+        <el-dropdown>
+          <span class="user-info">
+            <el-avatar :size="32" :src="userStore.adminUser?.avatar" />
+            {{ userStore.adminUser?.nickname || userStore.adminUser?.username }}
+          </span>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item @click="onLogout">退出登录</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+      </el-header>
+      <el-main><router-view /></el-main>
+    </el-container>
+  </el-container>
 </template>
 
 <style scoped>
-.layout { display: flex; flex-direction: column; height: 100vh; }
-.layout-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 16px; height: 48px; background: #001529; color: #fff;
+.layout { height: 100vh; }
+.sidebar { background: #001529; }
+.logo {
+  height: 60px;
+  line-height: 60px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+  background: #002140;
 }
-.layout-header .brand { font-weight: 600; }
-.layout-header .user-area { display: flex; align-items: center; gap: 12px; }
-.layout-main { flex: 1; padding: 16px; overflow: auto; background: #f5f5f5; }
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  border-bottom: 1px solid #e6e6e6;
+  padding: 0 20px;
+}
+.user-info {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 </style>
