@@ -1,0 +1,15 @@
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+.page-container {
+  padding: 20px;
+}
+
+.metric-card {
+  text-align: center;
+  .metric { font-size: 32px; font-weight: bold; color: #409eff; }
+  .label { color: #909399; margin-top: 8px; }
+}
