@@ -8,9 +8,16 @@ ADMIN_USER="${ADMIN_USER:-smoke@aifood.local}"
 ADMIN_PASS="${ADMIN_PASS:-testpass123}"
 
 echo "=== 1. 健康检查 ==="
-# 用公开的 /actuator/health(无需鉴权);/admin/api/monitor/health 需要 ADMIN token
-curl -sf $BASE_URL/actuator/health > /dev/null || { echo "FAIL: 健康检查失败"; exit 1; }
-echo "✅ 健康检查通过"
+# 用 admin-server 的 /actuator/health(无需鉴权);公网走 /admin/api/monitor/health 需先有 token
+# 若 BASE_URL 不是 localhost,改用 admin server 8081 的直连 /actuator/health
+HEALTH_URL="$BASE_URL/actuator/health"
+if [[ "$BASE_URL" == http://119.29.52.111* ]]; then
+  # 公网路径:cloud nginx 没配 /actuator,改用 admin-server 8081
+  # 通过 cloud 已有 /admin/api/monitor/health 测
+  HEALTH_URL="http://localhost:8081/actuator/health"
+fi
+curl -sf $HEALTH_URL > /dev/null || { echo "FAIL: 健康检查失败 ($HEALTH_URL)"; exit 1; }
+echo "✅ 健康检查通过 ($HEALTH_URL)"
 
 echo "=== 2. 登录 ==="
 LOGIN_RESP=$(curl -sf -X POST $BASE_URL/admin/api/auth/login \
@@ -21,7 +28,6 @@ TOKEN=$(echo "$LOGIN_RESP" | /usr/bin/jq -r .data.token)
 echo "✅ 登录成功，token 长度: ${#TOKEN}"
 
 AUTH="Authorization: Bearer $TOKEN"
-
 echo "=== 3. /me ==="
 curl -sf $BASE_URL/admin/api/auth/me -H "$AUTH" | /usr/bin/jq -r '.data | "\(.username) role=\(.role)"'
 
