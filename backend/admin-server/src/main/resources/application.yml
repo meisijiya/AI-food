@@ -64,12 +64,19 @@ spring.datasource.druid:
 management:
   endpoints:
     web:
+      # ponytail: 只暴露 health(公开 ping)+ info。不开 env/metrics/loggers(会泄露密钥/内部指标)
       exposure:
-        include: health,info,metrics,env
+        include: health,info
       base-path: /actuator
   endpoint:
     health:
-      show-details: always
+      # 不向未认证用户显示 components 详情(防信息泄露:数据库类型/磁盘容量/Redis 版本)
+      show-details: when_authorized
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: false
 
 logging:
   level:

@@ -4,7 +4,15 @@ import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import router from '@/router'
 
-const instance: AxiosInstance = axios.create({ baseURL: '/admin/api', timeout: 30000 })
+// ponytail: 动态 baseURL — 跟随当前页面所在 host,避免 NAT 回环
+// 浏览器从 sandbox 用 42.193.183.187 访问自己,POST 永远 pending
+// 用 window.location.host 同源拼接,本机测试走 127.0.0.1:8081,
+// 用户从外网走 42.193.183.187:8081(实际就是他们访问的 IP)
+const apiBase = `http://${window.location.hostname}:8081/admin/api`
+const instance: AxiosInstance = axios.create({
+  baseURL: apiBase,
+  timeout: 30000
+})
 
 // 请求拦截：自动注入 Bearer token
 instance.interceptors.request.use((config) => {
