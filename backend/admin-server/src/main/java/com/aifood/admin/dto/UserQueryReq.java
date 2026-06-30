@@ -8,6 +8,7 @@ import lombok.Data;
  *   <li>keyword: 模糊匹配 username / email / nickname</li>
  *   <li>role: 精确匹配 USER 或 ADMIN</li>
  *   <li>status: 0=启用 1=禁用（对应 sys_user.is_deleted）</li>
+ *   <li>startDate / endDate: yyyy-MM-dd 或 yyyy-MM-ddTHH:mm:ss(包含边界)</li>
  * </ul>
  */
 @Data
@@ -22,4 +23,8 @@ public class UserQueryReq {
     private String role;
     /** 0 启用,1 禁用 */
     private Integer status;
+    /** 起始日期 yyyy-MM-dd 或完整 LocalDateTime */
+    private String startDate;
+    /** 截止日期 yyyy-MM-dd 或完整 LocalDateTime */
+    private String endDate;
 }

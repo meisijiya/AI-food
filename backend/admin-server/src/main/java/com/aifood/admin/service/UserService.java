@@ -43,6 +43,9 @@ public class UserService {
         }
         if (StringUtils.hasText(req.getRole())) w.eq(SysUser::getRole, req.getRole());
         if (req.getStatus() != null) w.eq(SysUser::getIsDeleted, req.getStatus());
+        // ponytail: startDate 接受 LocalDateTime 字符串("2026-06-29T00:00:00")或 LocalDate("2026-06-29")格式
+        if (StringUtils.hasText(req.getStartDate())) w.ge(SysUser::getCreatedAt, req.getStartDate());
+        if (StringUtils.hasText(req.getEndDate())) w.le(SysUser::getCreatedAt, req.getEndDate());
         w.orderByDesc(SysUser::getCreatedAt);
         return userMapper.selectPage(page, w);
     }

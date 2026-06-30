@@ -2,15 +2,44 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { listUsers, updateRole, disableUser, enableUser } from '@/api/user'
+import SearchForm from '@/components/SearchForm.vue'
 
 const list = ref<any[]>([])
 const total = ref(0)
-const query = ref({ page: 1, size: 20, keyword: '', role: '', status: undefined as number | undefined })
+const loading = ref(false)
+const query = ref({
+  page: 1,
+  size: 20,
+  keyword: '' as string,
+  role: '' as string,
+  status: undefined as number | undefined,
+  startDate: '' as string
+})
 
 async function loadData() {
-  const res: any = await listUsers(query.value)
-  list.value = res.data?.records || []
-  total.value = res.data?.total || 0
+  loading.value = true
+  try {
+    const params: any = { page: query.value.page, size: query.value.size }
+    if (query.value.keyword) params.keyword = query.value.keyword
+    if (query.value.role) params.role = query.value.role
+    if (query.value.status !== undefined) params.status = query.value.status
+    if (query.value.startDate) params.startDate = query.value.startDate + 'T00:00:00'
+    const res: any = await listUsers(params)
+    list.value = res.data?.records || []
+    total.value = res.data?.total || 0
+  } finally {
+    loading.value = false
+  }
+}
+
+function onSearch() {
+  query.value.page = 1
+  loadData()
+}
+
+function onReset() {
+  query.value = { page: 1, size: 20, keyword: '', role: '', status: undefined, startDate: '' }
+  loadData()
 }
 
 async function onChangeRole(row: any, newRole: string) {
@@ -42,34 +71,37 @@ onMounted(loadData)
 
 <template>
   <div class="page-container">
-    <el-card>
-      <el-form :inline="true" :model="query">
-        <el-form-item label="搜索">
-          <el-input v-model="query.keyword" placeholder="用户名/邮箱/昵称" clearable />
-        </el-form-item>
-        <el-form-item label="角色">
-          <el-select v-model="query.role" placeholder="全部" clearable>
-            <el-option label="USER" value="USER" />
-            <el-option label="ADMIN" value="ADMIN" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable>
-            <el-option label="启用" :value="0" />
-            <el-option label="禁用" :value="1" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="loadData">查询</el-button>
-        </el-form-item>
-      </el-form>
+    <SearchForm @search="onSearch" @reset="onReset">
+      <el-form-item label="搜索">
+        <el-input v-model="query.keyword" placeholder="用户名/邮箱/昵称" clearable style="width: 200px" />
+      </el-form-item>
+      <el-form-item label="角色">
+        <el-select v-model="query.role" placeholder="全部" clearable style="width: 130px">
+          <el-option label="USER" value="USER" />
+          <el-option label="ADMIN" value="ADMIN" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="状态">
+        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
+          <el-option label="启用" :value="0" />
+          <el-option label="禁用" :value="1" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="注册日期">
+        <el-date-picker v-model="query.startDate" type="date" value-format="YYYY-MM-DD" placeholder="起" style="width: 150px" />
+      </el-form-item>
+    </SearchForm>
 
-      <el-table :data="list" stripe>
+    <el-card>
+      <div style="margin-bottom: 12px; color: #606266">
+        共 <b style="color: #409eff">{{ total }}</b> 个用户
+      </div>
+      <el-table :data="list" stripe v-loading="loading">
         <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="username" label="用户名" />
-        <el-table-column prop="nickname" label="昵称" />
-        <el-table-column prop="email" label="邮箱" />
-        <el-table-column label="角色" width="200">
+        <el-table-column prop="username" label="用户名" min-width="120" />
+        <el-table-column prop="nickname" label="昵称" min-width="120" />
+        <el-table-column prop="email" label="邮箱" min-width="200" show-overflow-tooltip />
+        <el-table-column label="角色" width="180">
           <template #default="{ row }">
             <el-radio-group :model-value="row.role" @change="(v: string) => onChangeRole(row, v)">
               <el-radio-button label="USER" />
@@ -84,7 +116,8 @@ onMounted(loadData)
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120">
+        <el-table-column prop="createdAt" label="注册时间" width="170" />
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
             <el-button size="small" :type="row.isDeleted === 0 ? 'danger' : 'primary'" @click="onToggleStatus(row)">
               {{ row.isDeleted === 0 ? '禁用' : '启用' }}
@@ -101,7 +134,7 @@ onMounted(loadData)
         layout="total, sizes, prev, pager, next, jumper"
         @current-change="loadData"
         @size-change="loadData"
-        style="margin-top: 20px"
+        style="margin-top: 16px; justify-content: flex-end"
       />
     </el-card>
   </div>

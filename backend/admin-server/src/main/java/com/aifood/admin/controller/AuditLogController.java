@@ -42,7 +42,8 @@ public class AuditLogController {
      * @param page      页码,默认 1
      * @param size      页大小,默认 50
      * @param actorId   操作者 id 可选过滤
-     * @param action    动作类型(LOGIN / UPDATE_USER 等)可选过滤
+     * @param action    动作类型可选过滤
+     * @param status    状态 SUCCESS/FAIL 可选过滤
      * @param startDate 起始日期 yyyy-MM-dd 包含
      * @param endDate   截止日期 yyyy-MM-dd 包含
      * @return 分页结果
@@ -53,12 +54,14 @@ public class AuditLogController {
             @RequestParam(defaultValue = "50") int size,
             @RequestParam(required = false) Long actorId,
             @RequestParam(required = false) String action,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
         Page<AuditLogEntity> p = new Page<>(page, size);
         LambdaQueryWrapper<AuditLogEntity> w = new LambdaQueryWrapper<>();
         if (actorId != null) w.eq(AuditLogEntity::getActorId, actorId);
         if (StringUtils.hasText(action)) w.eq(AuditLogEntity::getAction, action);
+        if (StringUtils.hasText(status)) w.eq(AuditLogEntity::getStatus, status);
         if (StringUtils.hasText(startDate)) w.ge(AuditLogEntity::getCreatedAt, startDate);
         if (StringUtils.hasText(endDate)) w.le(AuditLogEntity::getCreatedAt, endDate);
         w.orderByDesc(AuditLogEntity::getCreatedAt);

@@ -39,10 +39,11 @@ public class RecommendationController {
     /**
      * 分页查询推荐结果,按 created_at 倒序。
      *
-     * @param page     页码,默认 1
-     * @param size     页大小,默认 20
-     * @param sessionId 会话 id 可选过滤
-     * @param mode     模式(random / similarity 等)可选过滤
+     * @param page      页码,默认 1
+     * @param size      页大小,默认 20
+     * @param sessionId 会话 id 可选过滤(RecommendationResult 用 sessionId 关联而非 userId)
+     * @param mode      模式(random / similarity 等)可选过滤
+     * @param foodName  食物名模糊匹配可选过滤
      * @return 分页结果
      */
     @GetMapping
@@ -50,12 +51,13 @@ public class RecommendationController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String sessionId,
-            @RequestParam(required = false) String mode) {
-        // ponytail: RecommendationResult 没有 userId/accepted 字段,sessionId/mode 是合理的替代筛选维度
+            @RequestParam(required = false) String mode,
+            @RequestParam(required = false) String foodName) {
         Page<RecommendationResult> p = new Page<>(page, size);
         LambdaQueryWrapper<RecommendationResult> w = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(sessionId)) w.eq(RecommendationResult::getSessionId, sessionId);
         if (StringUtils.hasText(mode)) w.eq(RecommendationResult::getMode, mode);
+        if (StringUtils.hasText(foodName)) w.like(RecommendationResult::getFoodName, foodName);
         w.orderByDesc(RecommendationResult::getCreatedAt);
         return ApiResponse.success(recommendationMapper.selectPage(p, w));
     }
