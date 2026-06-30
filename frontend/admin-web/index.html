@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI-Food Admin</title>
+    <!-- ponytail: 内联空 data URL 防止浏览器请求 /admin/favicon.ico,
+         避免 cloud nginx catch-all (/ → :3000) 转发到 ai-food 触发 502 -->
+    <link rel="icon" href="data:," />
   </head>
   <body>
     <div id="app"></div>
