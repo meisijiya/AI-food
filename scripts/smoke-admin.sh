@@ -8,7 +8,8 @@ ADMIN_USER="${ADMIN_USER:-smoke@aifood.local}"
 ADMIN_PASS="${ADMIN_PASS:-testpass123}"
 
 echo "=== 1. 健康检查 ==="
-curl -sf $BASE_URL/admin/api/monitor/health > /dev/null || { echo "FAIL: 健康检查失败"; exit 1; }
+# 用公开的 /actuator/health(无需鉴权);/admin/api/monitor/health 需要 ADMIN token
+curl -sf $BASE_URL/actuator/health > /dev/null || { echo "FAIL: 健康检查失败"; exit 1; }
 echo "✅ 健康检查通过"
 
 echo "=== 2. 登录 ==="
