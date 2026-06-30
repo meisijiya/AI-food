@@ -131,6 +131,52 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # ============ Admin 管理后台 ============
+  admin-server:
+    build: ./backend/admin-server
+    container_name: aifood-admin-server
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      # 本地模式通过 SSH 隧道访问 cloud MySQL (127.0.0.1:13306 → cloud:3306)
+      SPRING_DATASOURCE_URL: ${ADMIN_DB_URL:-jdbc:mysql://127.0.0.1:13306/ai_food?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai}
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-aifood}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-aifood123}
+      SPRING_DATA_REDIS_HOST: 127.0.0.1
+      SPRING_DATA_REDIS_PORT: "6379"
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-604800000}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-test}
+      SBA_USER: ${SBA_USER:-admin}
+      SBA_PASSWORD: ${SBA_PASSWORD:-admin123}
+      DRUID_USER: ${DRUID_USER:-admin}
+      DRUID_PASSWORD: ${DRUID_PASSWORD:-admin123}
+      JAVA_OPTS: -XX:MaxRAMPercentage=75.0 -XX:+UseContainerSupport
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: '0.5'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  admin-web:
+    build: ./frontend/admin-web
+    container_name: aifood-admin-web
+    restart: unless-stopped
+    depends_on:
+      - admin-server
+    network_mode: host
+    mem_limit: 64m
+    memswap_limit: 64m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 volumes:
   redis_data:
   backend_uploads:
