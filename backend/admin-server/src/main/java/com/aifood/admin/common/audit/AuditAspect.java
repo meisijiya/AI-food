@@ -12,10 +12,21 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 
-/** 操作审计 AOP。拦截 @AuditLog 注解方法,记录 actor/action/target */
+/**
+ * 操作审计 AOP。拦截 @AuditLog 注解方法,记录 actor/action/target。
+ *
+ * <p>target_id 解析策略(优先级递减):</p>
+ * <ol>
+ *   <li>@AuditLog.targetParamIndex 显式声明的参数索引</li>
+ *   <li>fallback: 找参数名为 "id" 的第一个参数</li>
+ *   <li>fallback: 取 args[0](兼容旧调用)</li>
+ * </ol>
+ */
 @Slf4j
 @Aspect
 @Component
@@ -59,11 +70,10 @@ public class AuditAspect {
             e.setErrorMessage(err);
             e.setCreatedAt(LocalDateTime.now());
 
+            // ponytail: 用 annotation 的 targetParamIndex 显式取 target id,避免 args[1] 误取 req body
             Object[] args = pjp.getArgs();
-            // 约定:第二个参数是 target id(@PathVariable Long id)
-            if (args.length >= 2 && args[1] != null) {
-                e.setTargetId(args[1].toString());
-            }
+            e.setTargetId(resolveTargetId(a, pjp, args));
+
             MethodSignature sig = (MethodSignature) pjp.getSignature();
             String className = sig.getMethod().getDeclaringClass().getSimpleName();
             if (className.endsWith("Controller")) {
@@ -84,6 +94,36 @@ public class AuditAspect {
             // ponytail: 审计失败不能阻塞业务
             log.error("保存审计日志失败", ex);
         }
+    }
+
+    /**
+     * 解析 target id。
+     * 优先级:@AuditLog.targetParamIndex → 参数名="id" → args[0]
+     */
+    private String resolveTargetId(AuditLog a, ProceedingJoinPoint pjp, Object[] args) {
+        MethodSignature sig = (MethodSignature) pjp.getSignature();
+        Method method = sig.getMethod();
+        Parameter[] params = method.getParameters();
+
+        // 1. annotation 显式声明
+        int idx = a.targetParamIndex();
+        if (idx >= 0 && idx < args.length && args[idx] != null) {
+            return args[idx].toString();
+        }
+
+        // 2. fallback: 找参数名为 "id" 的
+        for (int i = 0; i < params.length && i < args.length; i++) {
+            if ("id".equals(params[i].getName()) && args[i] != null) {
+                return args[i].toString();
+            }
+        }
+
+        // 3. fallback: args[0]
+        if (args.length > 0 && args[0] != null) {
+            return args[0].toString();
+        }
+
+        return null;
     }
 
     private HttpServletRequest currentRequest() {

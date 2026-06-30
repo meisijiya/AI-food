@@ -1,5 +1,6 @@
 package com.aifood.admin;
 
+import de.codecentric.boot.admin.server.config.EnableAdminServer;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -19,6 +20,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  */
 @EnableAspectJAutoProxy
 @EnableScheduling
+@EnableAdminServer  // ponytail: 显式开启 SBA — 不加 AdminServerProperties 不会注册
 @SpringBootApplication(scanBasePackages = {"com.aifood.admin", "com.ai.food.common"})
 @MapperScan({"com.ai.food.common.mapper", "com.aifood.admin.common.audit"})
 public class AdminApplication {

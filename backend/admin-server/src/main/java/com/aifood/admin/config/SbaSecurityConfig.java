@@ -23,7 +23,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 // 这样浏览器访问会跳 SBA 自带登录页,API 客户端可以用 Basic。
 // 角色和口令来自 application.yml 的 spring.security.user。
 @Configuration
-public class AdminSecurityConfig {
+public class SbaSecurityConfig {
 
     /** Spring Boot Admin Server 配置属性(用于解析 context-path)。 */
     private final AdminServerProperties adminServer;
@@ -33,7 +33,7 @@ public class AdminSecurityConfig {
      *
      * @param adminServer SBA 配置属性
      */
-    public AdminSecurityConfig(AdminServerProperties adminServer) {
+    public SbaSecurityConfig(AdminServerProperties adminServer) {
         this.adminServer = adminServer;
     }
 

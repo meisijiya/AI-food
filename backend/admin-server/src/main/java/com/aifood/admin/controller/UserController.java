@@ -2,12 +2,15 @@ package com.aifood.admin.controller;
 
 import com.ai.food.common.model.SysUser;
 import com.ai.food.common.util.ApiResponse;
+import com.aifood.admin.common.AdminException;
 import com.aifood.admin.common.annotation.AuditLog;
 import com.aifood.admin.common.annotation.RequireAdmin;
+import com.aifood.admin.common.interceptor.AdminInterceptor;
 import com.aifood.admin.dto.UpdateRoleReq;
 import com.aifood.admin.dto.UserQueryReq;
 import com.aifood.admin.service.UserService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -54,17 +57,29 @@ public class UserController {
         return ApiResponse.success(userService.getDetail(id));
     }
 
-    /** 修改用户角色 */
+    /**
+     * 修改用户角色。
+     *
+     * <p>防自降权:管理员不能把自己降为 USER,否则当前 token 立刻失效、
+     * 系统中再也没有任何 ADMIN 可以恢复。返回 400。</p>
+     */
     @PatchMapping("/{id}/role")
-    @AuditLog(value = "修改用户角色", action = "UPDATE_USER_ROLE")
-    public ApiResponse<Void> updateRole(@PathVariable Long id, @Valid @RequestBody UpdateRoleReq req) {
+    @AuditLog(value = "修改用户角色", action = "UPDATE_USER_ROLE", targetParamIndex = 0)
+    public ApiResponse<Void> updateRole(@PathVariable Long id,
+                                       @Valid @RequestBody UpdateRoleReq req,
+                                       HttpServletRequest httpReq) {
+        // ponytail: 防自降权 —— 当前 admin 不能把自己改成 USER(只剩自己的 admin 锁死)
+        Long currentAdminId = (Long) httpReq.getAttribute(AdminInterceptor.ATTR_ADMIN_ID);
+        if (currentAdminId != null && currentAdminId.equals(id) && "USER".equals(req.getRole())) {
+            throw new AdminException(400, "不能把自己降级为 USER,会失去唯一的 admin 账号");
+        }
         userService.updateRole(id, req.getRole());
         return ApiResponse.success();
     }
 
     /** 禁用用户(软删,is_deleted=1) */
     @PostMapping("/{id}/disable")
-    @AuditLog(value = "禁用用户", action = "DISABLE_USER")
+    @AuditLog(value = "禁用用户", action = "DISABLE_USER", targetParamIndex = 0)
     public ApiResponse<Void> disable(@PathVariable Long id) {
         userService.disable(id);
         return ApiResponse.success();
@@ -72,7 +87,7 @@ public class UserController {
 
     /** 启用用户(is_deleted=0) */
     @PostMapping("/{id}/enable")
-    @AuditLog(value = "启用用户", action = "ENABLE_USER")
+    @AuditLog(value = "启用用户", action = "ENABLE_USER", targetParamIndex = 0)
     public ApiResponse<Void> enable(@PathVariable Long id) {
         userService.enable(id);
         return ApiResponse.success();

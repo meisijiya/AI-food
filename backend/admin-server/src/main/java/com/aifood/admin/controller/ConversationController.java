@@ -68,7 +68,7 @@ public class ConversationController {
 
     /** 软删除会话 (审计:DELETE_CONVERSATION) */
     @DeleteMapping("/{id}")
-    @AuditLog(value = "删除对话", action = "DELETE_CONVERSATION")
+    @AuditLog(value = "删除对话", action = "DELETE_CONVERSATION", targetParamIndex = 0)
     public ApiResponse<Void> delete(@PathVariable Long id) {
         conversationService.delete(id);
         return ApiResponse.success();
