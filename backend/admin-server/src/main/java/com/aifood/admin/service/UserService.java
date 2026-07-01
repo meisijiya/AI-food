@@ -3,6 +3,7 @@ package com.aifood.admin.service;
 import com.ai.food.common.mapper.UserMapper;
 import com.ai.food.common.model.SysUser;
 import com.aifood.admin.common.AdminException;
+import com.aifood.admin.dto.AdminUserVO;
 import com.aifood.admin.dto.UserQueryReq;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -10,6 +11,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+
+import java.util.stream.Collectors;
 
 /**
  * 管理后台用户管理服务。
@@ -61,6 +64,26 @@ public class UserService {
         SysUser u = userMapper.selectById(id);
         if (u == null) throw new AdminException(404, "用户不存在");
         return u;
+    }
+
+    /**
+     * 分页查询用户并转换为 VO(不含 password 等敏感字段)。
+     * Controller 层首选此方法。
+     */
+    public Page<AdminUserVO> pageVO(UserQueryReq req) {
+        Page<SysUser> page = page(req);
+        Page<AdminUserVO> voPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
+        voPage.setRecords(page.getRecords().stream()
+                .map(AdminUserVO::from)
+                .collect(Collectors.toList()));
+        return voPage;
+    }
+
+    /**
+     * 查询单个用户详情并转换为 VO(不含 password 等敏感字段)。
+     */
+    public AdminUserVO getDetailVO(Long id) {
+        return AdminUserVO.from(getDetail(id));
     }
 
     /**

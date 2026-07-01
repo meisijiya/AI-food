@@ -99,11 +99,38 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <finalName>admin-server</finalName>
         <plugins>
+            <!--
+                maven-compiler-plugin: 显式注册 Lombok 为 annotation processor。
+                父 POM (spring-boot-starter-parent 3.4.0) 在 pluginManagement 中只配了
+                annotationProcessorPathsUseDepMgmt=false 但未自动添加 Lombok,
+                实际依赖 javac 通过 META-INF/services 自动发现;admin-server 模块
+                在某些环境下未触发自动发现,故这里显式钉死,确保 @Data/@Builder 等注解稳定生效。
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
             <!--
                 spring-boot-maven-plugin with lombok excluded from the fat jar
                 (Lombok is annotation processor only, never ship it at runtime).

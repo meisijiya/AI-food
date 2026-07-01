@@ -1,11 +1,11 @@
 package com.aifood.admin.controller;
 
-import com.ai.food.common.model.SysUser;
 import com.ai.food.common.util.ApiResponse;
 import com.aifood.admin.common.AdminException;
 import com.aifood.admin.common.annotation.AuditLog;
 import com.aifood.admin.common.annotation.RequireAdmin;
 import com.aifood.admin.common.interceptor.AdminInterceptor;
+import com.aifood.admin.dto.AdminUserVO;
 import com.aifood.admin.dto.UpdateRoleReq;
 import com.aifood.admin.dto.UserQueryReq;
 import com.aifood.admin.service.UserService;
@@ -47,14 +47,14 @@ public class UserController {
 
     /** 分页查询用户列表 */
     @GetMapping
-    public ApiResponse<Page<SysUser>> list(UserQueryReq req) {
-        return ApiResponse.success(userService.page(req));
+    public ApiResponse<Page<AdminUserVO>> list(UserQueryReq req) {
+        return ApiResponse.success(userService.pageVO(req));
     }
 
     /** 查询单个用户详情 */
     @GetMapping("/{id}")
-    public ApiResponse<SysUser> detail(@PathVariable Long id) {
-        return ApiResponse.success(userService.getDetail(id));
+    public ApiResponse<AdminUserVO> detail(@PathVariable Long id) {
+        return ApiResponse.success(userService.getDetailVO(id));
     }
 
     /**
