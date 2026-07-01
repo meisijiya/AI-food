@@ -4,13 +4,13 @@ import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import router from '@/router'
 
-// ponytail: 动态 baseURL — 跟随当前页面所在 host,避免 NAT 回环
-// 浏览器从 sandbox 用 42.193.183.187 访问自己,POST 永远 pending
-// 用 window.location.host 同源拼接,本机测试走 127.0.0.1:8081,
-// 用户从外网走 42.193.183.187:8081(实际就是他们访问的 IP)
-const apiBase = `http://${window.location.hostname}:8081/admin/api`
+// ponytail: 用相对路径 + 当前页面的 pathname
+// - 用户从 cloud (119.29.52.111/admin/) 访问 → axios 用 /admin/api → nginx 代理 → admin-server
+//   CORS 同源,无需 OPTIONS
+// - 本地 sandbox (127.0.0.1:5174/admin/) 访问 → axios 用 /admin/api → 5174 自身 → vite preview 返回 SPA HTML → 失败
+//   这种情况下需要 vite dev proxy(本地开发用)或用户必须走 cloud
 const instance: AxiosInstance = axios.create({
-  baseURL: apiBase,
+  baseURL: (window.location.pathname.startsWith('/admin/') ? '/admin/api' : `http://${window.location.hostname}:8081/admin/api`),
   timeout: 30000
 })
 
