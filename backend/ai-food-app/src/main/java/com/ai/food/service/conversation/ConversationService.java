@@ -1,7 +1,5 @@
 package com.ai.food.service.conversation;
 
-import com.ai.food.dto.ConversationState;
-import com.ai.food.dto.WebSocketMessage;
 import com.ai.food.common.mapper.CollectedParamMapper;
 import com.ai.food.common.mapper.ConversationSessionMapper;
 import com.ai.food.common.mapper.QaRecordMapper;
@@ -10,14 +8,12 @@ import com.ai.food.common.model.CollectedParam;
 import com.ai.food.common.model.ConversationSession;
 import com.ai.food.common.model.QaRecord;
 import com.ai.food.common.model.RecommendationResult;
+import com.ai.food.dto.ConversationState;
+import com.ai.food.dto.WebSocketMessage;
 import com.ai.food.service.ai.AiService;
 import com.ai.food.service.bloom.BloomFilterService;
-import com.ai.food.service.match.ParamNormalizationService;
-import com.ai.food.service.conversation.MessageTagParser;
 import com.ai.food.validator.MessageValidator;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,26 +23,32 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import static com.ai.food.service.conversation.ConversationUtil.PENDING_RECOMMEND_KEY;
+import static com.ai.food.service.conversation.ConversationUtil.REQUIRED_PARAMS_COUNT;
+
 /**
- * 对话会话业务服务（MyBatis-Plus 迁移版）。
+ * 对话会话服务 facade：保留原 618 行 {@code ConversationService} 的全部公开方法签名（含 70 行
+ * {@code processAnswer} 状态机本身，按 Oracle 修订建议不拆），内部按职责 delegate 到
+ * {@link ConversationParamService} / {@link ConversationAiService}。
  * <p>
- * 继承 {@link ServiceImpl} 后，{@code baseMapper} 指向 {@link ConversationSessionMapper}；
- * 其余三张表（QA / 已收集参数 / 推荐结果）走注入的 Mapper 字段。
+ * Controller / {@code ConversationWebSocketHandler} 等调用方无需修改，仍按原
+ * {@code conversationService.xxx(...)} 调用。
  * </p>
+ *
+ * <p>ponytail: {@code processAnswer} 70 行状态机不拆 — Oracle 明确"应留在 facade，只把叶子调用抽出去"。
+ * Redis key 常量与必选/可选参数列表已下沉到 {@link ConversationUtil}。</p>
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ConversationService extends ServiceImpl<ConversationSessionMapper, ConversationSession> {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
+    private final ConversationParamService paramService;
+    private final ConversationAiService aiSubService;
     private final AiService aiService;
     private final MessageValidator messageValidator;
     private final MessageTagParser messageTagParser;
@@ -55,7 +57,6 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
     private final RecommendationResultMapper recommendationResultMapper;
     private final StringRedisTemplate redisTemplate;
     private final BloomFilterService bloomFilterService;
-    private final ParamNormalizationService paramNormalizationService;
 
     @Value("${ai.conversation.min-questions:7}")
     private int minQuestions;
@@ -66,34 +67,13 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
     @Value("${ai.conversation.max-params-retry:2}")
     private int maxParamRetry;
 
-    private static final int REQUIRED_PARAMS_COUNT = 7;
-
-    private final List<String> requiredParams = Arrays.asList(
-        "time", "location", "weather", "mood", "companion", "budget", "taste"
-    );
-
-    private final List<String> optionalParams = Arrays.asList(
-        "restriction", "preference", "health"
-    );
-
     // ==================== 权限校验 ====================
 
     /**
      * 校验 session 是否属于当前用户，并拒绝读取超过 30 天的已完成会话。
      */
     public void validateOwnership(String sessionId, Long userId) {
-        ConversationSession session = baseMapper.findBySessionId(sessionId);
-        if (session == null) {
-            throw new RuntimeException("会话不存在");
-        }
-        if (!userId.equals(session.getUserId())) {
-            throw new RuntimeException("无权访问此会话");
-        }
-        // 已完成超过 30 天的会话不可读取
-        if ("completed".equals(session.getStatus()) && session.getCompletedAt() != null
-                && session.getCompletedAt().isBefore(LocalDateTime.now().minusDays(30))) {
-            throw new RuntimeException("会话已过期");
-        }
+        paramService.validateOwnership(sessionId, userId);
     }
 
     // ==================== 初始化 ====================
@@ -133,6 +113,7 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
 
     // ==================== 核心：处理用户回答 ====================
     // 返回 List：第一条 = AI 确认/追问，第二条(可选) = 下一个问题
+    // ponytail: 70 行状态机本身不拆 — Oracle 修订建议保留在 facade，只 delegate 叶子调用。
 
     /**
      * 处理一轮用户回答：参数校验 / 重试逻辑 / AI 确认 / 推进 / 推荐触发。
@@ -180,16 +161,16 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
         }
 
         // 3. 调用 AI 生成个性化确认/闲聊消息
-        String aiResponse = generateAiResponse(currentParam, answer, state);
+        String aiResponse = aiSubService.generateAiResponse(currentParam, answer, state);
         result.add(createMessage("chat", currentParam, aiResponse, state));
 
         // 4. 确定下一个问题或进入推荐
-        if (state.isCompleted() || allParamsCollected(state)) {
+        if (state.isCompleted() || paramService.allParamsCollected(state)) {
             result.add(generateRecommendationMessage(sessionId, state));
             return result;
         }
 
-        String nextParam = determineNextParam(state);
+        String nextParam = paramService.determineNextParam(state);
         if (nextParam == null) {
             result.add(generateRecommendationMessage(sessionId, state));
             return result;
@@ -215,7 +196,7 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
         log.info("[{}] handleInterrupt: '{}'", state.getSessionId(), combinedMessage);
 
         // 用 AI 统一回复多条打断消息
-        String context = buildParamsContext(state);
+        String context = paramService.buildParamsContext(state);
         String prompt = String.format(
             "用户刚才快速发了几条消息：「%s」。已收集信息：%s。" +
             "请用一句轻松的话回应，比如「你说话太快啦」或者直接汇总理解用户的意思。15字以内。",
@@ -257,8 +238,8 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
             aiResponse = null;
         }
 
-        String normalizedJson = extractJsonFromResponse(aiResponse);
-        boolean saved = saveRecommendationResult(sessionId, state, normalizedJson);
+        String normalizedJson = aiSubService.extractJsonFromResponse(aiResponse);
+        boolean saved = aiSubService.saveRecommendationResult(sessionId, state, normalizedJson);
 
         if (!saved) {
             WebSocketMessage msg = new WebSocketMessage();
@@ -270,7 +251,7 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
 
         try {
             Long userId = getUserIdFromSession(sessionId);
-            String cacheKey = "pending:recommend:" + userId;
+            String cacheKey = PENDING_RECOMMEND_KEY + userId;
             redisTemplate.opsForValue().set(cacheKey, sessionId, 7, TimeUnit.DAYS);
         } catch (Exception e) {
             log.warn("Failed to cache pending recommendation to Redis for session {}", sessionId, e);
@@ -290,151 +271,7 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
         return msg;
     }
 
-    // ==================== AI 调用 ====================
-
-    /**
-     * 根据当前收集进度切换 prompt：必选参数未收齐走"简短确认"，收齐后走"自由对话"prompt。
-     */
-    private String generateAiResponse(String param, String answer, ConversationState state) {
-        String displayName = messageTagParser.getParamDisplayName(param);
-        String context = buildParamsContext(state);
-
-        // 如果所有必选参数已收集完，让 AI 自由对话
-        boolean allRequiredDone = requiredParams.stream().allMatch(p ->
-                p.equals(param) || state.isParamCollected(p));
-
-        String systemPrompt;
-        String userPrompt;
-
-        if (allRequiredDone && state.isInFreeFormStage()) {
-            systemPrompt = "你是一个友好的美食推荐助手。用一句自然的中文回应用户，可以适当追问饮食偏好或禁忌。20字以内。";
-            userPrompt = String.format("用户说「%s」。已收集信息：%s。请自然地回应。", answer, context);
-        } else {
-            systemPrompt = "你是一个友好的美食推荐助手。用一句简短自然的中文确认用户的信息，不要重复用户原话。15字以内。";
-            userPrompt = String.format(
-                "用户回答了关于「%s」的问题：「%s」。已收集：%s。请确认。",
-                displayName, answer, context
-            );
-        }
-
-        try {
-            String response = aiService.chat(systemPrompt, userPrompt).getText();
-            if (response != null && !response.isBlank() && !response.startsWith("抱歉")) {
-                return response.trim();
-            }
-        } catch (Exception e) {
-            log.warn("AI response generation failed: {}", e.getMessage());
-        }
-        // fallback
-        return String.format("好的，%s我记下了！", answer);
-    }
-
-    // ==================== 工具方法 ====================
-
-    /**
-     * 是否所有必选 + 可选参数都已收集。
-     */
-    private boolean allParamsCollected(ConversationState state) {
-        return requiredParams.stream().allMatch(state::isParamCollected)
-                && optionalParams.stream().allMatch(state::isParamCollected);
-    }
-
-    /**
-     * 决定下一个待收集的参数（必选优先，自由发挥阶段后补可选参数）。
-     */
-    private String determineNextParam(ConversationState state) {
-        for (String param : requiredParams) {
-            if (!state.isParamCollected(param)) return param;
-        }
-        if (state.isInFreeFormStage()) {
-            for (String param : optionalParams) {
-                if (!state.isParamCollected(param)) return param;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * 把已收集参数拼成自然语言上下文，供 AI prompt 使用。
-     */
-    private String buildParamsContext(ConversationState state) {
-        StringBuilder sb = new StringBuilder();
-        state.getParamValues().forEach((key, value) ->
-            sb.append(messageTagParser.getParamDisplayName(key)).append(": ").append(value).append("；")
-        );
-        return sb.toString();
-    }
-
-    /**
-     * 从 AI 原始响应中抽取 JSON：支持 ```json 包裹 / 裸 JSON / 纯文本降级。
-     */
-    private String extractJsonFromResponse(String response) {
-        if (response == null) return "{\"foodName\":\"暂无推荐\",\"reason\":\"无法生成推荐\"}";
-        String trimmed = response.trim();
-        if (trimmed.startsWith("```")) {
-            int start = trimmed.indexOf('{');
-            int end = trimmed.lastIndexOf('}');
-            if (start >= 0 && end > start) return trimmed.substring(start, end + 1);
-        }
-        if (trimmed.startsWith("{")) return trimmed;
-        return "{\"foodName\":\"" + trimmed.replace("\"", "\\\"") + "\",\"reason\":\"根据您的需求为您推荐\"}";
-    }
-
-    /**
-     * 持久化推荐结果（新增 or 更新），并把对应 entry 写入用户 Bloom 画像。
-     */
-    private boolean saveRecommendationResult(String sessionId, ConversationState state, String recommendationJson) {
-        try {
-            RecommendationResult existing = recommendationResultMapper.findBySessionId(sessionId);
-            RecommendationResult result = existing != null ? existing : new RecommendationResult();
-            Map<String, String> payload = parseRecommendationPayload(recommendationJson);
-            result.setSessionId(sessionId);
-            result.setMode(state.getMode());
-            result.setFoodName(payload.getOrDefault("foodName", "暂无推荐结果"));
-            result.setReason(payload.getOrDefault("reason", "该会话暂无可展示的推荐说明"));
-            if (existing == null) {
-                recommendationResultMapper.insert(result);
-            } else {
-                recommendationResultMapper.updateById(result);
-            }
-            log.debug("Saved recommendation result: foodName={}", result.getFoodName());
-
-            ConversationSession session = baseMapper.findBySessionId(sessionId);
-            if (session != null) {
-                Long userId = session.getUserId();
-                if (userId != null) {
-                    try {
-                        List<CollectedParam> params = collectedParamMapper.findBySessionId(sessionId);
-                        List<String> normalizedTokens = paramNormalizationService.normalizeCollectedParams(params);
-                        log.debug("[{}] normalized match tokens: {}", sessionId, normalizedTokens);
-                        String paramValue = String.join("|", normalizedTokens);
-                        bloomFilterService.addRecommendation(userId, result.getId().toString(), paramValue);
-                    } catch (Exception bloomEx) {
-                        log.warn("Failed to update bloom filter for user {}: {}", userId, bloomEx.getMessage());
-                    }
-                }
-            }
-            return true;
-        } catch (Exception e) {
-            log.error("Failed to save recommendation result", e);
-            return false;
-        }
-    }
-
-    /**
-     * 解析 AI 返回的 JSON；失败回退为 foodName=原文。
-     */
-    private Map<String, String> parseRecommendationPayload(String json) {
-        if (json == null || json.isBlank()) {
-            return Map.of();
-        }
-        try {
-            return OBJECT_MAPPER.readValue(json, new TypeReference<Map<String, String>>() {});
-        } catch (Exception e) {
-            log.warn("Failed to parse recommendation json, using fallback text: {}", json);
-            return Map.of("foodName", json, "reason", "根据您的需求为您推荐");
-        }
-    }
+    // ==================== 工具方法（facade 私有 helper） ====================
 
     /**
      * 构造 WebSocket 消息体（含进度条）。
@@ -498,7 +335,7 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
             if (existing == null) {
                 param.setSessionId(sessionId);
                 param.setParamName(paramName);
-                param.setParamType(requiredParams.contains(paramName) ? "required" : "optional");
+                param.setParamType(ConversationUtil.REQUIRED_PARAMS.contains(paramName) ? "required" : "optional");
             }
             param.setParamValue(paramValue);
             if (existing == null) {
@@ -526,9 +363,6 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
         }
     }
 
-    public List<String> getRequiredParams() { return requiredParams; }
-    public List<String> getOptionalParams() { return optionalParams; }
-
     /**
      * 从 session 表反查 userId（取不到则抛错）。
      */
@@ -540,56 +374,21 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
         return session.getUserId();
     }
 
-    private String parseFoodName(String response) {
-        if (response == null) return "未知美食";
-        try {
-            String trimmed = response.trim();
-            if (trimmed.startsWith("```")) {
-                int start = trimmed.indexOf('{');
-                int end = trimmed.lastIndexOf('}');
-                if (start >= 0 && end > start) trimmed = trimmed.substring(start, end + 1);
-            }
-            int start = trimmed.indexOf("\"foodName\"");
-            if (start >= 0) {
-                start = trimmed.indexOf(":", start) + 1;
-                int end = trimmed.indexOf(",", start);
-                if (end < 0) end = trimmed.indexOf("}", start);
-                return trimmed.substring(start, end).trim().replace("\"", "");
-            }
-        } catch (Exception e) {
-            log.warn("Failed to parse foodName", e);
-        }
-        return "未知美食";
-    }
+    // ==================== 必选参数查询（delegate → paramService） ====================
 
-    private String parseReason(String response) {
-        if (response == null) return "根据您的需求为您推荐";
-        try {
-            String trimmed = response.trim();
-            if (trimmed.startsWith("```")) {
-                int start = trimmed.indexOf('{');
-                int end = trimmed.lastIndexOf('}');
-                if (start >= 0 && end > start) trimmed = trimmed.substring(start, end + 1);
-            }
-            int start = trimmed.indexOf("\"reason\"");
-            if (start >= 0) {
-                start = trimmed.indexOf(":", start) + 1;
-                int end = trimmed.lastIndexOf("}");
-                return trimmed.substring(start, end).trim().replace("\"", "");
-            }
-        } catch (Exception e) {
-            log.warn("Failed to parse reason", e);
-        }
-        return "根据您的需求为您推荐";
-    }
+    public List<String> getRequiredParams() { return paramService.getRequiredParams(); }
+
+    public List<String> getOptionalParams() { return paramService.getOptionalParams(); }
 
     public boolean isAllRequiredParamsCollected(ConversationState state) {
-        return requiredParams.stream().allMatch(state::isParamCollected);
+        return paramService.isAllRequiredParamsCollected(state);
     }
 
     public int getRemainingRequiredParams(ConversationState state) {
-        return (int) requiredParams.stream().filter(p -> !state.isParamCollected(p)).count();
+        return paramService.getRemainingRequiredParams(state);
     }
+
+    // ==================== 取消会话 ====================
 
     /**
      * 取消会话：清理 Bloom 画像 + 软删除所有关联表数据。

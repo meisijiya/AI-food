@@ -35,9 +35,18 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.*;
 
+/**
+ * 行为测试：拆分后 facade 内部 delegate 到 {@link ConversationParamService} /
+ * {@link ConversationAiService}，但行为断言仍在 {@code ConversationService} 上做（与 controller / WebSocket
+ * 看到的契约一致）。
+ * <p>
+ * 构造方式：手工 new ConversationParamService / ConversationAiService，注入真实的子 service
+ * + mock 的下游 mapper，避免子 service 与 mapper 之间的桥接 stub。
+ * </p>
+ */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@DisplayName("ConversationService 对话服务")
+@DisplayName("ConversationService 对话服务（拆分后 facade）")
 class ConversationServiceTest {
 
     @Mock
@@ -73,10 +82,20 @@ class ConversationServiceTest {
     void setUp() {
         MessageValidator messageValidator = new MessageValidator();
         MessageTagParser messageTagParser = new MessageTagParser(messageValidator, aiService);
+
+        // 手工构造两个子 service（用真实 MessageTagParser + 真实子 service 行为，mock 掉所有 mapper 依赖）
+        ConversationParamService paramService = new ConversationParamService(
+                conversationSessionMapper, messageTagParser);
+        ConversationAiService aiSubService = new ConversationAiService(
+                aiService, messageTagParser, paramService,
+                recommendationResultMapper, conversationSessionMapper,
+                collectedParamMapper, paramNormalizationService, bloomFilterService);
+
         conversationService = new ConversationService(
+                paramService, aiSubService,
                 aiService, messageValidator, messageTagParser,
                 qaRecordMapper, collectedParamMapper,
-                recommendationResultMapper, redisTemplate, bloomFilterService, paramNormalizationService
+                recommendationResultMapper, redisTemplate, bloomFilterService
         );
         ReflectionTestUtils.setField(conversationService, "baseMapper", conversationSessionMapper);
         ReflectionTestUtils.setField(conversationService, "minQuestions", 7);
