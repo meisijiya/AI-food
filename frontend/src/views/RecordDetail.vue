@@ -22,107 +22,41 @@
         </div>
       </div>
 
-      <!-- Photo section -->
-      <template v-if="detail.recommendation">
-        <div v-if="detail.photo && !showUpload" class="photo-card card-enter card-delay-2">
-          <div class="section-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-            <span>美食照片</span>
-          </div>
-          <div class="photo-body">
-            <div class="photo-glow"></div>
-            <img
-              :src="detail.photo.thumbnailPath"
-              class="photo-image"
-              alt="美食照片"
-              @click="openPhotoModal(detail.photo.originalPath)"
-            />
-            <div class="photo-actions">
-              <button class="photo-action-btn" @click="showUpload = true" title="更换照片">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-              </button>
-              <button class="photo-action-btn delete" @click="handleDeletePhoto" title="删除照片">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-              </button>
-            </div>
-          </div>
-        </div>
+      <!-- Photo section: 照片展示 + 替换 + 删除 (子组件) -->
+      <RecordPhotoGallery
+        v-if="detail.recommendation"
+        :photo="detail.photo"
+        :session-id="sessionId"
+        @uploaded="onPhotoUploaded"
+        @delete="handleDeletePhoto"
+      />
 
-        <UploadPhoto
-          v-if="!detail.photo || showUpload"
-          :session-id="sessionId"
-          @uploaded="onPhotoUploaded"
-        />
-      </template>
+      <!-- Comment section: 美食评价 (子组件) -->
+      <RecordCommentList
+        v-if="detail.recommendation"
+        ref="commentListRef"
+        :comment="commentText"
+        @save="onSaveComment"
+      />
 
-      <!-- Comment section -->
-      <div v-if="detail.recommendation" class="comment-section card-enter card-delay-3">
-        <div class="section-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          <span>美食评价</span>
-        </div>
-        <div v-if="!editingComment && commentText" class="comment-display">
-          <p class="comment-text">{{ commentText }}</p>
-          <button class="comment-edit-btn" @click="startEditComment">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-          </button>
-        </div>
-        <div v-else class="comment-edit">
-          <textarea
-            v-model="commentInput"
-            class="comment-textarea"
-            placeholder="写下你对这道美食的评价..."
-            rows="3"
-            maxlength="500"
-          ></textarea>
-          <div class="comment-actions">
-            <button class="emoji-trigger" @click="openEmoji('comment')">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
-            </button>
-            <span class="comment-count">{{ (commentInput || '').length }}/500</span>
-            <button class="comment-save-btn" @click="saveComment" :disabled="savingComment">
-              {{ savingComment ? '保存中...' : '保存评价' }}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <EmojiPicker :show="showEmoji" @select="insertEmoji" @close="showEmoji = false" />
-
-      <!-- Actions row: Share + Publish -->
-      <div class="actions-row card-enter card-delay-4">
-        <!-- Share -->
-        <div v-if="sessionId && !shareUrl" class="action-chip">
-          <button class="chip-btn share-chip" @click="handleShare" :disabled="sharing">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
-            {{ sharing ? '创建中...' : '分享' }}
-          </button>
-        </div>
-        <div v-if="sessionId && detail.recommendation && !isPublished" class="action-chip">
-          <button class="chip-btn publish-chip" @click="openPublishDialog">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-            发布到大厅
-          </button>
-        </div>
-        <div v-if="sessionId && detail.recommendation && isPublished" class="action-chip">
-          <button class="chip-btn unpublish-chip" @click="handleUnpublish" :disabled="unpublishing">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-            {{ unpublishing ? '取消中...' : '取消发布' }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Share link (after copy) -->
-      <div v-if="shareUrl" class="share-link-card card-enter">
-        <div class="section-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
-          <span>分享链接</span>
-        </div>
-        <div class="share-link-row">
-          <input class="share-link-input" :value="shareUrl" readonly />
-          <button class="share-copy-btn" @click="copyShareUrl">复制</button>
-        </div>
-      </div>
+      <!-- Actions row: Share + Publish + Share link + Publish dialog (子组件) -->
+      <RecordActions
+        ref="actionsRef"
+        :session-id="sessionId"
+        :share-url="shareUrl"
+        :sharing="sharing"
+        :is-published="isPublished"
+        :unpublishing="unpublishing"
+        :show-recommendation="!!detail.recommendation"
+        :publish-dialog="publishDialog"
+        :publishing="publishing"
+        @share="handleShare"
+        @unpublish="handleUnpublish"
+        @open-publish="onOpenPublishDialog"
+        @close-publish="publishDialog = false"
+        @confirm-publish="onConfirmPublish"
+        @copy-share-url="copyShareUrl"
+      />
 
       <!-- Collected params -->
       <div v-if="paramsList.length" class="params-section card-enter card-delay-5">
@@ -168,119 +102,62 @@
     </button>
 
     <div class="nav-spacer"></div>
-
-    <!-- Photo modal -->
-    <Transition name="fade">
-      <div v-if="photoModalUrl" class="photo-modal" @click.self="photoModalUrl = null">
-        <div class="photo-modal-content">
-          <img :src="photoModalUrl" class="full-photo" alt="原始照片" />
-          <button class="photo-modal-close" @click="photoModalUrl = null">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-          </button>
-        </div>
-      </div>
-    </Transition>
-
-    <!-- Publish dialog -->
-    <Transition name="fade">
-      <div v-if="publishDialog" class="photo-modal" @click.self="publishDialog = false">
-        <div class="publish-dialog">
-          <div class="publish-dialog-glow"></div>
-          <div class="publish-dialog-title">发布动态</div>
-          <div class="publish-visibility-row">
-            <button
-              class="visibility-option"
-              :class="{ active: publishVisibility === 'public' }"
-              @click="publishVisibility = 'public'"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-              <span>发布到大厅</span>
-            </button>
-            <button
-              class="visibility-option"
-              :class="{ active: publishVisibility === 'friends' }"
-              @click="publishVisibility = 'friends'"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              <span>仅粉丝可见</span>
-            </button>
-          </div>
-          <p class="publish-dialog-hint">编辑评论预览（展示在大厅卡片上，最多30字）</p>
-          <textarea
-            v-model="publishPreview"
-            class="publish-textarea"
-            placeholder="写下你的推荐感言..."
-            rows="3"
-            maxlength="30"
-          ></textarea>
-          <div class="publish-dialog-count">
-            <button class="emoji-trigger" @click="openEmoji('publish')">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
-            </button>
-            <span>{{ (publishPreview || '').length }}/30</span>
-          </div>
-          <div class="publish-dialog-actions">
-            <button class="publish-cancel-btn" @click="publishDialog = false">取消</button>
-            <button class="publish-confirm-btn" @click="handlePublish" :disabled="publishing">
-              {{ publishing ? '发布中...' : '确认发布' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
+// 记录详情页父组件
+// 职责: 拉取详情数据 / 持有 page 级别 state / 编排子组件 / 转发 API 调用
+// 拆出去的子组件: RecordPhotoGallery / RecordCommentList / RecordActions
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { recordApi, shareApi, feedApi } from '@/api'
 import { showSuccess, showError } from '@/utils/toast'
-import UploadPhoto from '@/components/UploadPhoto.vue'
-import EmojiPicker from '@/components/EmojiPicker.vue'
+import RecordPhotoGallery from './components/RecordDetail/RecordPhotoGallery.vue'
+import RecordCommentList from './components/RecordDetail/RecordCommentList.vue'
+import RecordActions from './components/RecordDetail/RecordActions.vue'
 
 const route = useRoute()
 const router = useRouter()
 
-const showEmoji = ref(false)
-const emojiTarget = ref<'comment' | 'publish'>('comment')
+// 子组件 ref —— 用于在 API 回调中通知子组件更新内部 UI 状态
+const commentListRef = ref<InstanceType<typeof RecordCommentList> | null>(null)
+const actionsRef = ref<InstanceType<typeof RecordActions> | null>(null)
 
-function insertEmoji(icon: string) {
-  if (emojiTarget.value === 'comment') {
-    commentInput.value = (commentInput.value || '') + icon
-  } else {
-    publishPreview.value = (publishPreview.value || '') + icon
-  }
-  showEmoji.value = false
-}
-
-function openEmoji(target: 'comment' | 'publish') {
-  emojiTarget.value = target
-  showEmoji.value = !showEmoji.value
-}
-
+// Page 级别 state
 const loading = ref(true)
 const detail = ref<any>(null)
-const photoModalUrl = ref<string | null>(null)
-const showUpload = ref(false)
-const editingComment = ref(false)
-const commentInput = ref('')
-const savingComment = ref(false)
 const shareUrl = ref('')
 const sharing = ref(false)
 const isPublished = ref(false)
 const publishDialog = ref(false)
-const publishPreview = ref('')
-const publishVisibility = ref<'public' | 'friends'>('public')
 const publishing = ref(false)
 const unpublishing = ref(false)
 
 const sessionId = computed(() => route.params.sessionId as string)
 
+// 从 detail 派生的派生 state
 const commentText = computed(() => {
   return detail.value?.recommendation?.comment || ''
 })
 
+const foodName = computed(() => {
+  return detail.value?.recommendation?.foodName || '暂无推荐结果'
+})
+
+const reason = computed(() => {
+  return detail.value?.recommendation?.reason || ''
+})
+
+const paramsList = computed(() => {
+  return detail.value?.collectedParams || []
+})
+
+const qaList = computed(() => {
+  return detail.value?.qaRecords || []
+})
+
+// 静态参数标签映射
 const paramLabels: Record<string, string> = {
   time: '用餐时间',
   location: '用餐地点',
@@ -304,22 +181,7 @@ function formatDate(dateStr: string) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-const foodName = computed(() => {
-  return detail.value?.recommendation?.foodName || '暂无推荐结果'
-})
-
-const reason = computed(() => {
-  return detail.value?.recommendation?.reason || ''
-})
-
-const paramsList = computed(() => {
-  return detail.value?.collectedParams || []
-})
-
-const qaList = computed(() => {
-  return detail.value?.qaRecords || []
-})
-
+// 拉取详情 + 发布状态
 async function fetchDetail() {
   const sid = route.params.sessionId as string
   if (!sid) {
@@ -330,10 +192,6 @@ async function fetchDetail() {
   try {
     const res = await recordApi.getRecordDetail(sid)
     detail.value = res
-    // 如果没有评价，默认进入编辑模式
-    if (!res?.recommendation?.comment) {
-      editingComment.value = true
-    }
   } catch (e: any) {
     showError(e?.message || '记录不存在或已被删除')
     router.back()
@@ -353,68 +211,7 @@ onMounted(async () => {
   }
 })
 
-async function openPublishDialog() {
-  const sid = sessionId.value
-  if (!sid) return
-  publishPreview.value = commentText.value || ''
-  publishVisibility.value = 'public'
-  publishDialog.value = true
-}
-
-async function handlePublish() {
-  const sid = sessionId.value
-  if (!sid) return
-  publishing.value = true
-  try {
-    await feedApi.publish({ sessionId: sid, commentPreview: publishPreview.value || undefined, visibility: publishVisibility.value })
-    isPublished.value = true
-    publishDialog.value = false
-    showSuccess('发布成功')
-  } catch (e: any) {
-    showError(e?.message || '发布失败')
-  } finally {
-    publishing.value = false
-  }
-}
-
-async function handleUnpublish() {
-  const sid = sessionId.value
-  if (!sid) return
-  unpublishing.value = true
-  try {
-    await feedApi.unpublish(sid)
-    isPublished.value = false
-    showSuccess('已取消发布')
-  } catch (e: any) {
-    showError(e?.message || '取消失败')
-  } finally {
-    unpublishing.value = false
-  }
-}
-
-function startEditComment() {
-  commentInput.value = commentText.value
-  editingComment.value = true
-}
-
-async function saveComment() {
-  const sid = sessionId.value
-  if (!sid) return
-  savingComment.value = true
-  try {
-    await recordApi.updateComment(sid, commentInput.value || '')
-    if (detail.value?.recommendation) {
-      detail.value.recommendation.comment = commentInput.value
-    }
-    editingComment.value = false
-    showSuccess('评价已保存')
-  } catch {
-    showError('保存失败')
-  } finally {
-    savingComment.value = false
-  }
-}
-
+// ===== 照片相关(子组件 emit,父组件做 API) =====
 function onPhotoUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
   if (detail.value) {
     detail.value.photo = {
@@ -422,7 +219,6 @@ function onPhotoUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
       originalPath: data.originalUrl
     }
   }
-  showUpload.value = false
   // 保存到数据库并清除 Redis 缓存
   const sid = sessionId.value
   if (sid) {
@@ -438,13 +234,30 @@ async function handleDeletePhoto() {
     if (detail.value) {
       detail.value.photo = null
     }
-    showUpload.value = false
     showSuccess('照片已删除')
   } catch {
     showError('删除失败')
   }
 }
 
+// ===== 评价相关(子组件 emit,父组件做 API) =====
+async function onSaveComment(content: string) {
+  const sid = sessionId.value
+  if (!sid) return
+  try {
+    await recordApi.updateComment(sid, content || '')
+    if (detail.value?.recommendation) {
+      detail.value.recommendation.comment = content
+    }
+    commentListRef.value?.onSaveSuccess()
+    showSuccess('评价已保存')
+  } catch {
+    commentListRef.value?.onSaveError()
+    showError('保存失败')
+  }
+}
+
+// ===== 分享 + 发布相关(子组件 emit,父组件做 API) =====
 async function handleShare() {
   const sid = sessionId.value
   if (!sid) return
@@ -470,8 +283,41 @@ async function copyShareUrl() {
   }
 }
 
-function openPhotoModal(url: string) {
-  photoModalUrl.value = url
+async function handleUnpublish() {
+  const sid = sessionId.value
+  if (!sid) return
+  unpublishing.value = true
+  try {
+    await feedApi.unpublish(sid)
+    isPublished.value = false
+    showSuccess('已取消发布')
+  } catch (e: any) {
+    showError(e?.message || '取消失败')
+  } finally {
+    unpublishing.value = false
+  }
+}
+
+function onOpenPublishDialog() {
+  // 通过子组件暴露的方法,设置发布预览的初始值(从评价同步过来),保持原行为
+  actionsRef.value?.setPublishPreview(commentText.value)
+  publishDialog.value = true
+}
+
+async function onConfirmPublish(preview: string, visibility: 'public' | 'friends') {
+  const sid = sessionId.value
+  if (!sid) return
+  publishing.value = true
+  try {
+    await feedApi.publish({ sessionId: sid, commentPreview: preview || undefined, visibility })
+    isPublished.value = true
+    publishDialog.value = false
+    showSuccess('发布成功')
+  } catch (e: any) {
+    showError(e?.message || '发布失败')
+  } finally {
+    publishing.value = false
+  }
 }
 </script>
 
@@ -520,15 +366,11 @@ function openPhotoModal(url: string) {
   50% { transform: translate(10px, -10px); }
 }
 
-/* ===== Card Entrance Animation ===== */
+/* ===== Card Entrance Animation (parent-owned cards) ===== */
 .card-enter {
   animation: card-slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-
 .card-delay-1 { animation-delay: 0.05s; }
-.card-delay-2 { animation-delay: 0.1s; }
-.card-delay-3 { animation-delay: 0.15s; }
-.card-delay-4 { animation-delay: 0.2s; }
 .card-delay-5 { animation-delay: 0.25s; }
 .card-delay-6 { animation-delay: 0.3s; }
 .card-delay-7 { animation-delay: 0.35s; }
@@ -557,22 +399,6 @@ function openPhotoModal(url: string) {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-/* ===== Page Title ===== */
-.page-title {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 36px;
-  font-weight: 500;
-  color: var(--color-on-surface);
-  margin-bottom: 28px;
-  letter-spacing: -0.01em;
-
-  em {
-    font-style: italic;
-    color: var(--color-primary);
-  }
 }
 
 /* ===== Recommend Card (Light) ===== */
@@ -654,372 +480,6 @@ function openPhotoModal(url: string) {
     background: var(--color-surface-container-low);
     border-radius: 100px;
   }
-}
-
-/* ===== Section Title (shared) ===== */
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 18px;
-  font-weight: 500;
-  color: var(--color-on-surface);
-  margin-bottom: 14px;
-
-  svg {
-    color: var(--color-primary);
-  }
-}
-
-/* ===== Photo Card ===== */
-.photo-card {
-  margin-bottom: 24px;
-}
-
-.photo-body {
-  position: relative;
-  overflow: hidden;
-  border-radius: 2rem;
-  background: var(--color-surface-container-lowest);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-}
-
-.photo-glow {
-  position: absolute;
-  top: -40px;
-  left: -30px;
-  width: 140px;
-  height: 140px;
-  background: var(--color-primary-container);
-  opacity: 0.06;
-  border-radius: 50%;
-  filter: blur(40px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.photo-image {
-  width: 100%;
-  display: block;
-  max-height: 360px;
-  object-fit: cover;
-  cursor: pointer;
-  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-  position: relative;
-  z-index: 1;
-
-  &:hover {
-    transform: scale(1.02);
-  }
-}
-
-.photo-actions {
-  display: flex;
-  gap: 6px;
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 2;
-}
-
-.photo-action-btn {
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.25s;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  color: var(--color-on-surface);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.95);
-    transform: scale(1.08);
-  }
-
-  &:active {
-    transform: scale(0.95);
-  }
-
-  &.delete {
-    color: #ef4444;
-    &:hover { background: rgba(255, 240, 240, 0.95); }
-  }
-}
-
-/* ===== Photo Modal ===== */
-.photo-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: rgba(11, 15, 16, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-
-.photo-modal-content {
-  position: relative;
-  max-width: 100%;
-  max-height: 100%;
-}
-
-.full-photo {
-  max-width: 100%;
-  max-height: 85vh;
-  border-radius: 1.5rem;
-  object-fit: contain;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
-.photo-modal-close {
-  position: absolute;
-  top: -12px;
-  right: -12px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: scale(1.1);
-  }
-}
-
-/* ===== Comment Section ===== */
-.comment-section {
-  margin-bottom: 24px;
-}
-
-.comment-display {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 20px 24px;
-  background: var(--color-surface-container-lowest);
-  border-radius: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
-}
-
-.comment-text {
-  flex: 1;
-  font-size: 14px;
-  line-height: 1.8;
-  color: var(--color-on-surface);
-  white-space: pre-wrap;
-}
-
-.comment-edit-btn {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(0, 89, 182, 0.06);
-  color: var(--color-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.25s;
-
-  &:hover { background: rgba(0, 89, 182, 0.12); }
-  &:active { transform: scale(0.92); }
-}
-
-.comment-edit {
-  padding: 4px;
-  background: var(--color-surface-container-lowest);
-  border-radius: 2rem;
-  border: 1px solid var(--color-surface-container-low);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
-}
-
-.comment-textarea {
-  width: 100%;
-  padding: 16px 22px;
-  border: none;
-  background: none;
-  font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--color-on-surface);
-  resize: none;
-  outline: none;
-
-  &::placeholder {
-    color: var(--color-on-surface-variant);
-    opacity: 0.45;
-  }
-}
-
-.comment-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 22px 14px;
-}
-
-.emoji-trigger {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  color: var(--color-on-surface-variant);
-  cursor: pointer;
-  border-radius: 50%;
-  flex-shrink: 0;
-  transition: background 0.2s;
-  &:active { background: var(--color-surface-container-low); }
-}
-
-.comment-count {
-  font-size: 11px;
-  color: var(--color-on-surface-variant);
-  opacity: 0.45;
-  font-variant-numeric: tabular-nums;
-}
-
-.comment-save-btn {
-  margin-left: auto;
-  padding: 10px 24px;
-  border: none;
-  border-radius: 100px;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
-  color: white;
-  font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 89, 182, 0.2);
-  transition: all 0.25s;
-
-  &:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 89, 182, 0.3); }
-  &:active { transform: scale(0.97); }
-  &:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-}
-
-/* ===== Actions Row ===== */
-.actions-row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
-}
-
-.chip-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 12px 22px;
-  border-radius: 2rem;
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.25s;
-
-  &:active { transform: scale(0.96); }
-  &:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
-}
-
-.share-chip {
-  border: 1.5px solid var(--color-primary);
-  background: none;
-  color: var(--color-primary);
-
-  &:hover { background: rgba(0, 89, 182, 0.06); }
-}
-
-.publish-chip {
-  border: 1.5px solid #06b6d4;
-  background: none;
-  color: #06b6d4;
-
-  &:hover { background: rgba(6, 182, 212, 0.06); }
-}
-
-.unpublish-chip {
-  border: 1.5px solid rgba(239, 68, 68, 0.35);
-  background: rgba(239, 68, 68, 0.04);
-  color: #ef4444;
-
-  &:hover { background: rgba(239, 68, 68, 0.08); }
-}
-
-/* ===== Share Link Card ===== */
-.share-link-card {
-  background: var(--color-surface-container-lowest);
-  border-radius: 2rem;
-  padding: 20px 24px;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
-  margin-bottom: 24px;
-}
-
-.share-link-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-top: 4px;
-}
-
-.share-link-input {
-  flex: 1;
-  padding: 12px 16px;
-  border: 1px solid var(--color-surface-container-low);
-  border-radius: 1.25rem;
-  background: var(--color-surface);
-  font-family: var(--font-sans);
-  font-size: 12px;
-  color: var(--color-on-surface);
-  outline: none;
-  min-width: 0;
-}
-
-.share-copy-btn {
-  flex-shrink: 0;
-  padding: 12px 20px;
-  border: none;
-  border-radius: 1.25rem;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
-  color: white;
-  font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.25s;
-  white-space: nowrap;
-
-  &:hover { transform: translateY(-1px); }
-  &:active { transform: scale(0.97); }
 }
 
 /* ===== Params Section ===== */
@@ -1189,203 +649,11 @@ function openPhotoModal(url: string) {
   height: 80px;
 }
 
-/* ===== Publish Dialog ===== */
-.publish-dialog {
-  width: calc(100% - 48px);
-  max-width: 400px;
-  background: var(--color-surface-container-lowest);
-  border-radius: 2.5rem;
-  padding: 32px 28px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
-}
-
-.publish-dialog-glow {
-  position: absolute;
-  top: -60px;
-  right: -40px;
-  width: 180px;
-  height: 180px;
-  background: var(--color-primary-container);
-  opacity: 0.06;
-  border-radius: 50%;
-  filter: blur(40px);
-  pointer-events: none;
-}
-
-.publish-dialog-title {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 24px;
-  font-weight: 500;
-  color: var(--color-on-surface);
-  margin-bottom: 8px;
-  position: relative;
-  z-index: 1;
-}
-
-.publish-dialog-hint {
-  font-size: 12px;
-  color: var(--color-on-surface-variant);
-  margin-bottom: 18px;
-  opacity: 0.65;
-  line-height: 1.6;
-  position: relative;
-  z-index: 1;
-}
-
-.publish-visibility-row {
-  display: flex;
-  gap: 10px;
-  margin: 16px 0 12px;
-  position: relative;
-  z-index: 1;
-}
-
-.visibility-option {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 12px 8px;
-  border: 1.5px solid var(--color-surface-container-low);
-  border-radius: 1rem;
-  background: none;
-  color: var(--color-on-surface-variant);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  svg {
-    opacity: 0.5;
-    transition: all 0.2s;
-  }
-
-  &.active {
-    background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
-    border-color: transparent;
-    color: white;
-    svg {
-      opacity: 1;
-      stroke: white;
-    }
-  }
-
-  &:not(.active):active {
-    background: var(--color-surface-container-low);
-  }
-}
-
-.publish-textarea {
-  width: 100%;
-  padding: 14px 18px;
-  border: 1.5px solid var(--color-surface-container-low);
-  border-radius: 1.5rem;
-  background: var(--color-surface);
-  font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--color-on-surface);
-  resize: none;
-  outline: none;
-  position: relative;
-  z-index: 1;
-
-  &:focus {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(0, 89, 182, 0.08);
-  }
-
-  &::placeholder {
-    color: var(--color-on-surface-variant);
-    opacity: 0.4;
-  }
-}
-
-.publish-dialog-count {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--color-on-surface-variant);
-  opacity: 0.45;
-  margin-top: 6px;
-  margin-bottom: 18px;
-  font-variant-numeric: tabular-nums;
-  position: relative;
-  z-index: 1;
-}
-
-.publish-dialog-actions {
-  display: flex;
-  gap: 10px;
-  position: relative;
-  z-index: 1;
-}
-
-.publish-cancel-btn {
-  flex: 1;
-  padding: 14px;
-  border: 1.5px solid var(--color-surface-container-low);
-  border-radius: 1.5rem;
-  background: none;
-  color: var(--color-on-surface-variant);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    border-color: var(--color-on-surface-variant);
-  }
-}
-
-.publish-confirm-btn {
-  flex: 1;
-  padding: 14px;
-  border: none;
-  border-radius: 1.5rem;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 89, 182, 0.2);
-  transition: all 0.25s;
-
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(0, 89, 182, 0.3);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-  }
-}
-
 /* ===== Responsive ===== */
 @media (min-width: 1024px) {
   .detail-container {
     max-width: 60%;
     margin: 0 auto;
   }
-}
-
-/* ===== Transitions ===== */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
 }
 </style>
