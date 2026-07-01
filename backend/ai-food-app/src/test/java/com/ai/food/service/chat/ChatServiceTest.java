@@ -32,13 +32,19 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * 行为测试：拆分后迁移到 {@link ChatMessageService}（消息 CRUD + 文件/照片删除）。
+ * <p>
+ * 行为与拆分前一致：{@code ChatService} 改为 facade 后，对 {@code clearConversation} / {@code getChatHistory} /
+ * {@code deleteChatPhoto} / {@code deleteChatFile} 的行为断言现在直接对子 service 做。
+ * </p>
+ */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@DisplayName("ChatService soft delete consistency")
+@DisplayName("ChatMessageService soft delete consistency")
 class ChatServiceTest {
 
     @Mock
@@ -69,28 +75,33 @@ class ChatServiceTest {
     private FileUploadService fileUploadService;
 
     @Mock
+    private ChatUnreadService chatUnreadService;
+
+    @Mock
+    private ChatPermissionService chatPermissionService;
+
+    @Mock
     private HashOperations<String, Object, Object> hashOperations;
 
-    private ChatService chatService;
+    private ChatMessageService chatMessageService;
 
     @BeforeEach
     void setUp() {
-        chatService = new ChatService(
+        chatMessageService = new ChatMessageService(
                 conversationMapper,
                 chatPhotoMapper,
                 chatFileMapper,
                 userMapper,
                 followService,
                 notificationService,
-                stringRedisTemplate,
-                fileUploadService
+                fileUploadService,
+                chatUnreadService,
+                chatPermissionService
         );
-        // ChatService 继承 ServiceImpl<ChatMessageMapper, ChatMessage>，baseMapper 由 Spring 注入；
+        // ChatMessageService 继承 ServiceImpl<ChatMessageMapper, ChatMessage>，baseMapper 由 Spring 注入；
         // 测试手动 new，需把 messageMapper 挂到 baseMapper 上，否则 baseMapper.softDeleteByConversationIdBefore 等调用 NPE。
-        ReflectionTestUtils.setField(chatService, "baseMapper", messageMapper);
+        ReflectionTestUtils.setField(chatMessageService, "baseMapper", messageMapper);
 
-        when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
-        when(hashOperations.get(any(), any())).thenReturn(null);
         when(messageMapper.findLastMessageByConversationId(eq(100L), any())).thenReturn(List.of());
     }
 
@@ -113,7 +124,7 @@ class ChatServiceTest {
         when(conversationMapper.selectById(100L))
                 .thenReturn(initial, bothCleared);
 
-        chatService.clearConversation(1L, 100L);
+        chatMessageService.clearConversation(1L, 100L);
 
         verify(conversationMapper).setClearedAndHiddenAtUser1(eq(100L), any(LocalDateTime.class));
         verify(messageMapper).softDeleteByConversationIdBefore(eq(100L), any(LocalDateTime.class));
@@ -133,7 +144,7 @@ class ChatServiceTest {
         ReflectionTestUtils.setField(conv, "user2Id", 2L);
         when(conversationMapper.selectById(200L)).thenReturn(conv);
 
-        assertThrows(PermissionDeniedException.class, () -> chatService.getChatHistory(200L, 3L, 0, 20));
+        assertThrows(PermissionDeniedException.class, () -> chatMessageService.getChatHistory(200L, 3L, 0, 20));
     }
 
     @Test
@@ -145,7 +156,7 @@ class ChatServiceTest {
         ReflectionTestUtils.setField(conv, "user2Id", 2L);
         when(conversationMapper.selectById(300L)).thenReturn(conv);
 
-        assertThrows(PermissionDeniedException.class, () -> chatService.clearConversation(4L, 300L));
+        assertThrows(PermissionDeniedException.class, () -> chatMessageService.clearConversation(4L, 300L));
     }
 
     @Test
@@ -165,7 +176,7 @@ class ChatServiceTest {
         when(chatPhotoMapper.markSoftDeleted(10L)).thenReturn(1);
         when(chatPhotoMapper.hardDeleteById(10L)).thenReturn(1);
 
-        chatService.deleteChatPhoto(10L, 1L);
+        chatMessageService.deleteChatPhoto(10L, 1L);
 
         verify(chatPhotoMapper).markSoftDeleted(10L);
         verify(fileUploadService).deletePhysicalFile("/uploads/chat-photos/20260331/a.jpg");
@@ -185,7 +196,7 @@ class ChatServiceTest {
         when(chatFileMapper.markSoftDeleted(11L)).thenReturn(1);
         when(chatFileMapper.hardDeleteById(11L)).thenReturn(1);
 
-        chatService.deleteChatFile(11L, 1L);
+        chatMessageService.deleteChatFile(11L, 1L);
 
         verify(chatFileMapper).markSoftDeleted(11L);
         verify(fileUploadService).deletePhysicalFile("/uploads/chat-files/20260331/demo.pdf");
