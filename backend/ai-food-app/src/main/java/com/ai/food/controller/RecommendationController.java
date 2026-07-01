@@ -1,17 +1,23 @@
 package com.ai.food.controller;
 
 import com.ai.food.service.ai.AiService;
+import com.ai.food.util.RateLimiterUtil;
+import com.github.benmanes.caffeine.cache.Cache;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @RestController
@@ -20,7 +26,13 @@ import java.util.Map;
 @Tag(name = "推荐服务", description = "美食推荐相关接口，包括惯性模式、随机模式等")
 public class RecommendationController {
 
+    // [P0-AI-限流] inertia/random 走 LLM 推荐生成，按 userId 限流
+    private static final int REC_RATE_LIMIT = 30;
+
     private final AiService aiService;
+
+    @Qualifier("aiRateLimitCache")
+    private final Cache<String, AtomicInteger> aiRateLimitCache;
 
     @PostMapping("/inertia")
     @Operation(summary = "惯性模式推荐", description = "基于用户历史偏好进行推荐，生成全新的美食建议")
@@ -28,7 +40,10 @@ public class RecommendationController {
             @Parameter(description = "推荐请求参数", required = true)
             @RequestBody RecommendationRequest request) {
 
-        log.debug("Inertia recommendation request - sessionId: {}", request.getSessionId());
+        Long userId = requireUserId();
+        RateLimiterUtil.checkAndIncrement(aiRateLimitCache, "rec:inertia:" + userId, REC_RATE_LIMIT);
+
+        log.debug("Inertia recommendation request - userId: {}, sessionId: {}", userId, request.getSessionId());
 
         StringBuilder paramsBuilder = new StringBuilder();
         if (request.getParams() != null) {
@@ -63,7 +78,10 @@ public class RecommendationController {
             @Parameter(description = "推荐请求参数", required = true)
             @RequestBody RecommendationRequest request) {
 
-        log.debug("Random recommendation request - sessionId: {}", request.getSessionId());
+        Long userId = requireUserId();
+        RateLimiterUtil.checkAndIncrement(aiRateLimitCache, "rec:random:" + userId, REC_RATE_LIMIT);
+
+        log.debug("Random recommendation request - userId: {}, sessionId: {}", userId, request.getSessionId());
 
         // Generate AI recommendation first
         StringBuilder paramsBuilder = new StringBuilder();
@@ -108,7 +126,10 @@ public class RecommendationController {
             @Parameter(description = "食物B", required = true)
             @RequestParam String food2) {
 
-        log.debug("Calculate similarity request - food1: {}, food2: {}", food1, food2);
+        Long userId = requireUserId();
+        RateLimiterUtil.checkAndIncrement(aiRateLimitCache, "rec:similarity:" + userId, REC_RATE_LIMIT);
+
+        log.debug("Calculate similarity request - userId: {}, food1: {}, food2: {}", userId, food1, food2);
 
         double similarity = aiService.calculateSimilarity(food1, food2);
 
@@ -182,6 +203,19 @@ public class RecommendationController {
             return trimmed;
         }
         return "{}";
+    }
+
+    // ponytail: SecurityConfig 已要求 /api/recommendation/** 走 JWT；principal 为 String(userId)
+    private Long requireUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("未登录");
+        }
+        try {
+            return Long.parseLong(authentication.getName());
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("未登录");
+        }
     }
 
     @Data

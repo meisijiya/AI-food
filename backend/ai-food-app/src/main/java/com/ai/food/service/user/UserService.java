@@ -5,6 +5,7 @@ import com.ai.food.common.model.SysUser;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.github.benmanes.caffeine.cache.Cache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -34,9 +35,18 @@ public class UserService extends ServiceImpl<UserMapper, SysUser> {
     private final StringRedisTemplate redisTemplate;
     private final PasswordEncoder passwordEncoder;
 
+    // [P0-用户缓存] Caffeine 5min 缓存；update* 末尾 evict
+    private final Cache<Long, SysUser> userInfoCache;
+
     public SysUser getUserInfo(Long userId) {
-        return Optional.ofNullable(baseMapper.selectById(userId))
+        SysUser cached = userInfoCache.getIfPresent(userId);
+        if (cached != null) {
+            return cached;
+        }
+        SysUser user = Optional.ofNullable(baseMapper.selectById(userId))
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
+        userInfoCache.put(userId, user);
+        return user;
     }
 
     public Map<String, Object> signIn(Long userId) {
@@ -138,6 +148,7 @@ public class UserService extends ServiceImpl<UserMapper, SysUser> {
         user.setNickname(nickname.trim());
         // ponytail: 显式 updateById 语义清晰，避免 ServiceImpl.save 的 select-then-decide
         baseMapper.updateById(user);
+        userInfoCache.invalidate(userId);  // [P0-用户缓存] evict
         return user;
     }
 
@@ -154,12 +165,15 @@ public class UserService extends ServiceImpl<UserMapper, SysUser> {
         }
         user.setPassword(passwordEncoder.encode(newPassword));
         baseMapper.updateById(user);
+        // ponytail: 不 evict password 缓存——密码字段不影响 getUserInfo 行为，
+        // 5min 自然过期后下次读取会自动更新；其他字段（nickname/avatar）已 evict
     }
 
     public SysUser updateAvatar(Long userId, String avatarUrl) {
         SysUser user = getUserInfo(userId);
         user.setAvatar(avatarUrl);
         baseMapper.updateById(user);
+        userInfoCache.invalidate(userId);  // [P0-用户缓存] evict
         return user;
     }
 

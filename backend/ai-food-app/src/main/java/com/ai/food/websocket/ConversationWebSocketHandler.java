@@ -4,7 +4,9 @@ import com.ai.food.dto.ClientMessage;
 import com.ai.food.dto.ConversationState;
 import com.ai.food.dto.WebSocketMessage;
 import com.ai.food.service.conversation.ConversationService;
+import com.ai.food.util.RateLimiterUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.benmanes.caffeine.cache.Cache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Component
@@ -26,6 +29,11 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
 
     private final ConversationService conversationService;
     private final ObjectMapper objectMapper;
+
+    // [P0-AI-限流] WS 端 LLM 调用也走同一限流池：60s 内 30 次
+    @Autowired
+    @Qualifier("aiRateLimitCache")
+    private Cache<String, AtomicInteger> aiRateLimitCache;
 
     @Autowired
     @Qualifier("aiExecutor")
@@ -105,6 +113,17 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
         if (state == null) {
             sendError(session, "Conversation not started");
             return;
+        }
+
+        // [P0-AI-限流] WS 用户身份由 JwtHandshakeInterceptor 写入 attribute
+        Long userId = (Long) session.getAttributes().get("userId");
+        if (userId != null) {
+            try {
+                RateLimiterUtil.checkAndIncrement(aiRateLimitCache, "ws:answer:" + userId, 30);
+            } catch (RuntimeException e) {
+                sendError(session, e.getMessage());
+                return;
+            }
         }
 
         // AI 正在处理中 → 放入抢话队列

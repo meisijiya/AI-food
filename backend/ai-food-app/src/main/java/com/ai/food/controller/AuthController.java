@@ -7,6 +7,7 @@ import com.ai.food.dto.RegisterRequest;
 import com.ai.food.dto.SendCodeRequest;
 import com.ai.food.service.auth.AuthService;
 import com.ai.food.util.IpUtil;
+import com.github.benmanes.caffeine.cache.Cache;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -16,6 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -32,6 +34,15 @@ import java.time.Duration;
 public class AuthController {
 
     private final AuthService authService;
+
+    // [P0-登录限流] login/register 共用：60s 内同 email 5 次，或同 ip 5 次
+    private static final int AUTH_RATE_LIMIT = 5;
+
+    @Qualifier("emailLimitByUsername")
+    private final Cache<String, Boolean> emailLimitByUsername;
+
+    @Qualifier("emailLimitByIp")
+    private final Cache<String, Boolean> emailLimitByIp;
 
     @PostMapping("/send-code")
     @Operation(summary = "发送邮箱验证码", description = "向指定邮箱发送注册/登录验证码，60 秒内同一邮箱只能发一次")
@@ -56,7 +67,12 @@ public class AuthController {
     })
     public ApiResponse<LoginResponse> register(
             @Parameter(description = "注册信息（邮箱+验证码+密码）", required = true)
-            @Valid @RequestBody RegisterRequest req) {
+            @Valid @RequestBody RegisterRequest req,
+            HttpServletRequest request) {
+        // [P0-登录限流] 按 email + ip 双维度，超限直接拒绝
+        String clientIp = IpUtil.getClientIp(request);
+        checkAuthRateLimit(req.getEmail(), clientIp);
+
         LoginResponse response = authService.register(req);
         return ApiResponse.success("注册成功", response);
     }
@@ -70,7 +86,12 @@ public class AuthController {
     public ApiResponse<LoginResponse> login(
             @Parameter(description = "登录信息（邮箱+密码）", required = true)
             @Valid @RequestBody LoginRequest req,
+            HttpServletRequest request,
             HttpServletResponse response) {
+        // [P0-登录限流] 防暴力破解：按 email + ip 限流
+        String clientIp = IpUtil.getClientIp(request);
+        checkAuthRateLimit(req.getEmail(), clientIp);
+
         LoginResponse loginResponse = authService.login(req);
         // 安全修复（M2-后端）：将 JWT 写入 HttpOnly cookie，浏览器自动随请求带上，前端 JS 无法读取
         ResponseCookie cookie = ResponseCookie.from("auth_token", loginResponse.getToken())
@@ -82,6 +103,25 @@ public class AuthController {
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         return ApiResponse.success("登录成功", loginResponse);
+    }
+
+    // ponytail: 复用 CaffeineConfig 中已有的 emailLimitBy*，key 加 ":login" / ":register" 后缀
+    // 与 send-code 的 send-code 后缀不冲突。同 email 60s 内只能 send-code 一次 + login/register 5 次。
+    private void checkAuthRateLimit(String email, String clientIp) {
+        if (email != null && !email.isBlank()) {
+            String key = email + ":login";
+            if (Boolean.TRUE.equals(emailLimitByUsername.getIfPresent(key))) {
+                throw new RuntimeException("尝试次数过多，请稍后再试");
+            }
+            emailLimitByUsername.put(key, true);
+        }
+        if (clientIp != null && !clientIp.isBlank()) {
+            String key = clientIp + ":login";
+            if (Boolean.TRUE.equals(emailLimitByIp.getIfPresent(key))) {
+                throw new RuntimeException("尝试次数过多，请稍后再试");
+            }
+            emailLimitByIp.put(key, true);
+        }
     }
 
     @PostMapping("/logout")

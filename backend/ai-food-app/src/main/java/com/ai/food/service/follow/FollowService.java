@@ -5,12 +5,14 @@ import com.ai.food.common.mapper.UserMapper;
 import com.ai.food.common.model.SysUser;
 import com.ai.food.common.model.UserFollow;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.github.benmanes.caffeine.cache.Cache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,6 +31,12 @@ import java.util.Set;
 public class FollowService extends ServiceImpl<UserFollowMapper, UserFollow> {
 
     private final UserMapper userMapper;
+
+    // [P0-关注缓存] isFollowing 单条状态 60s 过期；key = followerId + ":" + followingId
+    private final Cache<String, Boolean> followStatusCache;
+
+    // [P0-关注缓存] getFollowingIds 关注列表 60s 过期
+    private final Cache<Long, List<Long>> followingIdsCache;
 
     @Transactional
     public Map<String, Object> toggleFollow(Long followerId, Long followingId) {
@@ -51,6 +59,10 @@ public class FollowService extends ServiceImpl<UserFollowMapper, UserFollow> {
             log.info("User {} followed user {}", followerId, followingId);
         }
 
+        // [P0-关注缓存] 两个方向都 evict：A→B 关注关系影响 B 的粉丝、A 的关注列表
+        followStatusCache.invalidate(followerId + ":" + followingId);
+        followingIdsCache.invalidate(followerId);
+
         long followerCount = baseMapper.countByFollowingId(followingId);
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -60,7 +72,7 @@ public class FollowService extends ServiceImpl<UserFollowMapper, UserFollow> {
     }
 
     public Map<String, Object> getFollowingList(Long userId, int page, int size) {
-        List<Long> followingIds = baseMapper.findFollowingIdsByUserId(userId);
+        List<Long> followingIds = getFollowingIds(userId);
 
         int start = page * size;
         int end = Math.min(start + size, followingIds.size());
@@ -121,7 +133,14 @@ public class FollowService extends ServiceImpl<UserFollowMapper, UserFollow> {
     }
 
     public boolean isFollowing(Long followerId, Long followingId) {
-        return baseMapper.existsByFollowerIdAndFollowingId(followerId, followingId);
+        String key = followerId + ":" + followingId;
+        Boolean cached = followStatusCache.getIfPresent(key);
+        if (cached != null) {
+            return cached;
+        }
+        boolean exists = baseMapper.existsByFollowerIdAndFollowingId(followerId, followingId);
+        followStatusCache.put(key, exists);
+        return exists;
     }
 
     public Map<String, Object> getFollowStats(Long userId) {
@@ -139,7 +158,15 @@ public class FollowService extends ServiceImpl<UserFollowMapper, UserFollow> {
     }
 
     public List<Long> getFollowingIds(Long userId) {
-        return baseMapper.findFollowingIdsByUserId(userId);
+        List<Long> cached = followingIdsCache.getIfPresent(userId);
+        if (cached != null) {
+            return cached;
+        }
+        List<Long> ids = baseMapper.findFollowingIdsByUserId(userId);
+        // ponytail: 缓存不可变视图，调用方若尝试修改会抛 UnsupportedOperationException ——
+        // 防不小心污染缓存（getFollowingList 等读路径返回了 ids 的 subList，原生 subList 不可写）
+        followingIdsCache.put(userId, Collections.unmodifiableList(ids));
+        return ids;
     }
 
     public List<Long> getMutualFriendIds(Long userId) {
