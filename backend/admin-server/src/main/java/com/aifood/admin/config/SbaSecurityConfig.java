@@ -52,6 +52,10 @@ public class SbaSecurityConfig {
         success.setTargetUrlParameter("redirectTo");
         success.setDefaultTargetUrl(adminServer.path("/"));
 
+        // ponytail: 不调用 http.cors(),避免 Spring Security 找名字为 "corsFilter" 的 CorsFilter bean(我们只注册 FilterRegistrationBean)
+        // CorsFilter 通过 CorsConfig 的 FilterRegistrationBean(Ordered.HIGHEST_PRECEDENCE)提前到 Security 之前
+        // 这样 OPTIONS preflight 不会被 Security 401
+
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(adminServer.path("/assets/**")).permitAll()
                 .requestMatchers(adminServer.path("/login")).permitAll()

@@ -34,6 +34,9 @@ public class ActuatorSecurityConfig {
     @Bean
     @Order(0)
     public SecurityFilterChain actuatorFilterChain(HttpSecurity http) throws Exception {
+        // ponytail: 同 SbaSecurityConfig,不调 http.cors() 避免 bean 解析冲突
+        // CorsFilter 已在 CorsConfig 中以 HIGHEST_PRECEDENCE 注册,提前处理 OPTIONS
+
         http.securityMatcher("/actuator/**")
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
