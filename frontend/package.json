@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tanstack/vue-virtual": "^3.13.31",
     "@vant/touch-emulator": "^1.4.0",
     "axios": "^1.6.2",
     "pinia": "^2.1.7",

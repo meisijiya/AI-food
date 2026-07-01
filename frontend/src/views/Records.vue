@@ -38,41 +38,47 @@
       <span>刷新中...</span>
     </div>
 
-    <!-- Record list -->
-    <div class="record-list">
+    <!-- Virtualized record list (@tanstack/vue-virtual POC) -->
+    <div class="record-list" :style="{ height: virtualizer.getTotalSize() + 'px' }">
       <div
-        v-for="(record, index) in records"
-        :key="record.sessionId"
-        class="record-card"
-        :class="[
-          'animate-fade-up',
-          `delay-${Math.min(index + 1, 4)}00`,
-          'animate-start-hidden',
-          { selected: selectedIds.includes(record.sessionId) }
-        ]"
-        @click="onCardClick(record.sessionId)"
+        v-for="virtualRow in virtualizer.getVirtualItems()"
+        :key="String(virtualRow.key)"
+        :ref="(el: any) => virtualizer.measureElement(el as Element | null)"
+        :data-index="virtualRow.index"
+        class="record-item-wrapper"
       >
-        <!-- Batch select checkbox -->
-        <label v-if="batchMode" class="card-checkbox" @click.stop>
-          <input
-            type="checkbox"
-            :checked="selectedIds.includes(record.sessionId)"
-            @change="toggleSelect(record.sessionId)"
-          />
-        </label>
+        <div
+          class="record-card"
+          :class="[
+            'animate-fade-up',
+            `delay-${Math.min(virtualRow.index + 1, 4)}00`,
+            'animate-start-hidden',
+            { selected: selectedIds.includes(records[virtualRow.index]?.sessionId) }
+          ]"
+          @click="onCardClick(records[virtualRow.index]?.sessionId)"
+        >
+          <!-- Batch select checkbox -->
+          <label v-if="batchMode" class="card-checkbox" @click.stop>
+            <input
+              type="checkbox"
+              :checked="selectedIds.includes(records[virtualRow.index]?.sessionId)"
+              @change="toggleSelect(records[virtualRow.index]?.sessionId)"
+            />
+          </label>
 
-        <div class="card-body">
-          <div class="record-food">{{ displayFoodName(record) }}</div>
-          <div class="record-reason">{{ displayReason(record) }}</div>
-          <div class="record-date">{{ formatDate(record.createdAt) }}</div>
+          <div class="card-body">
+            <div class="record-food">{{ displayFoodName(records[virtualRow.index]) }}</div>
+            <div class="record-reason">{{ displayReason(records[virtualRow.index]) }}</div>
+            <div class="record-date">{{ formatDate(records[virtualRow.index]?.createdAt) }}</div>
+          </div>
+
+          <!-- Single delete button -->
+          <button v-if="!batchMode" class="card-delete" @click.stop="deleteRecord(records[virtualRow.index]?.sessionId)" title="删除">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+            </svg>
+          </button>
         </div>
-
-        <!-- Single delete button -->
-        <button v-if="!batchMode" class="card-delete" @click.stop="deleteRecord(record.sessionId)" title="删除">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-          </svg>
-        </button>
       </div>
     </div>
 
@@ -115,6 +121,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useVirtualizer } from '@tanstack/vue-virtual'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { recordApi } from '@/api'
@@ -132,7 +139,7 @@ interface RecordItem {
 const router = useRouter()
 const authStore = useAuthStore()
 const isGuest = computed(() => authStore.isGuest)
-const scrollContainer = ref<HTMLElement>()
+const scrollContainer = ref<HTMLElement | null>(null)
 
 const records = ref<RecordItem[]>([])
 const page = ref(1)
@@ -140,6 +147,18 @@ const pageSize = 10
 const loading = ref(false)
 const finished = ref(false)
 const refreshing = ref(false)
+
+// Virtualizer: 响应式 count + 动态测量实际高度
+// estimateSize 130 = 卡片约 118px + gap 12px;measureElement 实际测量后覆盖
+const virtualizer = useVirtualizer(
+  computed(() => ({
+    count: records.value.length,
+    getScrollElement: () => scrollContainer.value,
+    estimateSize: () => 130,
+    overscan: 5,
+    getItemKey: (index: number) => records.value[index]?.sessionId ?? String(index)
+  }))
+)
 
 // Sort
 const sortOrder = ref<'desc' | 'asc'>('desc')
@@ -219,6 +238,8 @@ async function fetchRecords(reset = false) {
   } finally {
     loading.value = false
     refreshing.value = false
+    // 列表 reset 后,虚拟器需要重测(新数据条数变了)
+    virtualizer.value.measure()
   }
 }
 
@@ -456,12 +477,20 @@ onMounted(() => {
   to { transform: rotate(360deg); }
 }
 
-/* Record list */
+/* Record list (virtualized container) */
 .record-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  position: relative;
+  width: 100%;
   z-index: 1;
+}
+
+.record-item-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding-bottom: 12px; // 模拟原 gap:12px
+  contain: layout style; // ponytail: 隔离虚拟项重排不引发祖先 layout
 }
 
 .record-card {
