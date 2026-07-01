@@ -133,106 +133,25 @@
     <!-- Feed Tab Content -->
     <!-- ponytail: 用 v-show 替代 v-if,Tab 切换不再 mount/unmount,组件常驻 DOM 提升切换性能 -->
     <div v-show="activeTab === 'feed'" class="waterfall">
-      <div
+      <FeedPostCard
         v-for="(post, index) in posts"
         :key="post.id"
-        class="feed-card animate-scale-in"
-        :style="{ animationDelay: (index % 6) * 0.05 + 's' }"
-        @click="router.push('/feed/' + post.id)"
-      >
-        <div v-if="post.thumbnailUrl" class="card-photo">
-          <CachedImage
-            :src="post.thumbnailUrl"
-            :alt="post.foodName"
-            :lazy="true"
-          />
-        </div>
-        <div class="card-body">
-          <div class="card-food">
-            <span>{{ post.foodName }}</span>
-            <span v-if="post.visibility === 'friends'" class="fans-only-badge">仅粉丝可见</span>
-          </div>
-          <div v-if="post.commentPreview" class="card-preview">
-            {{ post.commentPreview }}
-          </div>
-        </div>
-        <div class="card-footer">
-          <div class="card-user">
-            <img
-              v-if="post.avatar"
-              :src="post.avatar"
-              class="card-avatar"
-              alt=""
-            />
-            <div v-else class="card-avatar-placeholder">
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </div>
-            <span class="card-nickname">{{ post.nickname || "匿名" }}</span>
-          </div>
-          <div class="card-likes">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
-              />
-            </svg>
-            {{ post.likeCount || 0 }}
-          </div>
-        </div>
-      </div>
+        :post="post"
+        :index="index"
+        @click="onPostClick"
+      />
     </div>
 
     <!-- Hot Rank Tab Content -->
     <!-- ponytail: v-show 替代 v-else-if,3 个 Tab 内容并存于 DOM,只切 display -->
     <div v-show="activeTab === 'hot'" class="hot-rank-list">
-      <div
+      <FeedHotRankItem
         v-for="(item, index) in hotRankList"
         :key="item.id"
-        class="hot-rank-item animate-fade-up"
-        :style="{ animationDelay: (index % 10) * 0.05 + 's' }"
-        @click="router.push('/feed/' + item.id)"
-      >
-        <span class="rank-num" :class="{ 'top-3': index < 3 }">{{
-          index + 1
-        }}</span>
-        <div v-if="item.thumbnailUrl" class="rank-photo">
-          <CachedImage
-            :src="item.thumbnailUrl"
-            :alt="item.foodName"
-            :lazy="true"
-          />
-        </div>
-          <div class="rank-content">
-          <div class="rank-food">
-            <span>{{ item.foodName }}</span>
-            <span v-if="item.visibility === 'friends'" class="fans-only-badge">仅粉丝可见</span>
-          </div>
-          <div class="rank-meta">
-            <span class="rank-user">{{ item.nickname || "匿名" }}</span>
-            <span class="rank-score">热度 {{ item.hotScore }}</span>
-          </div>
-        </div>
-      </div>
+        :item="item"
+        :index="index"
+        @click="onHotRankClick"
+      />
       <div v-if="hotRankList.length === 0" class="empty-state">
         <svg
           width="48"
@@ -340,45 +259,11 @@
 
     <div class="nav-spacer"></div>
 
-    <!-- Filter modal -->
-    <Transition name="overlay-fade">
-      <div v-if="showFilter" class="filter-overlay" @click="showFilter = false">
-        <div class="filter-panel" @click.stop>
-          <div class="filter-title">筛选</div>
-          <div class="filter-group">
-            <label class="filter-label">食物名称</label>
-            <input
-              v-model="filterFoodName"
-              class="filter-input"
-              placeholder="搜索食物名称..."
-            />
-          </div>
-          <div class="filter-group">
-            <label class="filter-label">参数筛选</label>
-            <select v-model="filterParamName" class="filter-select">
-              <option value="">不限</option>
-              <option value="time">用餐时间</option>
-              <option value="location">用餐地点</option>
-              <option value="mood">当前心情</option>
-              <option value="taste">口味偏好</option>
-              <option value="budget">预算范围</option>
-              <option value="companion">同行人员</option>
-              <option value="weather">天气情况</option>
-            </select>
-            <input
-              v-if="filterParamName"
-              v-model="filterParamValue"
-              class="filter-input"
-              placeholder="输入筛选值..."
-            />
-          </div>
-          <div class="filter-actions">
-            <button class="filter-reset" @click="resetFilter">重置</button>
-            <button class="filter-apply" @click="applyFilter">确定</button>
-          </div>
-        </div>
-      </div>
-    </Transition>
+    <!-- Filter modal(子组件 FeedFilterBar 维护表单内部状态) -->
+    <FeedFilterBar
+      v-model:visible="showFilter"
+      @apply="onApplyFilter"
+    />
   </div>
 </template>
 
@@ -388,6 +273,10 @@ import { useRouter } from "vue-router";
 import { feedApi, notificationApi } from "@/api";
 import CachedImage from "@/components/CachedImage.vue";
 import { useAuthStore } from "@/stores/auth";
+import type { FeedPost, HotRankItem, FilterForm } from "@/types/feed";
+import FeedPostCard from "./components/Feed/FeedPostCard.vue";
+import FeedHotRankItem from "./components/Feed/FeedHotRankItem.vue";
+import FeedFilterBar from "./components/Feed/FeedFilterBar.vue";
 
 const router = useRouter();
 const scrollContainer = ref<HTMLElement>();
@@ -395,8 +284,8 @@ const authStore = useAuthStore();
 const isGuest = computed(() => authStore.isGuest);
 
 const activeTab = ref("feed");
-const posts = ref<any[]>([]);
-const hotRankList = ref<any[]>([]);
+const posts = ref<FeedPost[]>([]);
+const hotRankList = ref<HotRankItem[]>([]);
 const friendFeedList = ref<any[]>([]);
 const page = ref(0);
 const pageSize = 10;
@@ -408,6 +297,8 @@ const unreadCount = ref(0);
 const loadedTabs = new Set<string>();
 
 const showFilter = ref(false);
+// 筛选表单的"已应用"状态(由子组件 FeedFilterBar apply 时回传赋值)
+// fetchPosts 用这些值拼 query params
 const filterFoodName = ref("");
 const filterParamName = ref("");
 const filterParamValue = ref("");
@@ -506,15 +397,19 @@ async function fetchNotifications() {
   }
 }
 
-function resetFilter() {
-  filterFoodName.value = "";
-  filterParamName.value = "";
-  filterParamValue.value = "";
+function onApplyFilter(form: FilterForm) {
+  filterFoodName.value = form.foodName;
+  filterParamName.value = form.paramName;
+  filterParamValue.value = form.paramValue;
+  fetchPosts(true);
 }
 
-function applyFilter() {
-  showFilter.value = false;
-  fetchPosts(true);
+function onPostClick(post: FeedPost) {
+  router.push("/feed/" + post.id);
+}
+
+function onHotRankClick(item: HotRankItem) {
+  router.push("/feed/" + item.id);
 }
 
 function formatTime(dateStr: string): string {
@@ -733,225 +628,12 @@ onMounted(() => {
   position: relative;
 }
 
-.feed-card {
-  break-inside: avoid;
-  margin-bottom: 10px;
-  background: var(--color-surface-container-lowest);
-  border-radius: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  overflow: hidden;
-  cursor: pointer;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-  &:active {
-    transform: scale(0.98);
-  }
-}
+/* ponytail: 帖子卡片 .feed-card + .card-* 样式已迁移到 FeedPostCard 子组件 */
 
-.card-photo {
-  img {
-    width: 100%;
-    display: block;
-    border-radius: 1.25rem 1.25rem 0 0;
-    max-height: 240px;
-    object-fit: cover;
-  }
-}
-
-.card-body {
-  padding: 10px 12px;
-}
-
-.card-food {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--color-on-surface);
-  margin-bottom: 4px;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.fans-only-badge {
-  flex-shrink: 0;
-  font-family: var(--font-sans);
-  font-style: normal;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: rgba(0, 89, 182, 0.08);
-  color: var(--color-primary);
-  white-space: nowrap;
-}
-
-.card-preview {
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--color-on-surface-variant);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px 10px;
-}
-
-.card-user {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-.card-avatar {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.card-avatar-placeholder {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--color-surface-container-low);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-on-surface-variant);
-  flex-shrink: 0;
-}
-
-.card-nickname {
-  font-size: 11px;
-  color: var(--color-on-surface-variant);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.card-likes {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 11px;
-  color: var(--color-on-surface-variant);
-  flex-shrink: 0;
-  svg {
-    color: #ef4444;
-  }
-}
-
-/* Hot Rank */
+/* Hot Rank 列表容器(条目样式已迁移到 FeedHotRankItem 子组件) */
 .hot-rank-list {
   z-index: 1;
   position: relative;
-}
-
-.hot-rank-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: var(--color-surface-container-lowest);
-  border-radius: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  margin-bottom: 8px;
-  cursor: pointer;
-  transition: transform 0.2s;
-  &:active {
-    transform: scale(0.98);
-  }
-}
-
-.rank-num {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: var(--color-surface-container-low);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--color-on-surface-variant);
-  flex-shrink: 0;
-
-  &.top-3 {
-    background: linear-gradient(135deg, #f59e0b, #ef4444);
-    color: white;
-  }
-}
-
-.rank-photo {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  overflow: hidden;
-  flex-shrink: 0;
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-}
-
-.rank-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.rank-food {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--color-on-surface);
-  margin-bottom: 4px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  overflow: hidden;
-  span:first-child {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
-.rank-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--color-on-surface-variant);
-}
-
-.rank-user {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rank-score {
-  color: var(--color-primary);
-  font-weight: 600;
 }
 
 /* Friend Feed */
@@ -1109,114 +791,7 @@ onMounted(() => {
   height: 80px;
 }
 
-/* Filter */
-.filter-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: rgba(11, 15, 16, 0.4);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.filter-panel {
-  width: calc(100% - 48px);
-  max-width: 400px;
-  background: var(--color-surface-container-lowest);
-  border-radius: 2rem;
-  padding: 28px 24px;
-}
-
-.filter-title {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 22px;
-  font-weight: 500;
-  color: var(--color-on-surface);
-  margin-bottom: 20px;
-}
-
-.filter-group {
-  margin-bottom: 16px;
-}
-
-.filter-label {
-  display: block;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--color-on-surface-variant);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 8px;
-}
-
-.filter-input,
-.filter-select {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1.5px solid var(--color-surface-container-low);
-  border-radius: 1rem;
-  background: var(--color-surface);
-  font-family: var(--font-sans);
-  font-size: 14px;
-  color: var(--color-on-surface);
-  outline: none;
-  &:focus {
-    border-color: var(--color-primary);
-  }
-}
-
-.filter-select {
-  appearance: none;
-  margin-bottom: 8px;
-}
-
-.filter-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.filter-reset {
-  flex: 1;
-  padding: 12px;
-  border: 1.5px solid var(--color-surface-container-low);
-  border-radius: 1rem;
-  background: none;
-  color: var(--color-on-surface-variant);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.filter-apply {
-  flex: 1;
-  padding: 12px;
-  border: none;
-  border-radius: 1rem;
-  background: linear-gradient(
-    135deg,
-    var(--color-primary-container),
-    var(--color-primary)
-  );
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.overlay-fade-enter-active {
-  transition: opacity 0.25s ease;
-}
-.overlay-fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.overlay-fade-enter-from,
-.overlay-fade-leave-to {
-  opacity: 0;
-}
+/* Filter 样式已迁移到 FeedFilterBar 子组件 */
 
 .match-entry {
   display: flex;
@@ -1247,9 +822,7 @@ onMounted(() => {
   .waterfall {
     column-gap: 14px;
   }
-  .feed-card {
-    margin-bottom: 14px;
-  }
+  /* ponytail: .feed-card 样式已迁移到 FeedPostCard 子组件 */
 }
 
 @media (min-width: 1024px) {
