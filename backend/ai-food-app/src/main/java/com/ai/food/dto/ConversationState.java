@@ -1,5 +1,6 @@
 package com.ai.food.dto;
 
+import com.ai.food.service.conversation.ConversationUtil;
 import lombok.Data;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -98,8 +99,7 @@ public class ConversationState {
     }
 
     public boolean isRequiredParam(String param) {
-        List<String> required = List.of("time", "location", "weather", "mood", "companion", "budget", "taste");
-        return required.contains(param);
+        return ConversationUtil.REQUIRED_PARAMS.contains(param);
     }
 
     public boolean isParamCollected(String param) {
@@ -107,9 +107,8 @@ public class ConversationState {
     }
 
     public int getRequiredParamsCount() {
-        List<String> required = List.of("time", "location", "weather", "mood", "companion", "budget", "taste");
         return (int) this.collectedParams.stream()
-                .filter(required::contains)
+                .filter(ConversationUtil.REQUIRED_PARAMS::contains)
                 .count();
     }
 }
