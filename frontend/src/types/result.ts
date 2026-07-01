@@ -18,3 +18,12 @@ export interface CollectedParam {
   label: string
   value: string
 }
+
+/** recordApi.getPendingRecommendation() 的返回结构(P1 nice-to-have) */
+export interface PendingRecommendation {
+  hasPending?: boolean
+  sessionId?: string
+  content?: unknown
+  /** 收集到的参数(7 参数:time/location/weather/mood/companion/budget/taste) */
+  paramValues?: Record<string, string>
+}

@@ -88,6 +88,7 @@
 // 职责: 加载数据 + 持有共享 state + 调用 API + 编排 5 个子组件
 // 子组件只通过 props + emit 通信,API 调用全部在本组件
 import { ref, computed, onMounted } from 'vue'
+import type { PendingRecommendation } from '@/types/result'
 import { useRouter } from 'vue-router'
 import { useChatStore } from '@/stores/chat'
 import { recordApi, shareApi, feedApi } from '@/api'
@@ -104,7 +105,7 @@ const chatStore = useChatStore()
 
 // 加载状态
 const loading = ref(true)
-const pendingData = ref<any>(null)
+const pendingData = ref<PendingRecommendation | null>(null)
 
 // 照片(子组件 ResultPhotoManager 拥有 UI 状态,这里只持有数据)
 const uploadedPhoto = ref<Photo | null>(null)
@@ -490,5 +491,21 @@ const goHome = () => {
   .result-page {
     padding: 60px 40px 80px;
   }
+}
+
+/* ===== 共享 Modal Overlay ===== */
+/* :deep() 让子组件 ResultActions (publish dialog) 和 ResultPhotoManager
+   (全屏 photo preview) 共用同一份 overlay 样式,避免 100 行重复 CSS。 */
+:deep(.photo-modal) {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
 }
 </style>

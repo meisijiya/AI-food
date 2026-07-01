@@ -15,6 +15,12 @@ ehthumbs.db
 *.swo
 *~
 backend/.settings/
+backend/*/.settings/
+backend/*/.classpath
+backend/*/.project
+backend/bak.20260629/
+backend.bak.20260629/
+backend.bak.*/
 
 # 后端Java项目相关
 backend/target/
@@ -74,6 +80,9 @@ lerna-debug.log*
 
 # Local git worktrees
 .worktrees/
+
+# Deepwork session state (orchestrator-only, not for git)
+.slim/deepwork/
 
 # 图片文件
 *.png

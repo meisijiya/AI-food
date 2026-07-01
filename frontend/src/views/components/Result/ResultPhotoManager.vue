@@ -149,16 +149,7 @@ function onUploaded(data: Photo) {
 
 /* Photo modal */
 .photo-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+  /* overlay 样式已抽到 Result.vue 父组件 :deep(.photo-modal),避免 100 行重复 */
 }
 
 .photo-modal-content {

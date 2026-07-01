@@ -129,11 +129,6 @@ function insertEmoji(icon: string) {
   publishPreview.value = (publishPreview.value || '') + icon
   showEmoji.value = false
 }
-
-// ponytail: 暴露 openPublishDialog 给父组件 —— 让父组件可以在数据加载完后触发
-// (原 Result.vue openPublishDialog 是在用户点击时调用,但如果父组件需要程序化打开,
-// 通过 defineExpose 暴露方法比 v-model:publish-dialog 更轻量)
-defineExpose({ openPublishDialog })
 </script>
 
 <style lang="scss" scoped>
@@ -309,16 +304,7 @@ defineExpose({ openPublishDialog })
 
 /* Publish dialog */
 .photo-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+  /* overlay 样式已抽到 Result.vue 父组件 :deep(.photo-modal),避免 100 行重复 */
 }
 
 .publish-dialog {
