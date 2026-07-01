@@ -131,7 +131,8 @@
     </div>
 
     <!-- Feed Tab Content -->
-    <div v-if="activeTab === 'feed'" class="waterfall">
+    <!-- ponytail: 用 v-show 替代 v-if,Tab 切换不再 mount/unmount,组件常驻 DOM 提升切换性能 -->
+    <div v-show="activeTab === 'feed'" class="waterfall">
       <div
         v-for="(post, index) in posts"
         :key="post.id"
@@ -202,7 +203,8 @@
     </div>
 
     <!-- Hot Rank Tab Content -->
-    <div v-else-if="activeTab === 'hot'" class="hot-rank-list">
+    <!-- ponytail: v-show 替代 v-else-if,3 个 Tab 内容并存于 DOM,只切 display -->
+    <div v-show="activeTab === 'hot'" class="hot-rank-list">
       <div
         v-for="(item, index) in hotRankList"
         :key="item.id"
@@ -253,7 +255,8 @@
     </div>
 
     <!-- Friend Feed Tab Content -->
-    <div v-else-if="activeTab === 'friend'" class="friend-feed-list">
+    <!-- ponytail: v-show 替代 v-else-if,好友动态 Tab 切换不再重建 -->
+    <div v-show="activeTab === 'friend'" class="friend-feed-list">
       <div
         v-for="(item, index) in friendFeedList"
         :key="item.postId"
@@ -401,6 +404,9 @@ const loading = ref(false);
 const finished = ref(false);
 const unreadCount = ref(0);
 
+// ponytail: 跟踪哪些 Tab 已加载过数据;切回已加载 Tab 时直接复用内存数据,不重复请求 API
+const loadedTabs = new Set<string>();
+
 const showFilter = ref(false);
 const filterFoodName = ref("");
 const filterParamName = ref("");
@@ -408,6 +414,9 @@ const filterParamValue = ref("");
 
 function switchTab(tab: string) {
   activeTab.value = tab;
+  // ponytail: 已加载过的 Tab 跳过 fetch,直接复用内存(perf: v-show 让组件常驻 + loadedTabs 避免重复请求)
+  if (loadedTabs.has(tab)) return;
+  loadedTabs.add(tab);
   if (tab === "feed") {
     fetchPosts(true);
   } else if (tab === "hot") {
@@ -525,6 +534,8 @@ function formatTime(dateStr: string): string {
 }
 
 onMounted(() => {
+  // ponytail: 首次 mount 直接标记 feed 已加载并拉数据(onMounted 不走 switchTab)
+  loadedTabs.add("feed");
   fetchPosts(true);
   if (!isGuest.value) {
     fetchNotifications();
