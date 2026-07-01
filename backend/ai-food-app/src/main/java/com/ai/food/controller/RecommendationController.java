@@ -1,7 +1,10 @@
 package com.ai.food.controller;
 
+import com.ai.food.common.mapper.RecommendationResultMapper;
+import com.ai.food.common.model.RecommendationResult;
 import com.ai.food.service.ai.AiService;
 import com.ai.food.util.RateLimiterUtil;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.github.benmanes.caffeine.cache.Cache;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,6 +19,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -33,6 +39,8 @@ public class RecommendationController {
 
     @Qualifier("aiRateLimitCache")
     private final Cache<String, AtomicInteger> aiRateLimitCache;
+
+    private final RecommendationResultMapper recommendationResultMapper;
 
     @PostMapping("/inertia")
     @Operation(summary = "惯性模式推荐", description = "基于用户历史偏好进行推荐，生成全新的美食建议")
@@ -94,8 +102,20 @@ public class RecommendationController {
         String aiResponse = aiService.generateRecommendation(paramsBuilder.toString());
         String newFood = parseFoodName(aiResponse);
 
-        // For random mode, use a placeholder old food (would come from RagFlow in full implementation)
-        String oldFood = "红烧肉";
+        // ponytail: RecommendationResult 没有 userId 字段,查全表最近 5 条取最新一条作为旧值参考
+        // (P2 再做按用户口味画像推荐)
+        List<RecommendationResult> history = recommendationResultMapper.selectList(
+                Wrappers.<RecommendationResult>lambdaQuery()
+                        .orderByDesc(RecommendationResult::getCreatedAt)
+                        .last("LIMIT 5")
+        );
+        String oldFood;
+        if (!history.isEmpty()) {
+            oldFood = history.get(0).getFoodName();
+        } else {
+            // 无历史时保留兜底,避免前端因 null 报错
+            oldFood = "红烧肉";
+        }
 
         double similarity = aiService.calculateSimilarity(oldFood, newFood);
         log.debug("Similarity between '{}' and '{}': {}", oldFood, newFood, similarity);
@@ -151,9 +171,26 @@ public class RecommendationController {
 
         log.debug("Get recommendation history for session: {}", sessionId);
 
+        // ponytail: 复用 mapper 自带的 findBySessionId(带 LIMIT 1); 真要历史多条应加 findBySessionIdIn 或排序查询
+        RecommendationResult result = recommendationResultMapper.findBySessionId(sessionId);
+
+        List<Map<String, Object>> items = new ArrayList<>();
+        if (result != null) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", result.getId());
+            item.put("sessionId", result.getSessionId());
+            item.put("mode", result.getMode());
+            item.put("foodName", result.getFoodName());
+            item.put("oldFood", result.getOldFood());
+            item.put("similarityScore", result.getSimilarityScore());
+            item.put("reason", result.getReason());
+            item.put("createdAt", result.getCreatedAt());
+            items.add(item);
+        }
+
         return ResponseEntity.ok(Map.of(
                 "sessionId", sessionId,
-                "recommendations", java.util.List.of()
+                "recommendations", items
         ));
     }
 

@@ -1,6 +1,11 @@
 package com.ai.food.controller;
 
+import com.ai.food.common.mapper.FeedPostMapper;
+import com.ai.food.common.mapper.UserMapper;
+import com.ai.food.common.model.FeedPost;
+import com.ai.food.common.model.SysUser;
 import com.ai.food.common.util.ApiResponse;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +24,9 @@ import java.util.Map;
 @RequestMapping("/api/guest")
 @RequiredArgsConstructor
 public class GuestController {
+
+    private final FeedPostMapper feedPostMapper;
+    private final UserMapper userMapper;
 
     /**
      * 获取游客访问信息
@@ -44,9 +52,21 @@ public class GuestController {
      */
     @GetMapping("/stats")
     public ApiResponse<Map<String, Object>> getGuestStats() {
+        // 总帖子数:只算 public 且未软删
+        long totalPosts = feedPostMapper.selectCount(
+                Wrappers.<FeedPost>lambdaQuery()
+                        .eq(FeedPost::getVisibility, "public")
+                        .eq(FeedPost::getIsDeleted, 0)
+        );
+        // 总用户数:未软删
+        long totalUsers = userMapper.selectCount(
+                Wrappers.<SysUser>lambdaQuery()
+                        .eq(SysUser::getIsDeleted, 0)
+        );
+
         Map<String, Object> data = new HashMap<>();
-        data.put("totalPosts", 0);
-        data.put("totalUsers", 0);
+        data.put("totalPosts", totalPosts);
+        data.put("totalUsers", totalUsers);
         data.put("guestCanView", true);
         data.put("guestCanInteract", false);
         return ApiResponse.success(data);
