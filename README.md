@@ -205,6 +205,10 @@ mvn spring-boot:run
 mvn clean package && java -jar target/ai-food-2.2.0.jar
 ```
 
+> ⚠️ **跑测试必须 `mvn clean test`** — IDE(Eclipse 等)在 `backend/target/` 下编译出的 `.class` 文件会让 Lombok 注解失效
+> (`log cannot be resolved` / `blank final field ... not initialized` 是假阳性),导致 `mvn test` 不带 `clean` 直接报编译失败。
+> 切分支或拉新代码后记得先 `mvn clean`。参见 `.slim/deepwork/p3-adminui-polish.md` §P1-F1。
+
 ### 前端启动
 
 ```bash

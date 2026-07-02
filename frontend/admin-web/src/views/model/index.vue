@@ -1,12 +1,26 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+/**
+ * 模型配置列表 — 显示已注册的 LLM 模型与启用状态。
+ *
+ * ponytail: 后端 listModels() 不带分页参数,这里 client-side 切页
+ * (模型数 < 50,真要多了再 server-side)。
+ */
+import { ref, computed, onMounted } from 'vue'
 import { listModels } from '@/api/model'
 
-const models = ref<any[]>([])
-onMounted(async () => {
+const allModels = ref<any[]>([])
+const page = ref(1)
+const size = ref(20)
+
+async function load() {
   const res: any = await listModels()
-  models.value = res.data || []
-})
+  allModels.value = res.data || []
+}
+
+const models = computed(() => allModels.value.slice((page.value - 1) * size.value, page.value * size.value))
+const total = computed(() => allModels.value.length)
+
+onMounted(load)
 </script>
 
 <template>
@@ -23,6 +37,17 @@ onMounted(async () => {
           </template>
         </el-table-column>
       </el-table>
+
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        @current-change="models"
+        @size-change="models"
+        style="margin-top: 16px; justify-content: flex-end"
+      />
     </el-card>
   </div>
 </template>
