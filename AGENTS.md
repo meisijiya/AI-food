@@ -23,14 +23,24 @@
 - **Deepwork 模式**: 重活走 `.slim/deepwork/` + oracle review(per phase),不是临时决定
 - **commit 规范**: `feat/fix/refactor/perf/chore/docs(scope): subject` + body 解释 why
 
+### 架构拓扑(避免误判)
+- **本机 (4GB / 4 核 Ubuntu) = 全部应用层**
+  - ai-food-app 后端: `127.0.0.1:8080`
+  - admin-server 后台: `127.0.0.1:8081`
+  - vite preview 前端: `127.0.0.1:5174`
+  - Redis: `127.0.0.1:6379`(无密码)
+  - 访问方式:`localhost` 或本机内网 IP,**不走公网**
+- **☁️ cloud `119.29.52.111` (2GB / 2 核) = 仅数据库**
+  - MySQL 8.0: 本机经 SSH tunnel `127.0.0.1:13306` 访问(`aifood/aifood123`)
+  - **不反代前端 / 后端 / WebSocket** — 公网无意义
+- **不通过 cloud nginx 转发本机应用**:减少一层代理 = 减少网络跳转 / 延迟 / 故障面;后续真有公网需求再单独评估
+
 ### 已知陷阱(踩过就记)
 - LSP 报 `log cannot be resolved` / `blank final field ... not initialized` = Lombok 假阳性,忽略
-- `vite preview` 不支持 `server.proxy` — 用相对路径 + cloud nginx 路由
+- `vite preview` 不支持 `server.proxy` — 用相对路径 + 本机 nginx/Caddy 路由(不走 cloud)
 - `pkill -f <jar>` 偶尔超时不返回 — 拆开命令(单独 `pkill` 然后 sleep 1)
 - pre-commit `end-of-file-fixer` bug — 用 `--no-verify` 绕过(后续排查)
 - sandbox 不通 GitHub — `git push` 会卡,需要用户手动 push
-- `feed:hot:details` 无 TTL ⚠️ — 已发现的代码 bug
-- cloud nginx 没 `/api/*` 转发 ⚠️ — 119.29.52.111/api/* 502
 
 ### 严禁
 - 不要删 `backend.bak.20260629/`(备份,gitignore 排除但本地留)
