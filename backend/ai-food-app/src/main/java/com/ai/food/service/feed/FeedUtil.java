@@ -7,6 +7,7 @@ import com.ai.food.common.model.SysUser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -40,6 +41,9 @@ final class FeedUtil {
     static final String HOT_RANK_KEY = "feed:hot:rank";
     static final String HOT_DETAILS_KEY = "feed:hot:details";
     static final String FRIEND_FEED_KEY = "feed:friend:";
+
+    /** ponytail: 集中 TTL 写入处,新增 cache write 必须经此 — 避免单点 set 漏 expire。 */
+    static final java.time.Duration HOT_DETAILS_TTL = java.time.Duration.ofMinutes(10);
 
     /** ponytail: 保留原版 {@code new ObjectMapper()} 实例，避免 Spring 全局 ObjectMapper 配置（如 JSR310 模块）改变序列化行为。 */
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -133,5 +137,18 @@ final class FeedUtil {
             log.error("Failed to serialize collected params", e);
             return "[]";
         }
+    }
+
+    /**
+     * 写入热榜详情缓存并强制附带 {@link #HOT_DETAILS_TTL},保证 {@code feed:hot:details} 不会永驻 Redis。
+     * <p>ponytail: 封装 TTL set,保证 feed:hot:details 写必带过期;新增 cache write 必须经此 helper,
+     * 不要绕开直接调 {@code redis.opsForValue().set}。</p>
+     *
+     * @param redis Redis 模板
+     * @param json  已序列化的热榜详情 JSON 字符串
+     */
+    static void cacheHotDetailsWithTtl(StringRedisTemplate redis, String json) {
+        // ponytail: 集中 TTL 写入处,新增 cache write 必须经此 — 避免单点 set 漏 expire
+        redis.opsForValue().set(HOT_DETAILS_KEY, json, HOT_DETAILS_TTL);
     }
 }

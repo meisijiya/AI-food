@@ -29,6 +29,7 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
 
     private final ConversationService conversationService;
     private final ObjectMapper objectMapper;
+    private final WebSocketSessionRegistry registry;
 
     // [P0-AI-限流] WS 端 LLM 调用也走同一限流池：60s 内 30 次
     @Autowired
@@ -65,6 +66,7 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
         }
 
         sessions.put(sessionId, session);
+        registry.register(sessionId, session);
         log.debug("WebSocket connected and verified: {}", sessionId);
     }
 
@@ -81,6 +83,9 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
                 sendError(session, "Session ID required");
                 return;
             }
+
+            // ponytail: 任何 client 消息都刷新 heartbeat,避免 idle sweep 误杀活跃连接
+            registry.touch(sessionId);
 
             ConversationState state = conversationStates.get(sessionId);
 
@@ -245,6 +250,7 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
         String sessionId = extractSessionId(session);
         if (sessionId != null) {
             sessions.remove(sessionId);
+            registry.unregister(sessionId);
             conversationStates.remove(sessionId);
             log.debug("WebSocket closed: {}", sessionId);
         }
@@ -258,6 +264,7 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
         // 也要清 — 否则连接异常断开的会话 state 会持续在 Map 里堆,几天后 OOM
         if (sessionId != null) {
             sessions.remove(sessionId);
+            registry.unregister(sessionId);
             conversationStates.remove(sessionId);
         }
     }

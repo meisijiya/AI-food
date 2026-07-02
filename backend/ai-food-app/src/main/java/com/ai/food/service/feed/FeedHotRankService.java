@@ -50,7 +50,7 @@ public class FeedHotRankService {
             Map<String, Object> emptyResult = Map.of("items", new ArrayList<>());
             if (currentUserId == null) {
                 try {
-                    stringRedisTemplate.opsForValue().set(HOT_DETAILS_KEY, OBJECT_MAPPER.writeValueAsString(emptyResult));
+                    FeedUtil.cacheHotDetailsWithTtl(stringRedisTemplate, OBJECT_MAPPER.writeValueAsString(emptyResult));
                 } catch (JsonProcessingException e) {
                     log.error("Failed to cache empty hot rank", e);
                 }
@@ -72,7 +72,7 @@ public class FeedHotRankService {
             Map<String, Object> emptyResult = Map.of("items", new ArrayList<>());
             if (currentUserId == null) {
                 try {
-                    stringRedisTemplate.opsForValue().set(HOT_DETAILS_KEY, OBJECT_MAPPER.writeValueAsString(emptyResult));
+                    FeedUtil.cacheHotDetailsWithTtl(stringRedisTemplate, OBJECT_MAPPER.writeValueAsString(emptyResult));
                 } catch (JsonProcessingException e) {
                     log.error("Failed to cache empty hot rank", e);
                 }
@@ -114,7 +114,7 @@ public class FeedHotRankService {
         // 仅未登录时缓存结果
         if (currentUserId == null) {
             try {
-                stringRedisTemplate.opsForValue().set(HOT_DETAILS_KEY, OBJECT_MAPPER.writeValueAsString(result));
+                FeedUtil.cacheHotDetailsWithTtl(stringRedisTemplate, OBJECT_MAPPER.writeValueAsString(result));
                 log.info("Hot rank cache refreshed, {} items", items.size());
             } catch (JsonProcessingException e) {
                 log.error("Failed to cache hot rank", e);

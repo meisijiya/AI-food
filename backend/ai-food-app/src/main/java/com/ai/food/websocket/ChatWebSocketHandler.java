@@ -22,17 +22,22 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final ChatService chatService;
     private final JwtService jwtService;
     private final ObjectMapper objectMapper;
+    private final WebSocketSessionRegistry registry;
 
     // userId -> WebSocketSession
     private final Map<Long, WebSocketSession> userSessions = new ConcurrentHashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
+        registry.register(session.getId(), session);
         log.info("Chat WebSocket connected: {}", session.getId());
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+        // ponytail: 任何 client 消息都先 touch,确保活跃连接不会被 idle sweep 误杀
+        registry.touch(session.getId());
+
         String payload = message.getPayload();
         log.debug("Chat received: {}", payload);
 
@@ -190,6 +195,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         Long userId = (Long) session.getAttributes().get("userId");
+        registry.unregister(session.getId());
         if (userId != null) {
             userSessions.remove(userId);
             chatService.setUserOffline(userId);
@@ -201,6 +207,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     public void handleTransportError(WebSocketSession session, Throwable exception) {
         Long userId = (Long) session.getAttributes().get("userId");
         log.error("Chat transport error for user {}: {}", userId, exception.getMessage());
+        registry.unregister(session.getId());
         if (userId != null) {
             userSessions.remove(userId);
         }
