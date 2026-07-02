@@ -60,9 +60,9 @@ onMounted(load)
       </el-form-item>
     </SearchForm>
 
-    <el-card>
-      <div style="margin-bottom: 12px; color: #606266">
-        共 <b style="color: #409eff">{{ total }}</b> 条推荐记录
+    <el-card class="page-card">
+      <div class="total-line">
+        共 <b class="total-num">{{ total }}</b> 条推荐记录
       </div>
       <el-table :data="list" stripe v-loading="loading">
         <el-table-column prop="id" label="ID" width="80" />
@@ -72,7 +72,7 @@ onMounted(load)
         <el-table-column prop="similarityScore" label="相似度" width="100">
           <template #default="{ row }">
             <span v-if="row.similarityScore != null">{{ Number(row.similarityScore).toFixed(2) }}</span>
-            <span v-else style="color: #c0c4cc">-</span>
+            <span v-else class="placeholder">-</span>
           </template>
         </el-table-column>
         <el-table-column prop="reason" label="推荐理由" min-width="200" show-overflow-tooltip />
@@ -87,8 +87,31 @@ onMounted(load)
         layout="total, sizes, prev, pager, next, jumper"
         @current-change="load"
         @size-change="load"
-        style="margin-top: 16px; justify-content: flex-end"
+        class="pagination-bar"
       />
     </el-card>
   </div>
 </template>
+
+<style scoped>
+.page-card {
+  border-radius: var(--radius-md);
+}
+.page-card :deep(.el-card__body) {
+  box-shadow: var(--shadow-sm);
+}
+
+.total-line {
+  margin-bottom: var(--space-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-base);
+}
+.total-num { color: var(--color-primary); font-weight: 600; }
+.placeholder { color: var(--color-text-tertiary); }
+
+.pagination-bar {
+  margin-top: var(--space-md);
+  justify-content: flex-end;
+  display: flex;
+}
+</style>

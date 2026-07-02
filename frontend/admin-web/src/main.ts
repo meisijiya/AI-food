@@ -6,6 +6,7 @@ import * as ElIcons from '@element-plus/icons-vue'
 import App from './App.vue'
 import router from './router'
 import './styles/index.scss'
+import './styles/tokens.scss'
 
 const app = createApp(App)
 

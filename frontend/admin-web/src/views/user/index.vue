@@ -92,9 +92,9 @@ onMounted(loadData)
       </el-form-item>
     </SearchForm>
 
-    <el-card>
-      <div style="margin-bottom: 12px; color: #606266">
-        共 <b style="color: #409eff">{{ total }}</b> 个用户
+    <el-card class="page-card">
+      <div class="total-line">
+        共 <b class="total-num">{{ total }}</b> 个用户
       </div>
       <el-table :data="list" stripe v-loading="loading">
         <el-table-column prop="id" label="ID" width="80" />
@@ -134,8 +134,33 @@ onMounted(loadData)
         layout="total, sizes, prev, pager, next, jumper"
         @current-change="loadData"
         @size-change="loadData"
-        style="margin-top: 16px; justify-content: flex-end"
+        class="pagination-bar"
       />
     </el-card>
   </div>
 </template>
+
+<style scoped>
+/* === 列表卡片(统一圆角 + 软阴影)==*/
+.page-card {
+  border-radius: var(--radius-md);
+}
+.page-card :deep(.el-card__body) {
+  box-shadow: var(--shadow-sm);
+}
+
+/* === 顶部统计行 === */
+.total-line {
+  margin-bottom: var(--space-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-base);
+}
+.total-num { color: var(--color-primary); font-weight: 600; }
+
+/* === 分页 === */
+.pagination-bar {
+  margin-top: var(--space-md);
+  justify-content: flex-end;
+  display: flex;
+}
+</style>

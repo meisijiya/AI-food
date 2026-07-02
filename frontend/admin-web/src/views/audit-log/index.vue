@@ -78,12 +78,12 @@ onMounted(load)
       </el-form-item>
     </SearchForm>
 
-    <el-card>
-      <div style="margin-bottom: 12px; color: #606266">
-        共 <b style="color: #409eff">{{ total }}</b> 条审计记录
+    <el-card class="page-card">
+      <div class="total-line">
+        共 <b class="total-num">{{ total }}</b> 条审计记录
       </div>
       <el-table :data="list" stripe v-loading="loading">
-        <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column prop="id" label="ID" width="180" :show-overflow-tooltip="true" />
         <el-table-column prop="actorUsername" label="操作者" width="140" />
         <el-table-column prop="action" label="动作" width="180">
           <template #default="{ row }">
@@ -91,7 +91,7 @@ onMounted(load)
           </template>
         </el-table-column>
         <el-table-column prop="targetType" label="对象类型" width="100" />
-        <el-table-column prop="targetId" label="对象 ID" width="100" />
+        <el-table-column prop="targetId" label="对象 ID" width="120" :show-overflow-tooltip="true" />
         <el-table-column prop="ip" label="IP" width="130" />
         <el-table-column label="状态" width="80">
           <template #default="{ row }">
@@ -103,8 +103,8 @@ onMounted(load)
         <el-table-column prop="createdAt" label="时间" width="170" />
         <el-table-column label="错误信息" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
-            <span v-if="row.errorMessage" style="color: #f56c6c">{{ row.errorMessage }}</span>
-            <span v-else style="color: #c0c4cc">-</span>
+            <span v-if="row.errorMessage" class="err-msg">{{ row.errorMessage }}</span>
+            <span v-else class="placeholder">-</span>
           </template>
         </el-table-column>
       </el-table>
@@ -117,8 +117,33 @@ onMounted(load)
         layout="total, sizes, prev, pager, next, jumper"
         @current-change="load"
         @size-change="load"
-        style="margin-top: 16px; justify-content: flex-end"
+        class="pagination-bar"
       />
     </el-card>
   </div>
 </template>
+
+<style scoped>
+.page-card {
+  border-radius: var(--radius-md);
+}
+.page-card :deep(.el-card__body) {
+  box-shadow: var(--shadow-sm);
+}
+
+.total-line {
+  margin-bottom: var(--space-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-base);
+}
+.total-num { color: var(--color-primary); font-weight: 600; }
+
+.err-msg { color: var(--color-danger); }
+.placeholder { color: var(--color-text-tertiary); }
+
+.pagination-bar {
+  margin-top: var(--space-md);
+  justify-content: flex-end;
+  display: flex;
+}
+</style>

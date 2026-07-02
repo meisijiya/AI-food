@@ -1,0 +1,106 @@
+/**
+ * AI-Food Admin · 设计令牌(Design Tokens)
+ * 单一来源:CSS 变量(:root,运行时可改,主题切换基础)+ SCSS mixin(组件 @use 后 @include)
+ * 改颜色 / 间距 / 圆角 / 阴影 / 字号 → 只改这里一套生效
+ *
+ * 组件内用法:
+ *   <style lang="scss">
+ *     @use '@/styles/tokens' as t;
+ *     .foo { @include t.page-container; color: var(--color-text-primary); }
+ *   </style>
+ *
+ * ponytail: 仅一份 tokens.scss,无 SCSS $variables(避免与 CSS var 双源不一致);mixin 直接编排 var()
+ * ponytail: 不引 dark mode 切换器 — 留 hook(--color-* 全在 :root),phase 后插 :root[data-theme="dark"] 即可
+ */
+
+// ============================================================
+// 1. CSS 变量(:root,运行时可改 + dark mode 基础)
+// ============================================================
+:root {
+  // --- 品牌色 ---
+  --color-primary: #3b6cf0;          // 主操作(按钮 / 链接 / 激活态 / chart line #1)
+  --color-primary-soft: #eaf0fe;     // 主色淡底(选中态 / 标签底 / chart area fill)
+  --color-success: #10b981;          // 成功(enabled / 上涨 / chart line #2 OK)
+  --color-warning: #f59e0b;          // 警告(quota / trend down 弱警示)
+  --color-danger:  #ef4444;          // 危险(disabled / 删除 / 错误)
+  --color-info:    #6366f1;          // 信息(中性 indigo)
+
+  // --- 中性色 ---
+  --color-bg-app:      #f5f7fa;      // 整体页面底色(el-main 用)
+  --color-bg-surface:  #ffffff;      // 卡片 / 表格 / 弹窗底
+  --color-bg-subtle:   #fafbfc;      // sidebar / SearchForm 等弱分区
+  --color-border:      #e5e7eb;      // 默认分割 / 卡片边
+  --color-text-primary:   #1f2937;   // 主文字 — slate-800,contrast ~16:1,WCAG AAA
+  --color-text-secondary: #6b7280;   // 次文字 — slate-500,contrast ~4.7:1,WCAG AA
+  --color-text-tertiary:  #9ca3af;   // 弱文字/placeholder — slate-400,UI only(非 body)
+
+  // --- 间距(4 / 8 / 16 / 24 / 32)---
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  // --- 圆角 ---
+  --radius-sm: 4px;                  // chip / small input
+  --radius-md: 8px;                  // button / card / search form
+  --radius-lg: 12px;                 // panel / modal
+
+  // --- 阴影(soft,有色透明避免发灰)---
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 10px 30px rgba(15, 23, 42, 0.12);
+
+  // --- 字号(12 / 13 / 14 / 16 / 20 / 28)---
+  --font-xs:  12px;
+  --font-sm:  13px;
+  --font-base: 14px;
+  --font-lg:  16px;
+  --font-xl:  20px;
+  --font-2xl: 28px;
+
+  // --- 层级 ---
+  --z-dropdown: 1000;
+  --z-modal:    2000;
+  --z-toast:    3000;
+}
+
+// ============================================================
+// 2. SCSS Mixin(组件 @use '@/styles/tokens' as t 后 @include t.xxx)
+// ============================================================
+
+/** 页面主容器统一 padding(替原 .page-container { padding: 20px })*/
+@mixin page-container { padding: var(--space-lg); }
+
+/** 页面头部:大标题 + 副标题 + 右侧操作(slot 风格) */
+@mixin page-header {
+  margin-bottom: var(--space-lg);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-md);
+  h2 { font-size: var(--font-xl); font-weight: 600; color: var(--color-text-primary); margin: 0; }
+  .subtitle { color: var(--color-text-secondary); font-size: var(--font-sm); margin-top: 4px; }
+}
+
+/** metric 卡片:icon + 大数字 + 标签 + 趋势 */
+@mixin metric-card {
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+  &:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+}
+
+/** 表格上方 toolbar(search / 筛选 / 新建 按钮 行) */
+@mixin toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
