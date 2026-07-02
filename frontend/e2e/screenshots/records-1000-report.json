@@ -1,0 +1,67 @@
+{
+  "totalRows": 1000,
+  "domCounts": {
+    "initial": 11,
+    "mid": 16,
+    "bottom": 16,
+    "afterSort": 11,
+    "afterDelete": 11,
+    "sanity": 11
+  },
+  "perf": {
+    "fetchMs": 1167,
+    "midMs": 1514,
+    "bottomMs": 820,
+    "sanityMs": 1699,
+    "loginMs": 1700
+  },
+  "consoleErrors": 0,
+  "pageErrors": 0,
+  "pageErrorsList": [],
+  "assertions": [
+    {
+      "name": "initial DOM < 50",
+      "pass": true,
+      "actual": 11
+    },
+    {
+      "name": "mid DOM < 50",
+      "pass": true,
+      "actual": 16
+    },
+    {
+      "name": "bottom DOM < 50",
+      "pass": true,
+      "actual": 16
+    },
+    {
+      "name": "after sort DOM < 50",
+      "pass": true,
+      "actual": 11
+    },
+    {
+      "name": "after delete DOM < 50",
+      "pass": true,
+      "actual": 11
+    },
+    {
+      "name": "no JS errors",
+      "pass": true,
+      "actual": 0
+    },
+    {
+      "name": "[sanity] virtualizer works with max-height",
+      "pass": true,
+      "actual": 11
+    }
+  ],
+  "diagnosis": {
+    "containerMinHeight": "844px",
+    "containerMaxHeight": "784px",
+    "containerOverflow": "auto",
+    "initialContainerH": 844,
+    "initialBodyH": 844,
+    "initialWindowH": 844
+  },
+  "pass": true
+}

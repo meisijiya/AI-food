@@ -29,86 +29,100 @@
       </button>
     </div>
 
-    <!-- Notification List -->
+    <!-- Notification List (virtualized via @tanstack/vue-virtual) -->
     <div class="notification-list" ref="scrollContainer" @scroll="onScroll">
       <div
-        v-for="(item, index) in notifications"
-        :key="item.id || item.conversationId || index"
-        class="notification-item animate-fade-up"
-        :style="{ animationDelay: (index % 10) * 0.05 + 's' }"
-        @click="handleClick(item)"
+        class="notification-virtual-list"
+        :style="{ height: virtualizer.getTotalSize() + 'px' }"
       >
-        <!-- Comment notification -->
-        <template v-if="item.type === 'comment'">
-          <div class="notif-avatar">
-            <img v-if="item.avatar" :src="item.avatar" alt="" />
-            <span v-else>{{ item.nickname?.charAt(0) || "?" }}</span>
-          </div>
-          <div class="notif-body">
-            <div class="notif-header">
-              <span class="notif-title"
-                >{{ item.nickname }}
-                <span class="notif-action">评论了你的动态</span></span
-              >
-              <button class="notif-delete" @click.stop="handleDelete(item.id)">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-            <div class="notif-content">{{ item.content }}</div>
-            <div class="notif-time">{{ formatTime(item.timestamp) }}</div>
-          </div>
-        </template>
+        <div
+          v-for="virtualRow in virtualizer.getVirtualItems()"
+          :key="String(virtualRow.key)"
+          :ref="(el: any) => virtualizer.measureElement(el as Element | null)"
+          :data-index="virtualRow.index"
+          :style="{ transform: `translateY(${virtualRow.start}px)` }"
+          class="notification-item-wrapper"
+        >
+          <div
+            class="notification-item animate-fade-up"
+            :style="{ animationDelay: (virtualRow.index % 10) * 0.05 + 's' }"
+            @click="handleClick(notifications[virtualRow.index])"
+          >
+            <!-- Comment notification -->
+            <template v-if="notifications[virtualRow.index].type === 'comment'">
+              <div class="notif-avatar">
+                <img v-if="notifications[virtualRow.index].avatar" :src="notifications[virtualRow.index].avatar" alt="" />
+                <span v-else>{{ notifications[virtualRow.index].nickname?.charAt(0) || "?" }}</span>
+              </div>
+              <div class="notif-body">
+                <div class="notif-header">
+                  <span class="notif-title"
+                    >{{ notifications[virtualRow.index].nickname }}
+                    <span class="notif-action">评论了你的动态</span></span
+                  >
+                  <button class="notif-delete" @click.stop="handleDelete(notifications[virtualRow.index].id)">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+                <div class="notif-content">{{ notifications[virtualRow.index].content }}</div>
+                <div class="notif-time">{{ formatTime(notifications[virtualRow.index].timestamp) }}</div>
+              </div>
+            </template>
 
-        <!-- Chat notification (aggregated) -->
-        <template v-else-if="item.type === 'chat'">
-          <div class="notif-avatar">
-            <img v-if="item.avatar" :src="item.avatar" alt="" />
-            <span v-else>{{ item.nickname?.charAt(0) || "?" }}</span>
-            <span v-if="item.unreadCount > 0" class="notif-badge">{{
-              item.unreadCount > 99 ? "99+" : item.unreadCount
-            }}</span>
+            <!-- Chat notification (aggregated) -->
+            <template v-else-if="notifications[virtualRow.index].type === 'chat'">
+              <div class="notif-avatar">
+                <img v-if="notifications[virtualRow.index].avatar" :src="notifications[virtualRow.index].avatar" alt="" />
+                <span v-else>{{ notifications[virtualRow.index].nickname?.charAt(0) || "?" }}</span>
+                <span v-if="notifications[virtualRow.index].unreadCount > 0" class="notif-badge">{{
+                  notifications[virtualRow.index].unreadCount > 99
+                    ? "99+"
+                    : notifications[virtualRow.index].unreadCount
+                }}</span>
+              </div>
+              <div class="notif-body">
+                <div class="notif-header">
+                  <span class="notif-title"
+                    >{{ notifications[virtualRow.index].nickname }}
+                    <span class="notif-action">发来消息</span></span
+                  >
+                  <button
+                    class="notif-delete"
+                    @click.stop="handleDelete('chat_' + notifications[virtualRow.index].conversationId)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+                <div class="notif-content">{{ notifications[virtualRow.index].lastMessage }}</div>
+                <div class="notif-time">{{ formatTime(notifications[virtualRow.index].timestamp) }}</div>
+              </div>
+            </template>
           </div>
-          <div class="notif-body">
-            <div class="notif-header">
-              <span class="notif-title"
-                >{{ item.nickname }}
-                <span class="notif-action">发来消息</span></span
-              >
-              <button
-                class="notif-delete"
-                @click.stop="handleDelete('chat_' + item.conversationId)"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-            <div class="notif-content">{{ item.lastMessage }}</div>
-            <div class="notif-time">{{ formatTime(item.timestamp) }}</div>
-          </div>
-        </template>
+        </div>
       </div>
     </div>
 
@@ -139,14 +153,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { useVirtualizer } from "@tanstack/vue-virtual";
 import { notificationApi } from "@/api";
 import { showSuccess, showError } from "@/utils/toast";
 import { showConfirmDialog } from "vant";
 
 const router = useRouter();
 const scrollContainer = ref<HTMLElement | null>(null);
+
+// Virtualizer: estimateSize 90 = 卡片约 76px(padding 16*2 + 内容) + gap 10px;measureElement 实际测量覆盖
+// key 策略:comment 用 id,chat 用 'chat_' + conversationId(与 handleDelete 保持一致)
+const virtualizer = useVirtualizer(
+  computed(() => ({
+    count: notifications.value.length,
+    getScrollElement: () => scrollContainer.value,
+    estimateSize: () => 90,
+    overscan: 5,
+    getItemKey: (index: number) =>
+      notifications.value[index]?.id ??
+      ("chat_" + (notifications.value[index]?.conversationId ?? "")) ??
+      String(index),
+  }))
+)
 
 const notifications = ref<any[]>([]);
 const loading = ref(false);
@@ -179,6 +209,7 @@ async function fetchNotifications(reset = false) {
     // ignore
   } finally {
     loading.value = false;
+    virtualizer.value.measure();
   }
 }
 
@@ -213,6 +244,7 @@ async function handleDelete(notificationId: string) {
         return "chat_" + n.conversationId !== notificationId;
       return n.id !== notificationId;
     });
+    virtualizer.value.measure();
     showSuccess("已删除");
   } catch {
     showError("删除失败");
@@ -224,6 +256,7 @@ async function handleClearAll() {
     await showConfirmDialog({ title: "确认", message: "确定清空所有通知吗？" });
     await notificationApi.clearAll();
     notifications.value = [];
+    virtualizer.value.measure();
     showSuccess("已清空");
   } catch {
     // user cancelled
@@ -343,6 +376,21 @@ onMounted(() => {
   z-index: 1;
   position: relative;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Virtual list inner + per-item wrapper (绝对定位 translateY(virtualRow.start)) */
+.notification-virtual-list {
+  position: relative;
+  width: 100%;
+}
+
+.notification-item-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding-bottom: 10px;
+  contain: layout style;
 }
 
 .notification-item {

@@ -45,6 +45,7 @@
         :key="String(virtualRow.key)"
         :ref="(el: any) => virtualizer.measureElement(el as Element | null)"
         :data-index="virtualRow.index"
+        :style="{ transform: `translateY(${virtualRow.start}px)` }"
         class="record-item-wrapper"
       >
         <div
@@ -317,7 +318,11 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .records-container {
-  min-height: 100vh;
+  // ponytail: height 锁 viewport 让 useVirtualizer() 能正确测量 scroll 容器;
+  // 否则 min-height-only 会让容器随内容涨到 130,000+px,真正滚动元素变成 body
+  height: 100vh;
+  max-height: 100vh; // 关键: 阻止容器随内容增长
+  min-height: 100vh; // 兜底, 避免 vh 不支持时塌缩
   display: flex;
   flex-direction: column;
   background-color: var(--color-surface);
