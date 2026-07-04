@@ -465,23 +465,7 @@ onMounted(() => {
   transform: scale(0.97);
 }
 
-.stat-item {
-  text-align: center;
-  flex: 1;
-}
-
-.stat-value {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 28px;
-  color: var(--color-primary);
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: var(--color-on-surface-variant);
-}
+/* .stat-item / .stat-value / .stat-label removed per Phase 5 P0 cleanup (using StatCard component) */
 
 /* Logout */
 .logout-btn {

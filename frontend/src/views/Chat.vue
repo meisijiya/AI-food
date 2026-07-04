@@ -439,66 +439,15 @@ onUnmounted(() => {
   background: var(--color-primary); color: white; font-size: 13px; font-weight: 600; cursor: pointer;
 }
 
-/* Messages */
-.msg {
-  display: flex; align-items: flex-start; gap: 10px; max-width: 85%;
-  &.msg-user { align-self: flex-end; flex-direction: row-reverse; }
-  &.msg-ai { align-self: flex-start; }
-}
-
-.msg-avatar {
-  width: 34px; height: 34px; border-radius: 1rem;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-
-.msg-avatar-ai {
-  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary)); color: white;
-}
-
-.msg-avatar-user {
-  background: var(--color-surface-low); color: var(--color-on-surface-variant);
-}
-
-.msg-bubble {
-  padding: 14px 18px; border-radius: 1.25rem; font-size: 14px; line-height: 1.6; word-break: break-word;
-
-  .msg-ai & {
-    background: var(--color-surface-lowest); color: var(--color-on-surface);
-    border: 1px solid rgba(255,255,255,0.8); border-bottom-left-radius: 0.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  }
-
-  .msg-user & {
-    background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
-    color: white; border-bottom-right-radius: 0.5rem;
-    box-shadow: 0 4px 16px rgba(74, 141, 213,0.2);
-  }
-
-  &.msg-retry { background: #fff7ed !important; color: #92400e !important; border: 1px solid #fed7aa !important; }
-  &.msg-interrupt { background: linear-gradient(135deg, #fefce8, #fef9c3) !important; color: #854d0e !important; border: 1px solid #fde68a !important; }
-}
+/* Messages: now using MessageBubble component (cleanup Phase 4 P0) */
 
 /* Thinking indicator */
 .thinking-indicator {
-  display: flex; align-items: center; gap: 10px; align-self: flex-start;
-  padding: 12px 18px; background: var(--color-surface-lowest);
-  border-radius: 1.25rem; border-bottom-left-radius: 0.5rem;
-  border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
-
-.thinking-dots {
-  display: flex; gap: 4px;
-  span {
-    width: 6px; height: 6px; border-radius: 50%; background: var(--color-primary-soft);
-    animation: dot-bounce 1.4s ease-in-out infinite;
-    &:nth-child(2) { animation-delay: 0.2s; }
-    &:nth-child(3) { animation-delay: 0.4s; }
-  }
-}
-
-@keyframes dot-bounce {
-  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-  40% { transform: scale(1); opacity: 1; }
+  display: flex; align-items: center; gap: var(--space-2); align-self: flex-start;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-lowest);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
 }
 
 /* Input */
