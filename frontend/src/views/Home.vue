@@ -95,7 +95,7 @@
         </div>
       </div>
       <div class="feature-card">
-        <div class="feature-icon icon-warm">
+        <div class="feature-icon icon-blue">
           <svg
             width="20"
             height="20"
@@ -312,10 +312,7 @@ const goToResult = () => {
     background: rgba(140, 225, 243, 0.18);
     color: var(--color-cyan-deep);
   }
-  &.icon-warm {
-    background: rgba(232, 133, 90, 0.10);
-    color: var(--color-accent-warm);
-  }
+  /* icon-warm removed per Phase 3 P0 review (warm-color rule: max 3 per screen) */
 }
 
 .feature-title {
@@ -417,10 +414,9 @@ const goToResult = () => {
 }
 
 .dialog-title {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 20px;
-  font-weight: 500;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 18px;
   color: var(--color-on-surface);
   margin-bottom: var(--space-2);
 }

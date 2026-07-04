@@ -5,7 +5,6 @@
     type="button"
     @click="$emit('toggle')"
   >
-    <span v-if="icon" class="icon" v-html="icon" />
     <span class="label">{{ label }}</span>
   </button>
 </template>
@@ -13,7 +12,6 @@
 <script setup lang="ts">
 interface Props {
   label: string;
-  icon?: string;
   selected?: boolean;
 }
 defineProps<Props>();
@@ -47,9 +45,5 @@ defineEmits<{ (e: 'toggle'): void }>();
   background: rgba(232, 133, 90, 0.12);
   border-color: var(--color-accent-warm);
   color: var(--color-accent-warm);
-}
-.icon {
-  display: inline-flex;
-  align-items: center;
 }
 </style>

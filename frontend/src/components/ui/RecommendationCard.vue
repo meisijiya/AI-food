@@ -3,7 +3,6 @@
     <div v-if="caption" class="caption">{{ caption }}</div>
     <div class="title">{{ title }}</div>
     <div v-if="subtitle" class="subtitle">{{ subtitle }}</div>
-    <slot name="extra" />
   </div>
 </template>
 
