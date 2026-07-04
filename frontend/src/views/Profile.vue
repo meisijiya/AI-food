@@ -88,18 +88,13 @@
 
       <!-- Stats -->
       <div class="stats-card animate-fade-up delay-300 animate-start-hidden">
-        <div class="stat-item" @click="router.push('/follow?type=following')">
-          <div class="stat-value">{{ followStats.followingCount }}</div>
-          <div class="stat-label">关注</div>
+        <div class="stat-clickable" @click="router.push('/follow?type=following')">
+          <StatCard :number="followStats.followingCount" label="关注" />
         </div>
-        <div class="stat-item" @click="router.push('/follow?type=followers')">
-          <div class="stat-value">{{ followStats.followerCount }}</div>
-          <div class="stat-label">粉丝</div>
+        <div class="stat-clickable" @click="router.push('/follow?type=followers')">
+          <StatCard :number="followStats.followerCount" label="粉丝" />
         </div>
-        <div class="stat-item">
-          <div class="stat-value">{{ conversationCount }}</div>
-          <div class="stat-label">推荐记录</div>
-        </div>
+        <StatCard :number="conversationCount" label="推荐记录" />
       </div>
 
       <!-- Logout -->
@@ -118,6 +113,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { userApi, recordApi, followApi } from '@/api'
 import { showSuccess, showError } from '@/utils/toast'
+import StatCard from '@/components/ui/StatCard.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -259,16 +255,15 @@ onMounted(() => {
 }
 
 .page-title {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 32px;
-  font-weight: 400;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1.25;
   color: var(--color-on-surface);
-  margin-bottom: 24px;
+  margin-bottom: var(--space-6);
   z-index: 1;
 
   em {
-    font-style: italic;
     color: var(--color-primary);
   }
 }
@@ -452,12 +447,22 @@ onMounted(() => {
 /* Stats card */
 .stats-card {
   display: flex;
-  padding: 24px;
+  gap: var(--space-3);
+  padding: var(--space-6);
   background: var(--color-surface-lowest);
-  border-radius: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--color-surface-low);
+  box-shadow: var(--shadow-xs);
   z-index: 1;
+}
+
+.stat-clickable {
+  flex: 1;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out-soft);
+}
+.stat-clickable:active {
+  transform: scale(0.97);
 }
 
 .stat-item {
