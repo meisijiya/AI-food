@@ -16,6 +16,7 @@
   --color-primary-grad-top: #5b9be0;
   --color-primary-grad-bottom: #3a7bc0;
   --color-cyan: #8ce1f3;
+  --color-cyan-deep: #06b6d4;  /* 状态指示 · 比 --color-cyan 更饱和 (publish chip 等) */
 
   /* --- 暖色点缀 · 旭日 --- */
   --color-accent-warm: #e8855a;
@@ -199,6 +200,10 @@
 }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* --- 字体 utility (独立 CSS class, 不依赖 Tailwind) --- */
+.font-sans { font-family: var(--font-sans); }
+.font-serif { font-family: var(--font-serif); }
 
 /* --- Vant 4 CSS 变量覆盖 (仅 3 个起步) --- */
 :root {

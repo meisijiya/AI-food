@@ -218,19 +218,19 @@ defineExpose({ setPublishPreview, insertEmoji })
 }
 
 .publish-chip {
-  border: 1.5px solid #06b6d4;
+  border: 1.5px solid var(--color-cyan-deep);
   background: none;
-  color: #06b6d4;
+  color: var(--color-cyan-deep);
 
   &:hover { background: rgba(6, 182, 212, 0.06); }
 }
 
 .unpublish-chip {
-  border: 1.5px solid rgba(239, 68, 68, 0.35);
-  background: rgba(239, 68, 68, 0.04);
-  color: #ef4444;
+  border: 1.5px solid var(--color-danger);
+  background: rgba(200, 52, 74, 0.04);
+  color: var(--color-danger);
 
-  &:hover { background: rgba(239, 68, 68, 0.08); }
+  &:hover { background: rgba(200, 52, 74, 0.08); }
 }
 
 /* ===== Share Link Card ===== */
