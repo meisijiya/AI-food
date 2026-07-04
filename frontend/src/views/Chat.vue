@@ -40,21 +40,18 @@
       <div
         v-for="message in chatStore.messages"
         :key="message.id"
-        :class="['msg', message.type === 'user' ? 'msg-user' : 'msg-ai']"
+        class="msg-row"
       >
-        <div v-if="message.type !== 'user'" class="msg-avatar msg-avatar-ai">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
-        </div>
-        <div :class="['msg-bubble', message.type === '2question' ? 'msg-retry' : '', message.type === 'interrupt' ? 'msg-interrupt' : '']">
+        <MessageBubble
+          :role="message.type === 'user' ? 'user' : 'ai'"
+          :modifier="message.type === '2question' ? 'retry' : message.type === 'interrupt' ? 'interrupt' : undefined"
+        >
           {{ message.content }}
-        </div>
-        <div v-if="message.type === 'user'" class="msg-avatar msg-avatar-user">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        </div>
+        </MessageBubble>
       </div>
 
       <div v-if="chatStore.isLoading && chatStore.isConnected" class="thinking-indicator animate-fade-in">
-        <div class="thinking-dots"><span></span><span></span><span></span></div>
+        <DSLoadingOrb />
         <span class="thinking-text">AI 正在思考...</span>
         <span class="thinking-hint">你可以继续说话</span>
       </div>
@@ -74,7 +71,7 @@
           @keyup.enter="sendMessage"
           class="chat-input"
         />
-        <button class="send-btn" :disabled="!inputValue.trim() || !chatStore.isConnected" @click="sendMessage">
+        <button class="send-btn btn-primary-gradient" :disabled="!inputValue.trim() || !chatStore.isConnected" @click="sendMessage">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
         </button>
       </div>
@@ -133,6 +130,8 @@ import { conversationApi } from '@/api'
 import { useChatStore } from '@/stores/chat'
 import { WebSocketClient, type WebSocketMessage } from '@/websocket'
 import EmojiPicker from '@/components/EmojiPicker.vue'
+import MessageBubble from '@/components/ui/MessageBubble.vue'
+import DSLoadingOrb from '@/components/ui/DSLoadingOrb.vue'
 import { showError } from '@/utils/toast'
 
 const router = useRouter()
