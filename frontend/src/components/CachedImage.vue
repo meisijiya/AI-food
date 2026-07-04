@@ -52,7 +52,7 @@ onMounted(loadPhoto)
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-surface-container-low, #1a1d1e);
+  background: var(--color-surface-low, #1a1d1e);
 }
 
 .cached-img-spinner {

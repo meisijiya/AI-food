@@ -185,7 +185,7 @@ onMounted(fetchShare)
   right: -40px;
   width: 240px;
   height: 240px;
-  background: var(--color-secondary-fixed);
+  background: var(--color-cyan);
   opacity: 0.12;
 }
 
@@ -194,7 +194,7 @@ onMounted(fetchShare)
   left: -80px;
   width: 200px;
   height: 200px;
-  background: var(--color-primary-container);
+  background: var(--color-primary-soft);
   opacity: 0.08;
   animation-delay: 3s;
 }
@@ -210,7 +210,7 @@ onMounted(fetchShare)
 .loading-spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid var(--color-surface-container-low);
+  border: 3px solid var(--color-surface-low);
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -262,7 +262,7 @@ onMounted(fetchShare)
   right: -30px;
   width: 120px;
   height: 120px;
-  background: var(--color-primary-container);
+  background: var(--color-primary-soft);
   opacity: 0.15;
   border-radius: 50%;
   filter: blur(30px);
@@ -291,14 +291,14 @@ onMounted(fetchShare)
   display: inline-block;
   padding: 10px 24px;
   border-radius: 100px;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white;
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-decoration: none;
-  box-shadow: 0 8px 24px -6px rgba(0, 89, 182, 0.4);
+  box-shadow: 0 8px 24px -6px rgba(74, 141, 213, 0.4);
   white-space: nowrap;
   transition: all 0.2s;
   &:active { transform: scale(0.96); }
@@ -314,12 +314,12 @@ onMounted(fetchShare)
 
 .sharer-avatar {
   width: 40px; height: 40px; border-radius: 50%;
-  object-fit: cover; border: 2px solid var(--color-surface-container-low);
+  object-fit: cover; border: 2px solid var(--color-surface-low);
 }
 
 .sharer-avatar-placeholder {
   width: 40px; height: 40px; border-radius: 50%;
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   display: flex; align-items: center; justify-content: center;
   color: var(--color-on-surface-variant);
 }
@@ -385,7 +385,7 @@ onMounted(fetchShare)
 .param-item {
   display: flex; flex-direction: column; gap: 2px;
   padding: 12px 16px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 1.25rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
 }
@@ -398,7 +398,7 @@ onMounted(fetchShare)
 
 .comment-text {
   padding: 16px 20px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 1.25rem; border: 1px solid rgba(255, 255, 255, 0.8);
   font-size: 14px; line-height: 1.7; color: var(--color-on-surface);
   white-space: pre-wrap;
@@ -424,11 +424,11 @@ onMounted(fetchShare)
 
 .timeline-line {
   position: absolute; left: -5px; top: 18px; bottom: 0;
-  width: 2px; background: var(--color-surface-container-low);
+  width: 2px; background: var(--color-surface-low);
 }
 
 .timeline-content {
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 1rem; padding: 12px 16px;
   border: 1px solid rgba(255, 255, 255, 0.8);
 }
@@ -445,9 +445,9 @@ onMounted(fetchShare)
 
 /* Bottom app card */
 .app-bottom-card {
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 1.5rem; padding: 20px;
-  border: 1px solid var(--color-surface-container-low);
+  border: 1px solid var(--color-surface-low);
 }
 
 .app-bottom-inner {
@@ -456,7 +456,7 @@ onMounted(fetchShare)
 
 .app-bottom-icon {
   width: 48px; height: 48px; border-radius: 1rem;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white; display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
@@ -470,10 +470,10 @@ onMounted(fetchShare)
 
 .app-bottom-btn {
   padding: 10px 20px; border-radius: 100px;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white; font-family: var(--font-sans); font-size: 13px; font-weight: 700;
   text-decoration: none; white-space: nowrap;
-  box-shadow: 0 6px 20px -6px rgba(0, 89, 182, 0.35);
+  box-shadow: 0 6px 20px -6px rgba(74, 141, 213, 0.35);
   transition: all 0.2s;
   &:active { transform: scale(0.96); }
 }

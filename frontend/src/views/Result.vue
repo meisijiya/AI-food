@@ -342,7 +342,7 @@ const goHome = () => {
 .loading-spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid var(--color-surface-container-low);
+  border: 3px solid var(--color-surface-low);
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -367,7 +367,7 @@ const goHome = () => {
   left: -60px;
   width: 260px;
   height: 260px;
-  background: var(--color-secondary-fixed);
+  background: var(--color-cyan);
   opacity: 0.15;
 }
 
@@ -376,7 +376,7 @@ const goHome = () => {
   right: -80px;
   width: 220px;
   height: 220px;
-  background: var(--color-primary-container);
+  background: var(--color-primary-soft);
   opacity: 0.1;
   animation-delay: 3s;
 }
@@ -422,7 +422,7 @@ const goHome = () => {
 
 /* ===== Params Card (轻量,留父组件) ===== */
 .params-card {
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 2rem;
   padding: 28px 24px;
   border: 1px solid rgba(255, 255, 255, 0.8);
@@ -438,7 +438,7 @@ const goHome = () => {
   left: -30px;
   width: 120px;
   height: 120px;
-  background: var(--color-secondary-fixed);
+  background: var(--color-cyan);
   opacity: 0.08;
   border-radius: 50%;
   filter: blur(30px);

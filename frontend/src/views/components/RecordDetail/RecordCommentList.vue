@@ -146,7 +146,7 @@ defineExpose({ onSaveSuccess, onSaveError })
   align-items: flex-start;
   gap: 12px;
   padding: 20px 24px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
@@ -166,7 +166,7 @@ defineExpose({ onSaveSuccess, onSaveError })
   height: 36px;
   border: none;
   border-radius: 50%;
-  background: rgba(0, 89, 182, 0.06);
+  background: rgba(74, 141, 213, 0.06);
   color: var(--color-primary);
   display: flex;
   align-items: center;
@@ -174,15 +174,15 @@ defineExpose({ onSaveSuccess, onSaveError })
   cursor: pointer;
   transition: all 0.25s;
 
-  &:hover { background: rgba(0, 89, 182, 0.12); }
+  &:hover { background: rgba(74, 141, 213, 0.12); }
   &:active { transform: scale(0.92); }
 }
 
 .comment-edit {
   padding: 4px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 2rem;
-  border: 1px solid var(--color-surface-container-low);
+  border: 1px solid var(--color-surface-low);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
 }
 
@@ -224,7 +224,7 @@ defineExpose({ onSaveSuccess, onSaveError })
   border-radius: 50%;
   flex-shrink: 0;
   transition: background 0.2s;
-  &:active { background: var(--color-surface-container-low); }
+  &:active { background: var(--color-surface-low); }
 }
 
 .comment-count {
@@ -239,17 +239,17 @@ defineExpose({ onSaveSuccess, onSaveError })
   padding: 10px 24px;
   border: none;
   border-radius: 100px;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white;
   font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.05em;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 89, 182, 0.2);
+  box-shadow: 0 4px 16px rgba(74, 141, 213, 0.2);
   transition: all 0.25s;
 
-  &:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 89, 182, 0.3); }
+  &:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(74, 141, 213, 0.3); }
   &:active { transform: scale(0.97); }
   &:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 }

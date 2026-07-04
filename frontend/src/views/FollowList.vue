@@ -161,7 +161,7 @@ onMounted(() => {
   right: -40px;
   width: 240px;
   height: 240px;
-  background: var(--color-primary-container);
+  background: var(--color-primary-soft);
   opacity: 0.1;
 }
 
@@ -185,7 +185,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  &:active { background: var(--color-surface-container-low); }
+  &:active { background: var(--color-surface-low); }
 }
 
 .page-title {
@@ -212,7 +212,7 @@ onMounted(() => {
 .tab-item {
   flex: 1;
   padding: 10px 16px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 100px;
   background: none;
   color: var(--color-on-surface-variant);
@@ -223,13 +223,13 @@ onMounted(() => {
   transition: all 0.2s;
 
   &.active {
-    background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+    background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
     border-color: transparent;
     color: white;
   }
 
   &:not(.active):active {
-    background: var(--color-surface-container-low);
+    background: var(--color-surface-low);
   }
 }
 
@@ -243,7 +243,7 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 1.25rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -254,7 +254,7 @@ onMounted(() => {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -307,8 +307,8 @@ onMounted(() => {
   }
 
   &.following {
-    background: var(--color-surface-container-low);
-    border-color: var(--color-surface-container-low);
+    background: var(--color-surface-low);
+    border-color: var(--color-surface-low);
     color: var(--color-on-surface-variant);
   }
 }
@@ -324,7 +324,7 @@ onMounted(() => {
 .spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid var(--color-surface-container-low);
+  border: 3px solid var(--color-surface-low);
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;

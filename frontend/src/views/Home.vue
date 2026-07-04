@@ -266,7 +266,7 @@ const goToResult = () => {
   right: -60px;
   width: 280px;
   height: 280px;
-  background: var(--color-secondary-fixed);
+  background: var(--color-cyan);
   opacity: 0.15;
 }
 
@@ -275,7 +275,7 @@ const goToResult = () => {
   left: -80px;
   width: 240px;
   height: 240px;
-  background: var(--color-primary-container);
+  background: var(--color-primary-soft);
   opacity: 0.1;
   animation-delay: 3s;
 }
@@ -297,10 +297,10 @@ const goToResult = () => {
   align-items: center;
   gap: 6px;
   padding: 6px 16px;
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   border-radius: 100px;
   margin-bottom: 28px;
-  border: 1px solid var(--color-surface-container-lowest);
+  border: 1px solid var(--color-surface-lowest);
 
   span {
     font-size: 10px;
@@ -347,7 +347,7 @@ const goToResult = () => {
   align-items: center;
   gap: 16px;
   padding: 20px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 1.5rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -366,7 +366,7 @@ const goToResult = () => {
   border-radius: 1rem;
   background: linear-gradient(
     135deg,
-    rgba(0, 89, 182, 0.08),
+    rgba(74, 141, 213, 0.08),
     rgba(104, 160, 255, 0.12)
   );
   display: flex;
@@ -417,9 +417,9 @@ const goToResult = () => {
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 1.5rem;
-  border: 1px solid var(--color-surface-container-low);
+  border: 1px solid var(--color-surface-low);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
   margin-bottom: 24px;
   z-index: 1;
@@ -530,11 +530,11 @@ const goToResult = () => {
   &.primary {
     background: linear-gradient(
       135deg,
-      var(--color-primary-container),
+      var(--color-primary-soft),
       var(--color-primary)
     );
     color: white;
-    box-shadow: 0 8px 24px -6px rgba(0, 89, 182, 0.3);
+    box-shadow: 0 8px 24px -6px rgba(74, 141, 213, 0.3);
 
     &:hover {
       transform: translateY(-1px);
@@ -543,11 +543,11 @@ const goToResult = () => {
 
   &.ghost {
     background: transparent;
-    border: 1.5px solid var(--color-surface-container-low);
+    border: 1.5px solid var(--color-surface-low);
     color: var(--color-on-surface-variant);
 
     &:hover {
-      background: var(--color-surface-container-low);
+      background: var(--color-surface-low);
     }
   }
 }
@@ -569,7 +569,7 @@ const goToResult = () => {
   border-radius: 2rem;
   background: linear-gradient(
     135deg,
-    var(--color-primary-container),
+    var(--color-primary-soft),
     var(--color-primary)
   );
   color: white;
@@ -579,14 +579,14 @@ const goToResult = () => {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
-  box-shadow: 0 12px 32px -8px rgba(0, 89, 182, 0.35);
+  box-shadow: 0 12px 32px -8px rgba(74, 141, 213, 0.35);
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   position: relative;
   overflow: hidden;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 16px 40px -8px rgba(0, 89, 182, 0.45);
+    box-shadow: 0 16px 40px -8px rgba(74, 141, 213, 0.45);
   }
 
   &:active {
@@ -601,7 +601,7 @@ const goToResult = () => {
   &.guest-cta {
     background: linear-gradient(
       135deg,
-      var(--color-secondary-fixed),
+      var(--color-cyan),
       var(--color-secondary-container)
     );
     box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.15);
@@ -665,12 +665,12 @@ const goToResult = () => {
 
 .version-badge {
   padding: 4px 10px;
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   border-radius: 100px;
   font-size: 11px;
   font-weight: 700;
   color: var(--color-primary);
-  border: 1px solid var(--color-surface-container-lowest);
+  border: 1px solid var(--color-surface-lowest);
 }
 
 .version-date {

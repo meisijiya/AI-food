@@ -460,7 +460,7 @@ onMounted(() => {
   right: -40px;
   width: 240px;
   height: 240px;
-  background: var(--color-secondary-fixed);
+  background: var(--color-cyan);
   opacity: 0.1;
 }
 
@@ -502,9 +502,9 @@ onMounted(() => {
   align-items: center;
   gap: 4px;
   padding: 6px 14px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 100px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   color: var(--color-on-surface-variant);
   font-family: var(--font-sans);
   font-size: 12px;
@@ -513,7 +513,7 @@ onMounted(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   transition: all 0.2s;
   &:active {
-    background: var(--color-surface-container-low);
+    background: var(--color-surface-low);
     transform: scale(0.95);
   }
 }
@@ -528,7 +528,7 @@ onMounted(() => {
   align-items: center;
   gap: 4px;
   padding: 6px 14px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 100px;
   background: none;
   color: var(--color-on-surface-variant);
@@ -537,7 +537,7 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
   &:active {
-    background: var(--color-surface-container-low);
+    background: var(--color-surface-low);
   }
 }
 
@@ -587,7 +587,7 @@ onMounted(() => {
   align-items: center;
   gap: 4px;
   padding: 8px 16px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 100px;
   background: none;
   color: var(--color-on-surface-variant);
@@ -604,7 +604,7 @@ onMounted(() => {
   &.active {
     background: linear-gradient(
       135deg,
-      var(--color-primary-container),
+      var(--color-primary-soft),
       var(--color-primary)
     );
     border-color: transparent;
@@ -616,7 +616,7 @@ onMounted(() => {
   }
 
   &:not(.active):active {
-    background: var(--color-surface-container-low);
+    background: var(--color-surface-low);
   }
 }
 
@@ -647,7 +647,7 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 1.25rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -665,7 +665,7 @@ onMounted(() => {
   border-radius: 50%;
   background: linear-gradient(
     135deg,
-    var(--color-primary-container),
+    var(--color-primary-soft),
     var(--color-primary)
   );
   display: flex;
@@ -749,7 +749,7 @@ onMounted(() => {
 .spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid var(--color-surface-container-low);
+  border: 3px solid var(--color-surface-low);
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -798,7 +798,7 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   border: none;
   border-radius: 1rem;
   color: var(--color-on-surface-variant);
@@ -811,7 +811,7 @@ onMounted(() => {
   }
   &:active {
     transform: scale(0.96);
-    background: var(--color-surface-container-lowest);
+    background: var(--color-surface-lowest);
   }
 }
 

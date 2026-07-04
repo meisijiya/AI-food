@@ -123,7 +123,7 @@ function handleUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
   position: relative;
   overflow: hidden;
   border-radius: 2rem;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 }
@@ -134,7 +134,7 @@ function handleUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
   left: -30px;
   width: 140px;
   height: 140px;
-  background: var(--color-primary-container);
+  background: var(--color-primary-soft);
   opacity: 0.06;
   border-radius: 50%;
   filter: blur(40px);

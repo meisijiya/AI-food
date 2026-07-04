@@ -391,6 +391,60 @@ body {
   git commit -m "refactor(frontend): replace Material 3 token names with design system names"
   ```
 
+## Task 1.4b · Replace hardcoded old primary rgba values (~10 places)
+
+**Files:**
+- Modify: ~5 Vue files + 1 SCSS file (Chat.vue, UploadPhoto.vue, RecordActions.vue, main.scss)
+
+**Interfaces:**
+- Consumes: hardcoded old primary color `rgba(0, 89, 182, ...)` / `#0059b6`
+- Produces: new primary color `rgba(74, 141, 213, ...)` / `#4a8dd5`
+
+> **Rationale (Oracle P0)**: Phase 1 Task 1.4 only replaces token NAMES, not hardcoded VALUES. ~10 places in `*.vue` / `*.scss` use the old primary color directly via rgba() or hex. These would otherwise keep the old deep blue while everything else migrates.
+
+- [ ] **Step 1:** Audit hardcoded old primary:
+  ```bash
+  cd /home/ubuntu/projects/AI-food
+  grep -rn "rgba(0,\s*89,\s*182\|#0059b6\|#003f80\|#68a0ff" --include="*.vue" --include="*.scss" frontend/src/ | tee /tmp/old-color-audit.txt
+  ```
+  Expected: ~10-15 lines.
+
+- [ ] **Step 2:** For each match, decide:
+  - Is it a **shadow** like `box-shadow: 0 4px 16px rgba(0,89,182,0.2)`? → prefer replacing with existing token (`var(--shadow-glow)` / `var(--shadow-md)` / `var(--shadow-lg)`) where the shape matches, else rewrite with new primary rgba.
+  - Is it a **background / border**? → replace `rgba(0, 89, 182, X)` with `rgba(74, 141, 213, X)` (new primary rgb) OR `var(--color-primary)` with `color-mix` if supported.
+
+- [ ] **Step 3:** Run sed for bulk replacements (manual review first):
+  ```bash
+  cd /home/ubuntu/projects/AI-food
+  # Replace rgba(0, 89, 182 with rgba(74, 141, 213 (new primary rgb)
+  grep -rl "rgba(0,\s*89,\s*182" --include="*.vue" --include="*.scss" frontend/src/ | xargs sed -i 's/rgba(0,\s*89,\s*182/rgba(74, 141, 213/g'
+  # Replace #0059b6 with #4a8dd5
+  grep -rl "#0059b6" --include="*.vue" --include="*.scss" frontend/src/ | xargs sed -i 's/#0059b6/#4a8dd5/g'
+  ```
+  ⚠️ **Note**: Don't replace rgba(11, 15, 16, ...) — that's the inverse-surface (unchanged).
+
+- [ ] **Step 4:** Manual review each remaining match (3-5 places):
+  - Chat.vue:475, 539, 647 — shadows → likely use new primary rgba
+  - UploadPhoto.vue:193, 300, 305 — backgrounds / shadows
+  - RecordActions.vue:217, 405, 479 — hover / focus
+  - main.scss:71 — sanctuary-glow shadow
+
+- [ ] **Step 5:** Verify build still works:
+  ```bash
+  cd /home/ubuntu/projects/AI-food/frontend && npm run build 2>&1 | tail -5
+  ```
+
+- [ ] **Step 6:** Commit (combine with Task 1.4 commit if both touch same files):
+  ```bash
+  git add frontend/src/
+  git commit -m "refactor(frontend): replace hardcoded old primary rgba with new primary"
+  ```
+  OR amend previous commit:
+  ```bash
+  git add frontend/src/
+  git commit --amend --no-edit
+  ```
+
 ## Task 1.5 · Add font preload to `frontend/index.html`
 
 **Files:**
@@ -525,7 +579,7 @@ body {
 
 - [ ] **Step 7:** Stop dev server:
   ```bash
-  pkill -f "vite" 2>/dev/null
+  PID=$(lsof -ti :3000 2>/dev/null); [ -n "$PID" ] && kill $PID 2>/dev/null; sleep 1
   ```
 
 ---
@@ -533,6 +587,14 @@ body {
 # Phase 3 · Home Deep Polish (~3-4h)
 
 **Objective:** Apply winter-sunrise aesthetic + RecommendationCard + MoodChips + gradient CTA to `Home.vue`. Update `App.vue` pill nav to use `--color-nav-active`.
+
+**Component strategy note**: Spec §2.1 lists 11 components. Of those, **5 are Vue files** (RecommendationCard, MoodChip, MessageBubble, DSLoadingOrb, StatCard). The remaining 6 are intentionally NOT created as Vue files:
+- `DSAppShell` / `DSTopBar` — App.vue already has layout + page-level top bars; wrapping in another component adds no value
+- `DSGlassCard` / `DSSurfaceCard` — already implemented as `.glass-card` / `.glass-card-strong` / `.surface-card` CSS utility classes in `_tokens.scss`
+- `DSSegmented` — only Feed uses it (Phase 6 deferred); create when Feed phase lands
+- `DSEmptyState` — none of the 3 deep-polish pages (Home / Chat / Profile) need an empty state; create when a page requires one
+
+Acceptance gate explicitly checks: each page references only what's needed, no speculative component files.
 
 ## Task 3.1 · Update App.vue pill nav active color
 
@@ -764,7 +826,7 @@ defineEmits<{ (e: 'toggle'): void }>();
   # Navigate to / via browser devtools (or curl to verify page returns 200)
   curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/
   # Stop dev server
-  pkill -f "vite" 2>/dev/null
+  PID=$(lsof -ti :3000 2>/dev/null); [ -n "$PID" ] && kill $PID 2>/dev/null; sleep 1
   ```
 
 - [ ] **Step 7:** Commit:
@@ -1124,7 +1186,16 @@ defineProps<Props>();
 
 - [ ] **Step 3:** Replace inline stat cards with `<StatCard :number="42" label="对话" />` × 3.
 
-- [ ] **Step 4:** Wrap stat cards in `<div class="px-4 pt-4 grid grid-cols-3 gap-2">`.
+- [ ] **Step 4:** Wrap stat cards in `<div class="stat-grid">` (use scoped CSS instead of Tailwind). Add to `<style scoped>`:
+
+```scss
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-4) 0;
+}
+```
 
 - [ ] **Step 5:** Add script imports:
   ```ts
@@ -1250,7 +1321,7 @@ defineProps<Props>();
 
 - [ ] **Step 4:** Stop dev server:
   ```bash
-  pkill -f "vite" 2>/dev/null
+  PID=$(lsof -ti :3000 2>/dev/null); [ -n "$PID" ] && kill $PID 2>/dev/null; sleep 1
   ```
 
 ## Task 6.5 · Acceptance criteria sign-off

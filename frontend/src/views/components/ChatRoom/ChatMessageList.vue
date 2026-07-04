@@ -206,7 +206,7 @@ defineExpose({
 .spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid var(--color-surface-container-low);
+  border: 2px solid var(--color-surface-low);
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -231,7 +231,7 @@ defineExpose({
   &.message-self {
     justify-content: flex-end;
     .message-bubble {
-      background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+      background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
       color: white;
       border-radius: 1.25rem 1.25rem 4px 1.25rem;
     }
@@ -249,7 +249,7 @@ defineExpose({
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -271,7 +271,7 @@ defineExpose({
 .message-bubble {
   max-width: 70%;
   padding: 10px 14px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 1.25rem 1.25rem 1.25rem 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   position: relative;
@@ -318,7 +318,7 @@ defineExpose({
   min-width: 140px;
   padding: 8px 10px;
   border-radius: 10px;
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   color: var(--color-on-surface-variant);
   font-size: 13px;
   text-align: center;
@@ -328,7 +328,7 @@ defineExpose({
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -400,7 +400,7 @@ defineExpose({
   left: 0;
   display: flex;
   gap: 6px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 8px;
   padding: 6px 8px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
@@ -417,7 +417,7 @@ defineExpose({
   padding: 6px 12px;
   border: none;
   border-radius: 6px;
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   color: var(--color-on-surface);
   font-size: 13px;
   font-weight: 500;
@@ -425,7 +425,7 @@ defineExpose({
   transition: background 0.2s;
 
   &:active {
-    background: var(--color-surface-container-high);
+    background: var(--color-surface-low);
   }
 
   &.action-btn-delete {

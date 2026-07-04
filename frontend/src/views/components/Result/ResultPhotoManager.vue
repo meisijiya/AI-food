@@ -104,9 +104,9 @@ function onUploaded(data: Photo) {
   transition: all 0.2s;
 
   &.replace {
-    background: rgba(0, 89, 182, 0.08);
+    background: rgba(74, 141, 213, 0.08);
     color: var(--color-primary);
-    &:active { background: rgba(0, 89, 182, 0.15); }
+    &:active { background: rgba(74, 141, 213, 0.15); }
   }
 
   &.delete {

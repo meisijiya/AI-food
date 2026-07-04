@@ -88,9 +88,9 @@ function onSave() {
 
 .comment-edit {
   padding: 4px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 1.25rem;
-  border: 1px solid var(--color-surface-container-low);
+  border: 1px solid var(--color-surface-low);
 }
 
 .comment-textarea {
@@ -120,7 +120,7 @@ function onSave() {
   background: none; border: none; color: var(--color-on-surface-variant);
   cursor: pointer; border-radius: 50%; flex-shrink: 0;
   transition: background 0.2s;
-  &:active { background: var(--color-surface-container-low); }
+  &:active { background: var(--color-surface-low); }
 }
 
 .comment-count {
@@ -133,13 +133,13 @@ function onSave() {
   padding: 8px 20px;
   border: none;
   border-radius: 100px;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white;
   font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 89, 182, 0.2);
+  box-shadow: 0 4px 12px rgba(74, 141, 213, 0.2);
   transition: all 0.2s;
   &:hover { transform: translateY(-1px); }
   &:active { transform: scale(0.97); }

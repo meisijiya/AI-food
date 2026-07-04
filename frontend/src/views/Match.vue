@@ -285,7 +285,7 @@ onDeactivated(() => {
   right: -80px;
   width: 300px;
   height: 300px;
-  background: var(--color-secondary-fixed);
+  background: var(--color-cyan);
   border-radius: 50%;
   filter: blur(100px);
   opacity: 0.15;
@@ -306,7 +306,7 @@ onDeactivated(() => {
   height: 40px;
   border: none;
   border-radius: 50%;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -316,7 +316,7 @@ onDeactivated(() => {
   transition: all 0.2s;
   &:active {
     transform: scale(0.95);
-    background: var(--color-surface-container-low);
+    background: var(--color-surface-low);
   }
 }
 
@@ -357,7 +357,7 @@ onDeactivated(() => {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   opacity: 0.3;
   animation: pulse 1.5s ease-in-out infinite;
 }
@@ -366,7 +366,7 @@ onDeactivated(() => {
   width: 160px;
   height: 16px;
   border-radius: 8px;
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   animation: pulse 1.5s ease-in-out infinite;
   &.short {
     width: 100px;
@@ -399,7 +399,7 @@ onDeactivated(() => {
   right: -60px;
   width: 200px;
   height: 200px;
-  background: var(--color-secondary-fixed);
+  background: var(--color-cyan);
   border-radius: 50%;
   filter: blur(60px);
   opacity: 0.15;
@@ -422,15 +422,15 @@ onDeactivated(() => {
   height: 120px;
   border-radius: 50%;
   object-fit: cover;
-  border: 4px solid var(--color-surface-container-lowest);
-  box-shadow: 0 8px 24px rgba(0, 89, 182, 0.15);
+  border: 4px solid var(--color-surface-lowest);
+  box-shadow: 0 8px 24px rgba(74, 141, 213, 0.15);
 }
 
 .avatar-placeholder {
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -439,21 +439,21 @@ onDeactivated(() => {
   font-style: italic;
   font-size: 48px;
   font-weight: 400;
-  border: 4px solid var(--color-surface-container-lowest);
-  box-shadow: 0 8px 24px rgba(0, 89, 182, 0.15);
+  border: 4px solid var(--color-surface-lowest);
+  box-shadow: 0 8px 24px rgba(74, 141, 213, 0.15);
 }
 
 .similarity-badge {
   position: absolute;
   bottom: 0;
   right: 0;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white;
   font-size: 13px;
   font-weight: 700;
   padding: 6px 14px;
   border-radius: 100px;
-  box-shadow: 0 4px 12px rgba(0, 89, 182, 0.3);
+  box-shadow: 0 4px 12px rgba(74, 141, 213, 0.3);
 }
 
 .user-info {
@@ -489,7 +489,7 @@ onDeactivated(() => {
 }
 
 .param-item {
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   border-radius: 1rem;
   padding: 12px 16px;
   display: flex;
@@ -526,17 +526,17 @@ onDeactivated(() => {
   padding: 14px 24px;
   border: none;
   border-radius: 1.5rem;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white;
   font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.05em;
   cursor: pointer;
-  box-shadow: 0 8px 20px rgba(0, 89, 182, 0.25);
+  box-shadow: 0 8px 20px rgba(74, 141, 213, 0.25);
   transition: all 0.2s;
   &:hover {
-    box-shadow: 0 12px 28px rgba(0, 89, 182, 0.35);
+    box-shadow: 0 12px 28px rgba(74, 141, 213, 0.35);
     transform: translateY(-2px);
   }
   &:active {
@@ -578,7 +578,7 @@ onDeactivated(() => {
   justify-content: center;
   gap: 8px;
   padding: 12px 24px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 1.5rem;
   background: transparent;
   color: var(--color-on-surface-variant);
@@ -588,7 +588,7 @@ onDeactivated(() => {
   cursor: pointer;
   transition: all 0.2s;
   &:hover {
-    background: var(--color-surface-container-low);
+    background: var(--color-surface-low);
     border-color: transparent;
     transform: translateY(-1px);
   }
@@ -617,7 +617,7 @@ onDeactivated(() => {
   height: 100px;
   margin: 0 auto 24px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(0, 89, 182, 0.08), rgba(140, 225, 243, 0.08));
+  background: linear-gradient(135deg, rgba(74, 141, 213, 0.08), rgba(140, 225, 243, 0.08));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -644,16 +644,16 @@ onDeactivated(() => {
   padding: 14px 32px;
   border: none;
   border-radius: 1.5rem;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white;
   font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 8px 20px rgba(0, 89, 182, 0.25);
+  box-shadow: 0 8px 20px rgba(74, 141, 213, 0.25);
   transition: all 0.2s;
   &:hover {
-    box-shadow: 0 12px 28px rgba(0, 89, 182, 0.35);
+    box-shadow: 0 12px 28px rgba(74, 141, 213, 0.35);
     transform: translateY(-2px);
   }
   &:active {

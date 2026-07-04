@@ -368,15 +368,15 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: var(--color-surface-container-lowest);
-  border-bottom: 1px solid var(--color-surface-container-low);
+  background: var(--color-surface-lowest);
+  border-bottom: 1px solid var(--color-surface-low);
 }
 
 .header-btn {
   width: 40px; height: 40px; border: none; background: none;
   border-radius: 1rem; display: flex; align-items: center; justify-content: center;
   color: var(--color-on-surface-variant); cursor: pointer; transition: background 0.2s;
-  &:active { background: var(--color-surface-container-low); }
+  &:active { background: var(--color-surface-low); }
 }
 
 .header-center { text-align: center; }
@@ -400,16 +400,16 @@ onUnmounted(() => {
 /* Progress */
 .progress-section {
   display: flex; align-items: center; gap: 12px;
-  padding: 10px 20px; background: var(--color-surface-container-lowest);
+  padding: 10px 20px; background: var(--color-surface-lowest);
 }
 
 .progress-track {
-  flex: 1; height: 4px; background: var(--color-surface-container-low);
+  flex: 1; height: 4px; background: var(--color-surface-low);
   border-radius: 2px; overflow: hidden;
 }
 
 .progress-fill {
-  height: 100%; background: linear-gradient(90deg, var(--color-primary-container), var(--color-primary));
+  height: 100%; background: linear-gradient(90deg, var(--color-primary-soft), var(--color-primary));
   border-radius: 2px; transition: width 0.6s cubic-bezier(0.22,1,0.36,1);
 }
 
@@ -430,7 +430,7 @@ onUnmounted(() => {
 }
 
 .state-loading {
-  width: 32px; height: 32px; border: 3px solid var(--color-surface-container-low);
+  width: 32px; height: 32px; border: 3px solid var(--color-surface-low);
   border-top-color: var(--color-primary); border-radius: 50%; margin: 0 auto;
   animation: spin 0.8s linear infinite;
 }
@@ -453,26 +453,26 @@ onUnmounted(() => {
 }
 
 .msg-avatar-ai {
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary)); color: white;
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary)); color: white;
 }
 
 .msg-avatar-user {
-  background: var(--color-surface-container-low); color: var(--color-on-surface-variant);
+  background: var(--color-surface-low); color: var(--color-on-surface-variant);
 }
 
 .msg-bubble {
   padding: 14px 18px; border-radius: 1.25rem; font-size: 14px; line-height: 1.6; word-break: break-word;
 
   .msg-ai & {
-    background: var(--color-surface-container-lowest); color: var(--color-on-surface);
+    background: var(--color-surface-lowest); color: var(--color-on-surface);
     border: 1px solid rgba(255,255,255,0.8); border-bottom-left-radius: 0.5rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   }
 
   .msg-user & {
-    background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+    background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
     color: white; border-bottom-right-radius: 0.5rem;
-    box-shadow: 0 4px 16px rgba(0,89,182,0.2);
+    box-shadow: 0 4px 16px rgba(74, 141, 213,0.2);
   }
 
   &.msg-retry { background: #fff7ed !important; color: #92400e !important; border: 1px solid #fed7aa !important; }
@@ -482,7 +482,7 @@ onUnmounted(() => {
 /* Thinking indicator */
 .thinking-indicator {
   display: flex; align-items: center; gap: 10px; align-self: flex-start;
-  padding: 12px 18px; background: var(--color-surface-container-lowest);
+  padding: 12px 18px; background: var(--color-surface-lowest);
   border-radius: 1.25rem; border-bottom-left-radius: 0.5rem;
   border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
@@ -490,7 +490,7 @@ onUnmounted(() => {
 .thinking-dots {
   display: flex; gap: 4px;
   span {
-    width: 6px; height: 6px; border-radius: 50%; background: var(--color-primary-container);
+    width: 6px; height: 6px; border-radius: 50%; background: var(--color-primary-soft);
     animation: dot-bounce 1.4s ease-in-out infinite;
     &:nth-child(2) { animation-delay: 0.2s; }
     &:nth-child(3) { animation-delay: 0.4s; }
@@ -504,15 +504,15 @@ onUnmounted(() => {
 
 /* Input */
 .input-area {
-  padding: 12px 16px 24px; background: var(--color-surface-container-lowest);
-  border-top: 1px solid var(--color-surface-container-low);
+  padding: 12px 16px 24px; background: var(--color-surface-lowest);
+  border-top: 1px solid var(--color-surface-low);
 }
 
 .input-wrapper {
   display: flex; align-items: center; gap: 10px; background: var(--color-surface);
-  border-radius: 2rem; padding: 4px 4px 4px 10px; border: 1px solid var(--color-surface-container-low);
+  border-radius: 2rem; padding: 4px 4px 4px 10px; border: 1px solid var(--color-surface-low);
   transition: border-color 0.2s;
-  &:focus-within { border-color: var(--color-primary-container); }
+  &:focus-within { border-color: var(--color-primary-soft); }
 }
 
 .emoji-trigger {
@@ -520,7 +520,7 @@ onUnmounted(() => {
   background: none; border: none; color: var(--color-on-surface-variant);
   cursor: pointer; border-radius: 50%; flex-shrink: 0;
   transition: background 0.2s;
-  &:active { background: var(--color-surface-container-low); }
+  &:active { background: var(--color-surface-low); }
   &:disabled { opacity: 0.3; cursor: not-allowed; }
 }
 
@@ -533,10 +533,10 @@ onUnmounted(() => {
 
 .send-btn {
   width: 40px; height: 40px; border: none; border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white; display: flex; align-items: center; justify-content: center;
   cursor: pointer; flex-shrink: 0; transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(0,89,182,0.25);
+  box-shadow: 0 4px 12px rgba(74, 141, 213,0.25);
   &:hover { transform: scale(1.05); }
   &:active { transform: scale(0.95); }
   &:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
@@ -555,7 +555,7 @@ onUnmounted(() => {
 
 .sanctuary-sheet {
   width: 100%; max-width: 480px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 2rem 2rem 0 0;
   padding: 12px 20px 32px;
   box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.1);
@@ -563,7 +563,7 @@ onUnmounted(() => {
 
 .sheet-handle {
   width: 36px; height: 4px; border-radius: 2px;
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   margin: 0 auto 20px;
 }
 
@@ -581,16 +581,16 @@ onUnmounted(() => {
 
   svg { color: var(--color-primary); flex-shrink: 0; }
 
-  &:active { background: var(--color-surface-container-low); }
+  &:active { background: var(--color-surface-low); }
 }
 
 .sheet-cancel {
   width: 100%; padding: 14px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 1.5rem; background: none;
   font-family: var(--font-sans); font-size: 14px; font-weight: 600;
   color: var(--color-on-surface-variant); cursor: pointer; transition: all 0.2s;
-  &:active { background: var(--color-surface-container-low); }
+  &:active { background: var(--color-surface-low); }
 }
 
 /* ============================================
@@ -599,7 +599,7 @@ onUnmounted(() => {
 
 .sanctuary-dialog {
   width: calc(100% - 48px); max-width: 360px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 2rem; padding: 36px 28px 24px;
   text-align: center;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.15);
@@ -608,7 +608,7 @@ onUnmounted(() => {
 
 .dialog-icon {
   width: 52px; height: 52px; border-radius: 50%;
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   display: flex; align-items: center; justify-content: center;
   margin: 0 auto 20px;
   color: var(--color-primary);
@@ -636,15 +636,15 @@ onUnmounted(() => {
 }
 
 .dialog-btn-cancel {
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   color: var(--color-on-surface-variant);
-  &:active { background: var(--color-surface-container-low); opacity: 0.8; }
+  &:active { background: var(--color-surface-low); opacity: 0.8; }
 }
 
 .dialog-btn-confirm {
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white;
-  box-shadow: 0 4px 16px rgba(0, 89, 182, 0.25);
+  box-shadow: 0 4px 16px rgba(74, 141, 213, 0.25);
   &:active { transform: scale(0.97); }
 }
 

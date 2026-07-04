@@ -346,7 +346,7 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
   right: -60px;
   width: 280px;
   height: 280px;
-  background: var(--color-primary-container);
+  background: var(--color-primary-soft);
   opacity: 0.1;
   animation: glow-drift 8s ease-in-out infinite;
 }
@@ -356,7 +356,7 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
   left: -80px;
   width: 200px;
   height: 200px;
-  background: var(--color-secondary-fixed);
+  background: var(--color-cyan);
   opacity: 0.06;
   animation: glow-drift 10s ease-in-out infinite reverse;
 }
@@ -391,7 +391,7 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
 .loading-spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid var(--color-surface-container-low);
+  border: 3px solid var(--color-surface-low);
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -403,18 +403,18 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
 
 /* ===== Recommend Card (Light) ===== */
 .recommend-card {
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 2.5rem;
   padding: 32px 28px;
   margin-bottom: 24px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 89, 182, 0.06);
+  box-shadow: 0 8px 32px rgba(74, 141, 213, 0.06);
   transition: box-shadow 0.4s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 
   &:hover {
-    box-shadow: 0 12px 40px rgba(0, 89, 182, 0.1);
+    box-shadow: 0 12px 40px rgba(74, 141, 213, 0.1);
     transform: translateY(-2px);
   }
 }
@@ -425,7 +425,7 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--color-primary-container), var(--color-primary), var(--color-secondary-fixed));
+  background: linear-gradient(90deg, var(--color-primary-soft), var(--color-primary), var(--color-cyan));
   border-radius: 2.5rem 2.5rem 0 0;
 }
 
@@ -435,7 +435,7 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
   right: -40px;
   width: 200px;
   height: 200px;
-  background: var(--color-secondary-fixed);
+  background: var(--color-cyan);
   opacity: 0.08;
   border-radius: 50%;
   filter: blur(50px);
@@ -477,7 +477,7 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
     letter-spacing: 0.15em;
     color: var(--color-on-surface-variant);
     padding: 5px 14px;
-    background: var(--color-surface-container-low);
+    background: var(--color-surface-low);
     border-radius: 100px;
   }
 }
@@ -507,9 +507,9 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 100px;
-  border: 1px solid var(--color-surface-container-low);
+  border: 1px solid var(--color-surface-low);
   font-size: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
   transition: box-shadow 0.2s;
@@ -563,8 +563,8 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
   z-index: 1;
 
   &.assistant {
-    border-color: var(--color-secondary-fixed);
-    background: radial-gradient(circle, var(--color-secondary-fixed) 30%, transparent 30%);
+    border-color: var(--color-cyan);
+    background: radial-gradient(circle, var(--color-cyan) 30%, transparent 30%);
   }
 
   &.user {
@@ -579,11 +579,11 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
   top: 22px;
   bottom: 0;
   width: 2px;
-  background: linear-gradient(to bottom, var(--color-surface-container-low), transparent);
+  background: linear-gradient(to bottom, var(--color-surface-low), transparent);
 }
 
 .timeline-content {
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 1.5rem;
   padding: 16px 20px;
   border: 1px solid rgba(255, 255, 255, 0.8);
@@ -600,7 +600,7 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  color: var(--color-secondary-fixed);
+  color: var(--color-cyan);
   margin-bottom: 6px;
 
   &.user-role {
@@ -621,9 +621,9 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
   justify-content: center;
   gap: 6px;
   padding: 14px 28px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 2rem;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   color: var(--color-on-surface-variant);
   font-family: var(--font-sans);
   font-size: 14px;
@@ -637,7 +637,7 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
     border-color: var(--color-primary);
     color: var(--color-primary);
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(0, 89, 182, 0.08);
+    box-shadow: 0 4px 16px rgba(74, 141, 213, 0.08);
   }
 
   &:active {

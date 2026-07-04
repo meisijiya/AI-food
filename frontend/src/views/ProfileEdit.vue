@@ -289,7 +289,7 @@ async function savePassword() {
   right: -40px;
   width: 240px;
   height: 240px;
-  background: var(--color-primary-container);
+  background: var(--color-primary-soft);
   opacity: 0.12;
 }
 
@@ -298,7 +298,7 @@ async function savePassword() {
   left: -60px;
   width: 200px;
   height: 200px;
-  background: var(--color-secondary-fixed);
+  background: var(--color-cyan);
   opacity: 0.08;
   animation-delay: 3s;
 }
@@ -324,7 +324,7 @@ async function savePassword() {
   transition: background 0.2s;
 
   &:active {
-    background: var(--color-surface-container-lowest);
+    background: var(--color-surface-lowest);
   }
 }
 
@@ -342,7 +342,7 @@ async function savePassword() {
 }
 
 .section-card {
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -372,7 +372,7 @@ async function savePassword() {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -416,7 +416,7 @@ async function savePassword() {
 .field-input {
   flex: 1;
   padding: 10px 14px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 12px;
   background: transparent;
   color: var(--color-on-surface);
@@ -490,7 +490,7 @@ async function savePassword() {
 
 .cancel-btn {
   padding: 8px 16px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 100px;
   background: transparent;
   color: var(--color-on-surface-variant);

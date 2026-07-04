@@ -175,7 +175,7 @@ function insertEmoji(icon: string) {
 .publish-dialog {
   width: calc(100% - 48px);
   max-width: 400px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 2rem;
   padding: 28px 24px;
 }
@@ -199,7 +199,7 @@ function insertEmoji(icon: string) {
 .publish-textarea {
   width: 100%;
   padding: 14px 18px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 1.25rem;
   background: var(--color-surface);
   font-family: var(--font-sans);
@@ -239,7 +239,7 @@ function insertEmoji(icon: string) {
 .publish-cancel-btn {
   flex: 1;
   padding: 12px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 1rem;
   background: none;
   color: var(--color-on-surface-variant);
@@ -272,7 +272,7 @@ function insertEmoji(icon: string) {
   background: none; border: none; color: var(--color-on-surface-variant);
   cursor: pointer; border-radius: 50%; flex-shrink: 0;
   transition: background 0.2s;
-  &:active { background: var(--color-surface-container-low); }
+  &:active { background: var(--color-surface-low); }
 }
 
 /* Transition */

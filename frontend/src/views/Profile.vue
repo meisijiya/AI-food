@@ -244,7 +244,7 @@ onMounted(() => {
   right: -40px;
   width: 240px;
   height: 240px;
-  background: var(--color-primary-container);
+  background: var(--color-primary-soft);
   opacity: 0.12;
 }
 
@@ -253,7 +253,7 @@ onMounted(() => {
   left: -60px;
   width: 200px;
   height: 200px;
-  background: var(--color-secondary-fixed);
+  background: var(--color-cyan);
   opacity: 0.08;
   animation-delay: 3s;
 }
@@ -279,7 +279,7 @@ onMounted(() => {
   align-items: center;
   gap: 16px;
   padding: 24px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -296,7 +296,7 @@ onMounted(() => {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -402,7 +402,7 @@ onMounted(() => {
       height: 22px;
       border-radius: 50%;
       background: var(--color-primary);
-      box-shadow: 0 2px 8px rgba(0, 89, 182, 0.4);
+      box-shadow: 0 2px 8px rgba(74, 141, 213, 0.4);
     }
   }
 
@@ -453,7 +453,7 @@ onMounted(() => {
 .stats-card {
   display: flex;
   padding: 24px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -481,7 +481,7 @@ onMounted(() => {
 /* Logout */
 .logout-btn {
   padding: 14px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 2rem;
   background: none;
   color: var(--color-on-surface-variant);
@@ -508,7 +508,7 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   padding: 40px 24px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -519,7 +519,7 @@ onMounted(() => {
   width: 96px;
   height: 96px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -562,7 +562,7 @@ onMounted(() => {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white;
   display: flex;
   align-items: center;
@@ -576,19 +576,19 @@ onMounted(() => {
   padding: 16px;
   border: none;
   border-radius: 2rem;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white;
   font-family: var(--font-sans);
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 12px 32px -8px rgba(0, 89, 182, 0.35);
+  box-shadow: 0 12px 32px -8px rgba(74, 141, 213, 0.35);
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   margin-bottom: 12px;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 16px 40px -8px rgba(0, 89, 182, 0.45);
+    box-shadow: 0 16px 40px -8px rgba(74, 141, 213, 0.45);
   }
 
   &:active {
@@ -599,7 +599,7 @@ onMounted(() => {
 .guest-back-btn {
   width: 100%;
   padding: 16px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 2rem;
   background: none;
   color: var(--color-on-surface-variant);
@@ -610,7 +610,7 @@ onMounted(() => {
   transition: all 0.2s;
 
   &:hover {
-    background: var(--color-surface-container-low);
+    background: var(--color-surface-low);
   }
 
   &:active {

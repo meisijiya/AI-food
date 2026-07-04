@@ -179,15 +179,15 @@ defineExpose({
 
 .permission-hint-info {
   color: var(--color-on-surface-variant);
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
 }
 
 .input-container {
   display: flex;
   gap: 8px;
   padding: 12px;
-  background: var(--color-surface-container-lowest);
-  border-top: 1px solid var(--color-surface-container-low);
+  background: var(--color-surface-lowest);
+  border-top: 1px solid var(--color-surface-low);
   flex-shrink: 0;
 }
 
@@ -204,9 +204,9 @@ defineExpose({
   border-radius: 50%;
   flex-shrink: 0;
   transition: background 0.2s, color 0.2s;
-  &:active { background: var(--color-surface-container-low); }
+  &:active { background: var(--color-surface-low); }
   &:disabled { opacity: 0.3; cursor: not-allowed; }
-  &.active { color: var(--color-primary); background: rgba(0, 89, 182, 0.08); }
+  &.active { color: var(--color-primary); background: rgba(74, 141, 213, 0.08); }
 }
 
 .plus-btn {
@@ -222,11 +222,11 @@ defineExpose({
   border-radius: 50%;
   flex-shrink: 0;
   transition: background 0.2s, transform 0.2s, color 0.2s;
-  &:active { background: var(--color-surface-container-low); }
+  &:active { background: var(--color-surface-low); }
   &:disabled { opacity: 0.3; cursor: not-allowed; }
   &.active {
     color: var(--color-primary);
-    background: rgba(0, 89, 182, 0.08);
+    background: rgba(74, 141, 213, 0.08);
     svg { transform: rotate(45deg); }
   }
 }
@@ -234,7 +234,7 @@ defineExpose({
 .message-input {
   flex: 1;
   padding: 10px 16px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 100px;
   background: var(--color-surface);
   font-family: var(--font-sans);
@@ -249,7 +249,7 @@ defineExpose({
   height: 44px;
   border: none;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white;
   display: flex;
   align-items: center;
@@ -328,7 +328,7 @@ defineExpose({
   transition: background 0.2s, transform 0.15s;
 
   &:active:not(:disabled) {
-    background: rgba(0, 89, 182, 0.08);
+    background: rgba(74, 141, 213, 0.08);
     transform: scale(0.95);
   }
 
@@ -347,7 +347,7 @@ defineExpose({
   justify-content: center;
 
   &.photo-icon {
-    background: linear-gradient(135deg, rgba(0, 89, 182, 0.12), rgba(0, 89, 182, 0.06));
+    background: linear-gradient(135deg, rgba(74, 141, 213, 0.12), rgba(74, 141, 213, 0.06));
     color: var(--color-primary);
   }
 

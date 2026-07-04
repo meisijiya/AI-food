@@ -1,21 +1,8 @@
 /* ============================================
-   Sanctuary UI — CSS Variables & Global Styles
+   Sanctuary UI — Global Styles
+   Design tokens: ../../styles/tokens
    ============================================ */
-
-:root {
-  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-serif: "Newsreader", Georgia, serif;
-
-  --color-primary: #0059b6;
-  --color-primary-container: #68a0ff;
-  --color-secondary-fixed: #8ce1f3;
-  --color-surface: #f4f7f9;
-  --color-surface-container-low: #edf1f3;
-  --color-surface-container-lowest: #ffffff;
-  --color-on-surface: #2b2f31;
-  --color-on-surface-variant: #585c5e;
-  --color-inverse-surface: #0b0f10;
-}
+@use "../../styles/tokens" as *;
 
 * {
   margin: 0;
@@ -32,7 +19,7 @@ html, body {
 body {
   font-family: var(--font-sans);
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.45;
   color: var(--color-on-surface);
   background-color: var(--color-surface);
   -webkit-font-smoothing: antialiased;
@@ -58,26 +45,11 @@ img {
 }
 
 /* ============================================
-   Sanctuary Utility Classes
+   Sanctuary Legacy Utilities (kept for backward compat)
    ============================================ */
 
-.glass-card {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-
 .vibrant-shadow {
-  box-shadow: 0 20px 40px -15px rgba(0, 89, 182, 0.15);
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  box-shadow: var(--shadow-glow);
 }
 
 /* ============================================

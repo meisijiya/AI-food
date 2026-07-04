@@ -278,7 +278,7 @@ const goAsGuest = () => {
   right: -40px;
   width: 260px;
   height: 260px;
-  background: var(--color-primary-container);
+  background: var(--color-primary-soft);
   opacity: 0.15;
 }
 
@@ -297,7 +297,7 @@ const goAsGuest = () => {
   right: -50px;
   width: 180px;
   height: 180px;
-  background: var(--color-primary-container);
+  background: var(--color-primary-soft);
   opacity: 0.1;
   animation-delay: 1.5s;
 }
@@ -308,10 +308,10 @@ const goAsGuest = () => {
   align-items: center;
   gap: 6px;
   padding: 6px 16px;
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   border-radius: 100px;
   margin-bottom: 24px;
-  border: 1px solid var(--color-surface-container-lowest);
+  border: 1px solid var(--color-surface-lowest);
   z-index: 1;
 
   span {
@@ -353,13 +353,13 @@ const goAsGuest = () => {
 .tab-switch {
   position: relative;
   display: flex;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 2rem;
   padding: 4px;
   margin-bottom: 28px;
   width: 100%;
   max-width: 360px;
-  border: 1px solid var(--color-surface-container-low);
+  border: 1px solid var(--color-surface-low);
   z-index: 1;
 }
 
@@ -388,7 +388,7 @@ const goAsGuest = () => {
   left: 4px;
   width: calc(50% - 4px);
   height: calc(100% - 8px);
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   border-radius: 1.75rem;
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   z-index: 0;
@@ -415,14 +415,14 @@ const goAsGuest = () => {
   width: 100%;
   padding: 0 20px;
   height: 52px;
-  background: var(--color-surface-container-lowest);
-  border: 1.5px solid var(--color-surface-container-low);
+  background: var(--color-surface-lowest);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 2rem;
   transition: border-color 0.2s, box-shadow 0.2s;
 
   &:focus-within {
-    border-color: var(--color-primary-container);
-    box-shadow: 0 0 0 3px rgba(0, 89, 182, 0.08);
+    border-color: var(--color-primary-soft);
+    box-shadow: 0 0 0 3px rgba(74, 141, 213, 0.08);
   }
 
   &.input-pill-code {
@@ -457,7 +457,7 @@ const goAsGuest = () => {
   padding: 8px 16px;
   border: none;
   border-radius: 1.5rem;
-  background: var(--color-primary-container);
+  background: var(--color-primary-soft);
   color: var(--color-primary);
   font-family: var(--font-sans);
   font-size: 12px;
@@ -487,21 +487,21 @@ const goAsGuest = () => {
   margin-top: 8px;
   border: none;
   border-radius: 2rem;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white;
   font-family: var(--font-sans);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.15em;
   cursor: pointer;
-  box-shadow: 0 12px 32px -8px rgba(0, 89, 182, 0.35);
+  box-shadow: 0 12px 32px -8px rgba(74, 141, 213, 0.35);
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   position: relative;
   overflow: hidden;
 
   &:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 16px 40px -8px rgba(0, 89, 182, 0.45);
+    box-shadow: 0 16px 40px -8px rgba(74, 141, 213, 0.45);
   }
 
   &:active:not(:disabled) {
@@ -538,7 +538,7 @@ const goAsGuest = () => {
 .divider-line {
   flex: 1;
   height: 1px;
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
 }
 
 .divider-text {
@@ -552,9 +552,9 @@ const goAsGuest = () => {
   width: 100%;
   max-width: 360px;
   padding: 14px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 2rem;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   color: var(--color-on-surface-variant);
   font-family: var(--font-sans);
   font-size: 14px;
@@ -564,7 +564,7 @@ const goAsGuest = () => {
   z-index: 1;
 
   &:hover {
-    background: var(--color-surface-container-low);
+    background: var(--color-surface-low);
     border-color: var(--color-primary);
     color: var(--color-primary);
   }

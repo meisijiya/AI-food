@@ -214,7 +214,7 @@ defineExpose({ setPublishPreview, insertEmoji })
   background: none;
   color: var(--color-primary);
 
-  &:hover { background: rgba(0, 89, 182, 0.06); }
+  &:hover { background: rgba(74, 141, 213, 0.06); }
 }
 
 .publish-chip {
@@ -235,7 +235,7 @@ defineExpose({ setPublishPreview, insertEmoji })
 
 /* ===== Share Link Card ===== */
 .share-link-card {
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 2rem;
   padding: 20px 24px;
   border: 1px solid rgba(255, 255, 255, 0.8);
@@ -253,7 +253,7 @@ defineExpose({ setPublishPreview, insertEmoji })
 .share-link-input {
   flex: 1;
   padding: 12px 16px;
-  border: 1px solid var(--color-surface-container-low);
+  border: 1px solid var(--color-surface-low);
   border-radius: 1.25rem;
   background: var(--color-surface);
   font-family: var(--font-sans);
@@ -268,7 +268,7 @@ defineExpose({ setPublishPreview, insertEmoji })
   padding: 12px 20px;
   border: none;
   border-radius: 1.25rem;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white;
   font-family: var(--font-sans);
   font-size: 12px;
@@ -298,7 +298,7 @@ defineExpose({ setPublishPreview, insertEmoji })
 .publish-dialog {
   width: calc(100% - 48px);
   max-width: 400px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 2.5rem;
   padding: 32px 28px;
   position: relative;
@@ -312,7 +312,7 @@ defineExpose({ setPublishPreview, insertEmoji })
   right: -40px;
   width: 180px;
   height: 180px;
-  background: var(--color-primary-container);
+  background: var(--color-primary-soft);
   opacity: 0.06;
   border-radius: 50%;
   filter: blur(40px);
@@ -355,7 +355,7 @@ defineExpose({ setPublishPreview, insertEmoji })
   justify-content: center;
   gap: 6px;
   padding: 12px 8px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 1rem;
   background: none;
   color: var(--color-on-surface-variant);
@@ -371,7 +371,7 @@ defineExpose({ setPublishPreview, insertEmoji })
   }
 
   &.active {
-    background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+    background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
     border-color: transparent;
     color: white;
     svg {
@@ -381,14 +381,14 @@ defineExpose({ setPublishPreview, insertEmoji })
   }
 
   &:not(.active):active {
-    background: var(--color-surface-container-low);
+    background: var(--color-surface-low);
   }
 }
 
 .publish-textarea {
   width: 100%;
   padding: 14px 18px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 1.5rem;
   background: var(--color-surface);
   font-family: var(--font-sans);
@@ -402,7 +402,7 @@ defineExpose({ setPublishPreview, insertEmoji })
 
   &:focus {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(0, 89, 182, 0.08);
+    box-shadow: 0 0 0 3px rgba(74, 141, 213, 0.08);
   }
 
   &::placeholder {
@@ -439,7 +439,7 @@ defineExpose({ setPublishPreview, insertEmoji })
   border-radius: 50%;
   flex-shrink: 0;
   transition: background 0.2s;
-  &:active { background: var(--color-surface-container-low); }
+  &:active { background: var(--color-surface-low); }
 }
 
 .publish-dialog-actions {
@@ -452,7 +452,7 @@ defineExpose({ setPublishPreview, insertEmoji })
 .publish-cancel-btn {
   flex: 1;
   padding: 14px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 1.5rem;
   background: none;
   color: var(--color-on-surface-variant);
@@ -471,17 +471,17 @@ defineExpose({ setPublishPreview, insertEmoji })
   padding: 14px;
   border: none;
   border-radius: 1.5rem;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 89, 182, 0.2);
+  box-shadow: 0 4px 16px rgba(74, 141, 213, 0.2);
   transition: all 0.25s;
 
   &:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(0, 89, 182, 0.3);
+    box-shadow: 0 6px 20px rgba(74, 141, 213, 0.3);
   }
 
   &:disabled {

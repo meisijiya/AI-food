@@ -35,7 +35,7 @@ const emit = defineEmits<{
   padding: 18px;
   border: none;
   border-radius: 2rem;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white;
   font-family: var(--font-sans);
   font-size: 15px;
@@ -43,16 +43,16 @@ const emit = defineEmits<{
   letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
-  box-shadow: 0 12px 32px -8px rgba(0, 89, 182, 0.35);
+  box-shadow: 0 12px 32px -8px rgba(74, 141, 213, 0.35);
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-  &:hover { transform: translateY(-2px); box-shadow: 0 16px 40px -8px rgba(0, 89, 182, 0.45); }
+  &:hover { transform: translateY(-2px); box-shadow: 0 16px 40px -8px rgba(74, 141, 213, 0.45); }
   &:active { transform: translateY(0); }
 }
 
 .ghost-btn {
   width: 100%;
   padding: 16px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 2rem;
   background: transparent;
   color: var(--color-on-surface-variant);
@@ -62,6 +62,6 @@ const emit = defineEmits<{
   letter-spacing: 0.05em;
   cursor: pointer;
   transition: all 0.2s;
-  &:hover { background: var(--color-surface-container-low); }
+  &:hover { background: var(--color-surface-low); }
 }
 </style>

@@ -80,7 +80,7 @@ const emojis = emojiData.list
   align-items: center;
   border-radius: 50%;
   transition: background 0.2s;
-  &:active { background: var(--color-surface-container-low); }
+  &:active { background: var(--color-surface-low); }
 }
 
 .emoji-grid {
@@ -106,7 +106,7 @@ const emojis = emojiData.list
   cursor: pointer;
   transition: background 0.15s, transform 0.1s;
   &:active {
-    background: var(--color-surface-container-low);
+    background: var(--color-surface-low);
     transform: scale(0.9);
   }
 }

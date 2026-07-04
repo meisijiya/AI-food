@@ -345,7 +345,7 @@ onMounted(() => {
   left: -40px;
   width: 240px;
   height: 240px;
-  background: var(--color-primary-container);
+  background: var(--color-primary-soft);
   opacity: 0.12;
 }
 
@@ -381,7 +381,7 @@ onMounted(() => {
   align-items: center;
   gap: 4px;
   padding: 6px 14px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 100px;
   background: none;
   color: var(--color-on-surface-variant);
@@ -392,13 +392,13 @@ onMounted(() => {
   transition: all 0.2s;
 
   &:active {
-    background: var(--color-surface-container-low);
+    background: var(--color-surface-low);
   }
 }
 
 .edit-btn {
   padding: 6px 14px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 100px;
   background: none;
   color: var(--color-on-surface-variant);
@@ -420,7 +420,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 10px 16px;
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   border-radius: 1rem;
   margin-bottom: 12px;
   z-index: 1;
@@ -472,7 +472,7 @@ onMounted(() => {
 .refresh-spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid var(--color-surface-container-low);
+  border: 2px solid var(--color-surface-low);
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -503,7 +503,7 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   padding: 20px 24px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -515,7 +515,7 @@ onMounted(() => {
   }
 
   &.selected {
-    border-color: var(--color-primary-container);
+    border-color: var(--color-primary-soft);
     background: rgba(104, 160, 255, 0.05);
   }
 }
@@ -647,7 +647,7 @@ onMounted(() => {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -676,19 +676,19 @@ onMounted(() => {
   padding: 14px 24px;
   border: none;
   border-radius: 2rem;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white;
   font-family: var(--font-sans);
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 12px 32px -8px rgba(0, 89, 182, 0.35);
+  box-shadow: 0 12px 32px -8px rgba(74, 141, 213, 0.35);
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   margin-bottom: 12px;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 16px 40px -8px rgba(0, 89, 182, 0.45);
+    box-shadow: 0 16px 40px -8px rgba(74, 141, 213, 0.45);
   }
 
   &:active {
@@ -700,7 +700,7 @@ onMounted(() => {
   width: 100%;
   max-width: 300px;
   padding: 14px 24px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 2rem;
   background: none;
   color: var(--color-on-surface-variant);
@@ -711,7 +711,7 @@ onMounted(() => {
   transition: all 0.2s;
 
   &:hover {
-    background: var(--color-surface-container-low);
+    background: var(--color-surface-low);
   }
 
   &:active {

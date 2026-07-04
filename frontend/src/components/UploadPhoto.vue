@@ -178,19 +178,19 @@ async function upload() {
 }
 
 .upload-area {
-  border: 2px dashed var(--color-surface-container-low);
+  border: 2px dashed var(--color-surface-low);
   border-radius: 1.5rem;
   padding: 32px 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   position: relative;
   overflow: hidden;
 
   &:hover {
     border-color: var(--color-primary);
-    background: rgba(0, 89, 182, 0.03);
+    background: rgba(74, 141, 213, 0.03);
   }
 
   &:active {
@@ -200,7 +200,7 @@ async function upload() {
   &.has-preview {
     padding: 8px;
     border-style: solid;
-    border-color: var(--color-surface-container-low);
+    border-color: var(--color-surface-low);
   }
 }
 
@@ -215,7 +215,7 @@ async function upload() {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -260,7 +260,7 @@ async function upload() {
 .progress-bar {
   flex: 1;
   height: 4px;
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   border-radius: 100px;
   overflow: hidden;
 }
@@ -290,19 +290,19 @@ async function upload() {
   padding: 14px;
   border: none;
   border-radius: 2rem;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white;
   font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.05em;
   cursor: pointer;
-  box-shadow: 0 8px 24px -6px rgba(0, 89, 182, 0.3);
+  box-shadow: 0 8px 24px -6px rgba(74, 141, 213, 0.3);
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 
   &:hover {
     transform: translateY(-1px);
-    box-shadow: 0 12px 32px -6px rgba(0, 89, 182, 0.4);
+    box-shadow: 0 12px 32px -6px rgba(74, 141, 213, 0.4);
   }
 
   &:active {

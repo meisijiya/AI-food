@@ -91,7 +91,7 @@ const emit = defineEmits<{
 .feed-card {
   break-inside: avoid;
   margin-bottom: 10px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 1.25rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -145,7 +145,7 @@ const emit = defineEmits<{
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(0, 89, 182, 0.08);
+  background: rgba(74, 141, 213, 0.08);
   color: var(--color-primary);
   white-space: nowrap;
 }
@@ -187,7 +187,7 @@ const emit = defineEmits<{
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   display: flex;
   align-items: center;
   justify-content: center;

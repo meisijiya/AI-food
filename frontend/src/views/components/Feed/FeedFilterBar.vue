@@ -94,7 +94,7 @@ function apply() {
 .filter-panel {
   width: calc(100% - 48px);
   max-width: 400px;
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 2rem;
   padding: 28px 24px;
 }
@@ -126,7 +126,7 @@ function apply() {
 .filter-select {
   width: 100%;
   padding: 12px 16px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 1rem;
   background: var(--color-surface);
   font-family: var(--font-sans);
@@ -152,7 +152,7 @@ function apply() {
 .filter-reset {
   flex: 1;
   padding: 12px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 1rem;
   background: none;
   color: var(--color-on-surface-variant);
@@ -168,7 +168,7 @@ function apply() {
   border-radius: 1rem;
   background: linear-gradient(
     135deg,
-    var(--color-primary-container),
+    var(--color-primary-soft),
     var(--color-primary)
   );
   color: white;

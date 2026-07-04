@@ -63,7 +63,7 @@ const emit = defineEmits<{
   transition: all 0.2s;
 
   &:hover {
-    background: rgba(0, 89, 182, 0.06);
+    background: rgba(74, 141, 213, 0.06);
   }
 
   &:active {
@@ -77,10 +77,10 @@ const emit = defineEmits<{
 }
 
 .share-link-card {
-  background: var(--color-surface-container-lowest);
+  background: var(--color-surface-lowest);
   border-radius: 1.25rem;
   padding: 16px 20px;
-  border: 1px solid var(--color-surface-container-low);
+  border: 1px solid var(--color-surface-low);
   width: 100%;
 }
 
@@ -107,7 +107,7 @@ const emit = defineEmits<{
 .share-link-input {
   flex: 1;
   padding: 10px 14px;
-  border: 1px solid var(--color-surface-container-low);
+  border: 1px solid var(--color-surface-low);
   border-radius: 1rem;
   background: var(--color-surface);
   font-family: var(--font-sans);
@@ -122,7 +122,7 @@ const emit = defineEmits<{
   padding: 10px 16px;
   border: none;
   border-radius: 1rem;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white;
   font-family: var(--font-sans);
   font-size: 12px;

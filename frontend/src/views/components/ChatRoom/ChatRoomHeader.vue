@@ -31,8 +31,8 @@ const emit = defineEmits<{
   align-items: center;
   gap: 12px;
   padding: 40px 12px 12px;
-  background: var(--color-surface-container-lowest);
-  border-bottom: 1px solid var(--color-surface-container-low);
+  background: var(--color-surface-lowest);
+  border-bottom: 1px solid var(--color-surface-low);
   flex-shrink: 0;
 }
 
@@ -47,7 +47,7 @@ const emit = defineEmits<{
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  &:active { background: var(--color-surface-container-low); }
+  &:active { background: var(--color-surface-low); }
 }
 
 .header-info {
@@ -74,6 +74,6 @@ const emit = defineEmits<{
   border-radius: 50%;
   flex-shrink: 0;
   transition: background 0.2s;
-  &:active { background: var(--color-surface-container-low); }
+  &:active { background: var(--color-surface-low); }
 }
 </style>

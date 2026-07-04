@@ -465,7 +465,7 @@ onMounted(async () => {
   right: -40px;
   width: 240px;
   height: 240px;
-  background: var(--color-primary-container);
+  background: var(--color-primary-soft);
   opacity: 0.1;
 }
 
@@ -480,7 +480,7 @@ onMounted(async () => {
 .spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid var(--color-surface-container-low);
+  border: 3px solid var(--color-surface-low);
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -501,7 +501,7 @@ onMounted(async () => {
   font-family: var(--font-sans); font-style: normal;
   font-size: 11px; font-weight: 700;
   padding: 4px 10px; border-radius: 6px;
-  background: rgba(0, 89, 182, 0.08);
+  background: rgba(74, 141, 213, 0.08);
   color: var(--color-primary);
 }
 
@@ -556,7 +556,7 @@ onMounted(async () => {
 
 .param-item {
   display: flex; flex-direction: column; gap: 2px;
-  padding: 12px 16px; background: var(--color-surface-container-lowest);
+  padding: 12px 16px; background: var(--color-surface-lowest);
   border-radius: 1.25rem; border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
@@ -575,12 +575,12 @@ onMounted(async () => {
 
 .user-avatar {
   width: 40px; height: 40px; border-radius: 50%;
-  object-fit: cover; border: 2px solid var(--color-surface-container-low);
+  object-fit: cover; border: 2px solid var(--color-surface-low);
 }
 
 .user-avatar-placeholder {
   width: 40px; height: 40px; border-radius: 50%;
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   display: flex; align-items: center; justify-content: center;
   color: var(--color-on-surface-variant);
 }
@@ -607,8 +607,8 @@ onMounted(async () => {
   transition: all 0.2s;
   &:active { transform: scale(0.95); }
   &.following {
-    background: var(--color-surface-container-low);
-    border-color: var(--color-surface-container-low);
+    background: var(--color-surface-low);
+    border-color: var(--color-surface-low);
     color: var(--color-on-surface-variant);
   }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -616,7 +616,7 @@ onMounted(async () => {
 
 .like-btn {
   display: flex; align-items: center; gap: 4px;
-  padding: 8px 16px; border: 1.5px solid var(--color-surface-container-low);
+  padding: 8px 16px; border: 1.5px solid var(--color-surface-low);
   border-radius: 100px; background: none;
   color: var(--color-on-surface-variant); font-size: 13px; font-weight: 600;
   cursor: pointer; transition: all 0.2s;
@@ -629,7 +629,7 @@ onMounted(async () => {
 
 /* Divider */
 .divider {
-  height: 1px; background: var(--color-surface-container-low);
+  height: 1px; background: var(--color-surface-low);
   margin: 20px 0; z-index: 1; position: relative;
 }
 
@@ -653,7 +653,7 @@ onMounted(async () => {
 
 .comment-avatar-placeholder {
   width: 32px; height: 32px; border-radius: 50%;
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-low);
   display: flex; align-items: center; justify-content: center;
   color: var(--color-on-surface-variant); flex-shrink: 0;
 }
@@ -693,7 +693,7 @@ onMounted(async () => {
 
 .load-more-btn {
   display: block; width: 100%; padding: 12px;
-  border: 1px solid var(--color-surface-container-low);
+  border: 1px solid var(--color-surface-low);
   border-radius: 1rem; background: none;
   color: var(--color-primary); font-size: 13px; font-weight: 600;
   cursor: pointer; margin-top: 12px;
@@ -706,14 +706,14 @@ onMounted(async () => {
 /* Guest comments prompt */
 .guest-comments-prompt {
   display: flex; flex-direction: column; align-items: center;
-  padding: 40px 20px; background: var(--color-surface-container-lowest);
+  padding: 40px 20px; background: var(--color-surface-lowest);
   border-radius: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.8);
   margin-top: 16px; z-index: 1; position: relative;
 }
 
 .guest-comments-icon {
   width: 64px; height: 64px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   display: flex; align-items: center; justify-content: center;
   color: white; margin-bottom: 16px;
 }
@@ -725,7 +725,7 @@ onMounted(async () => {
 
 .guest-comments-btn {
   padding: 10px 24px; border: none; border-radius: 100px;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white; font-size: 13px; font-weight: 600; cursor: pointer;
   transition: all 0.2s;
   &:hover {
@@ -740,8 +740,8 @@ onMounted(async () => {
 .comment-input-bar {
   position: fixed; bottom: 0; left: 0; right: 0;
   display: flex; gap: 8px; padding: 12px 16px;
-  background: var(--color-surface-container-lowest);
-  border-top: 1px solid var(--color-surface-container-low);
+  background: var(--color-surface-lowest);
+  border-top: 1px solid var(--color-surface-low);
   z-index: 100;
 }
 
@@ -751,8 +751,8 @@ onMounted(async () => {
   background: none; border: none; color: var(--color-on-surface-variant);
   cursor: pointer; border-radius: 50%; flex-shrink: 0;
   transition: background 0.2s, color 0.2s;
-  &:active { background: var(--color-surface-container-low); }
-  &.active { color: var(--color-primary); background: rgba(0, 89, 182, 0.08); }
+  &:active { background: var(--color-surface-low); }
+  &.active { color: var(--color-primary); background: rgba(74, 141, 213, 0.08); }
 }
 
 .plus-btn-comment {
@@ -761,10 +761,10 @@ onMounted(async () => {
   background: none; border: none; color: var(--color-on-surface-variant);
   cursor: pointer; border-radius: 50%; flex-shrink: 0;
   transition: background 0.2s, transform 0.2s, color 0.2s;
-  &:active { background: var(--color-surface-container-low); }
+  &:active { background: var(--color-surface-low); }
   &.active {
     color: var(--color-primary);
-    background: rgba(0, 89, 182, 0.08);
+    background: rgba(74, 141, 213, 0.08);
     svg { transform: rotate(45deg); }
   }
 }
@@ -787,7 +787,7 @@ onMounted(async () => {
 
 .comment-input {
   flex: 1; padding: 10px 16px;
-  border: 1.5px solid var(--color-surface-container-low);
+  border: 1.5px solid var(--color-surface-low);
   border-radius: 100px; background: var(--color-surface);
   font-family: var(--font-sans); font-size: 14px;
   color: var(--color-on-surface); outline: none;
@@ -797,7 +797,7 @@ onMounted(async () => {
 
 .comment-send {
   padding: 10px 20px; border: none; border-radius: 100px;
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white; font-size: 13px; font-weight: 700; cursor: pointer;
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
@@ -849,7 +849,7 @@ onMounted(async () => {
   cursor: pointer;
   transition: background 0.2s, transform 0.15s;
   &:active {
-    background: rgba(0, 89, 182, 0.08);
+    background: rgba(74, 141, 213, 0.08);
     transform: scale(0.95);
   }
 }
@@ -858,7 +858,7 @@ onMounted(async () => {
   width: 48px; height: 48px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   &.attach-photo-icon {
-    background: linear-gradient(135deg, rgba(0, 89, 182, 0.12), rgba(0, 89, 182, 0.06));
+    background: linear-gradient(135deg, rgba(74, 141, 213, 0.12), rgba(74, 141, 213, 0.06));
     color: var(--color-primary);
   }
 }
