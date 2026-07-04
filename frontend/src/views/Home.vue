@@ -1,9 +1,5 @@
 <template>
-  <div class="home-container">
-    <!-- Decorative background glows -->
-    <div class="bg-glow bg-glow-1"></div>
-    <div class="bg-glow bg-glow-2"></div>
-
+  <div class="home-container bg-winter-sunrise">
     <!-- Pending photo check-in notification -->
     <div
       v-if="
@@ -38,24 +34,25 @@
       </button>
     </div>
 
-    <!-- Hero Section -->
-    <div class="hero animate-fade-up">
-      <div class="hero-badge animate-fade-up delay-100 animate-start-hidden">
-        <span>AI 驱动</span>
-      </div>
-      <h1 class="hero-title animate-fade-up delay-200 animate-start-hidden">
-        <em>为你推荐</em><br />恰到好处的美味
-      </h1>
-      <p class="hero-subtitle animate-fade-up delay-300 animate-start-hidden">
-        通过智能对话，了解你的时间、心情与偏好<br />
-        在万千美食中找到最适合你的那一道
-      </p>
+    <!-- Hero Section · RecommendationCard -->
+    <RecommendationCard
+      caption="AI 驱动"
+      title="为你推荐恰到好处的美味"
+      subtitle="通过智能对话，了解你的时间、心情与偏好，在万千美食中找到最适合你的那一道。"
+      class="hero-card animate-fade-up animate-start-hidden"
+    />
+
+    <!-- Mood Chips · 心情偏好快捷入口 -->
+    <div class="mood-row animate-fade-up delay-100 animate-start-hidden">
+      <MoodChip label="热汤面" :selected="mood === 'hot'" @toggle="setMood('hot')" />
+      <MoodChip label="暖心菜" :selected="mood === 'warm'" @toggle="setMood('warm')" />
+      <MoodChip label="夜宵" :selected="mood === 'late'" @toggle="setMood('late')" />
     </div>
 
-    <!-- Feature Cards -->
-    <div class="features animate-fade-up delay-400 animate-start-hidden">
+    <!-- Feature Cards · product features (informational) -->
+    <div class="features animate-fade-up delay-200 animate-start-hidden">
       <div class="feature-card">
-        <div class="feature-icon">
+        <div class="feature-icon icon-blue">
           <svg
             width="20"
             height="20"
@@ -77,7 +74,7 @@
         </div>
       </div>
       <div class="feature-card">
-        <div class="feature-icon icon-orange">
+        <div class="feature-icon icon-cyan">
           <svg
             width="20"
             height="20"
@@ -98,7 +95,7 @@
         </div>
       </div>
       <div class="feature-card">
-        <div class="feature-icon icon-green">
+        <div class="feature-icon icon-warm">
           <svg
             width="20"
             height="20"
@@ -122,16 +119,15 @@
     </div>
 
     <!-- CTA Button -->
-    <div class="cta-area animate-fade-up delay-500 animate-start-hidden">
+    <div class="cta-area animate-fade-up delay-300 animate-start-hidden">
       <button
         v-if="isGuest"
         class="cta-button guest-cta"
         @click="goToLogin"
-        style="background-color: #1677ff"
       >
         <span>登录后开始体验</span>
       </button>
-      <button v-else class="cta-button" @click="startChat" :disabled="loading">
+      <button v-else class="cta-button btn-primary-gradient" @click="startChat" :disabled="loading">
         <span v-if="loading" class="cta-loading"></span>
         <span v-else>开始美食之旅</span>
       </button>
@@ -172,16 +168,24 @@ import { conversationApi, recordApi } from "@/api";
 import { useChatStore } from "@/stores/chat";
 import { useAuthStore } from "@/stores/auth";
 import { showError } from "@/utils/toast";
+import RecommendationCard from "@/components/ui/RecommendationCard.vue";
+import MoodChip from "@/components/ui/MoodChip.vue";
+
 const router = useRouter();
 const chatStore = useChatStore();
 const authStore = useAuthStore();
 const loading = ref(false);
 const showConfirmDialog = ref(false);
 const pendingRecommendation = ref<any>(null);
+const mood = ref<"hot" | "warm" | "late" | null>(null);
 const version = import.meta.env.VITE_VERSION || "1.0.0";
 const releaseDate = import.meta.env.VITE_TIME || "未知日期";
 
 const isGuest = computed(() => authStore.isGuest);
+
+function setMood(value: "hot" | "warm" | "late") {
+  mood.value = mood.value === value ? null : value;
+}
 
 function goToLogin() {
   router.push("/login");
@@ -246,114 +250,45 @@ const goToResult = () => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-surface);
   padding: 40px 24px 60px;
   position: relative;
   overflow: hidden;
 }
 
-/* Background decorative glows */
-.bg-glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  pointer-events: none;
-  animation: sanctuary-glow-pulse 6s ease-in-out infinite;
-}
-
-.bg-glow-1 {
-  top: -80px;
-  right: -60px;
-  width: 280px;
-  height: 280px;
-  background: var(--color-cyan);
-  opacity: 0.15;
-}
-
-.bg-glow-2 {
-  bottom: 100px;
-  left: -80px;
-  width: 240px;
-  height: 240px;
-  background: var(--color-primary-soft);
-  opacity: 0.1;
-  animation-delay: 3s;
-}
-
-/* Hero */
-.hero {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  padding: 40px 0;
+/* Hero card */
+.hero-card {
+  margin: 40px 0 var(--space-6);
   z-index: 1;
 }
 
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 16px;
-  background: var(--color-surface-low);
-  border-radius: 100px;
-  margin-bottom: 28px;
-  border: 1px solid var(--color-surface-lowest);
-
-  span {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.2em;
-    color: var(--color-primary);
-  }
-}
-
-.hero-title {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 40px;
-  font-weight: 400;
-  line-height: 1.2;
-  color: var(--color-on-surface);
-  margin-bottom: 20px;
-
-  em {
-    font-style: italic;
-    color: var(--color-primary);
-  }
-}
-
-.hero-subtitle {
-  font-size: 14px;
-  line-height: 1.8;
-  color: var(--color-on-surface-variant);
-  max-width: 320px;
+/* Mood chips row */
+.mood-row {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-8);
+  z-index: 1;
+  flex-wrap: wrap;
 }
 
 /* Feature cards */
 .features {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 40px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-10);
   z-index: 1;
 }
 
 .feature-card {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px;
+  gap: var(--space-4);
+  padding: var(--space-5);
   background: var(--color-surface-lowest);
-  border-radius: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  transition:
-    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.3s ease;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-surface-low);
+  box-shadow: var(--shadow-xs);
+  transition: transform var(--dur-base) var(--ease-out-soft), box-shadow var(--dur-base) var(--ease-out-soft);
 
   &:active {
     transform: scale(0.98);
@@ -363,34 +298,23 @@ const goToResult = () => {
 .feature-icon {
   width: 44px;
   height: 44px;
-  border-radius: 1rem;
-  background: linear-gradient(
-    135deg,
-    rgba(74, 141, 213, 0.08),
-    rgba(104, 160, 255, 0.12)
-  );
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-primary);
   flex-shrink: 0;
 
-  &.icon-orange {
-    background: linear-gradient(
-      135deg,
-      rgba(255, 152, 0, 0.08),
-      rgba(255, 183, 77, 0.12)
-    );
-    color: #f57c00;
+  &.icon-blue {
+    background: rgba(74, 141, 213, 0.10);
+    color: var(--color-primary);
   }
-
-  &.icon-green {
-    background: linear-gradient(
-      135deg,
-      rgba(76, 175, 80, 0.08),
-      rgba(129, 199, 132, 0.12)
-    );
-    color: #388e3c;
+  &.icon-cyan {
+    background: rgba(140, 225, 243, 0.18);
+    color: var(--color-cyan-deep);
+  }
+  &.icon-warm {
+    background: rgba(232, 133, 90, 0.10);
+    color: var(--color-accent-warm);
   }
 }
 
@@ -415,29 +339,25 @@ const goToResult = () => {
 .pending-notification {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
   background: var(--color-surface-lowest);
-  border-radius: 1.5rem;
+  border-radius: var(--radius-xl);
   border: 1px solid var(--color-surface-low);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-6);
   z-index: 1;
 }
 
 .pending-icon {
   width: 40px;
   height: 40px;
-  border-radius: 1rem;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 152, 0, 0.08),
-    rgba(255, 183, 77, 0.12)
-  );
+  border-radius: var(--radius-lg);
+  background: rgba(232, 133, 90, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #f57c00;
+  color: var(--color-accent-warm);
   flex-shrink: 0;
 }
 
@@ -454,16 +374,16 @@ const goToResult = () => {
 
 .pending-action {
   flex-shrink: 0;
-  padding: 8px 16px;
+  padding: var(--space-2) var(--space-4);
   border: none;
-  border-radius: 100px;
+  border-radius: var(--radius-pill);
   background: var(--color-primary);
-  color: white;
+  color: var(--color-on-primary);
   font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--dur-fast) var(--ease-out-soft);
 
   &:hover {
     opacity: 0.9;
@@ -477,23 +397,23 @@ const goToResult = () => {
 .dialog-overlay {
   position: fixed;
   inset: 0;
-  z-index: 100;
-  background: rgba(0, 0, 0, 0.4);
+  z-index: var(--z-dialog);
+  background: rgba(11, 15, 16, 0.4);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: var(--space-6);
 }
 
 .dialog-card {
   width: 100%;
   max-width: 340px;
-  background: var(--color-surface);
-  border-radius: 2rem;
-  padding: 32px 28px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.15);
+  background: var(--color-surface-lowest);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-8) var(--space-7);
+  box-shadow: var(--shadow-xl);
 }
 
 .dialog-title {
@@ -502,39 +422,35 @@ const goToResult = () => {
   font-size: 20px;
   font-weight: 500;
   color: var(--color-on-surface);
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 
 .dialog-desc {
   font-size: 14px;
   color: var(--color-on-surface-variant);
-  margin-bottom: 28px;
+  margin-bottom: var(--space-7);
 }
 
 .dialog-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--space-2);
 }
 
 .dialog-btn {
   flex: 1;
-  padding: 14px 16px;
+  padding: var(--space-3) var(--space-4);
   border: none;
-  border-radius: 1.5rem;
+  border-radius: var(--radius-xl);
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--dur-fast) var(--ease-out-soft);
 
   &.primary {
-    background: linear-gradient(
-      135deg,
-      var(--color-primary-soft),
-      var(--color-primary)
-    );
-    color: white;
-    box-shadow: 0 8px 24px -6px rgba(74, 141, 213, 0.3);
+    background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
+    color: var(--color-on-primary);
+    box-shadow: var(--shadow-glow);
 
     &:hover {
       transform: translateY(-1px);
@@ -554,9 +470,8 @@ const goToResult = () => {
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.25s ease;
+  transition: opacity var(--dur-base) ease;
 }
-
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
@@ -564,29 +479,22 @@ const goToResult = () => {
 
 .cta-button {
   width: 100%;
-  padding: 18px;
+  padding: var(--space-5);
   border: none;
-  border-radius: 2rem;
-  background: linear-gradient(
-    135deg,
-    var(--color-primary-soft),
-    var(--color-primary)
-  );
-  color: white;
+  border-radius: var(--radius-2xl);
+  color: var(--color-on-primary);
   font-family: var(--font-sans);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
-  box-shadow: 0 12px 32px -8px rgba(74, 141, 213, 0.35);
-  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-  position: relative;
-  overflow: hidden;
+  box-shadow: var(--shadow-glow);
+  transition: all var(--dur-base) var(--ease-out-soft);
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 16px 40px -8px rgba(74, 141, 213, 0.45);
+    box-shadow: var(--shadow-lg);
   }
 
   &:active {
@@ -599,12 +507,8 @@ const goToResult = () => {
   }
 
   &.guest-cta {
-    background: linear-gradient(
-      135deg,
-      var(--color-cyan),
-      var(--color-secondary-container)
-    );
-    box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(135deg, var(--color-cyan), var(--color-primary-soft));
+    box-shadow: var(--shadow-md);
   }
 }
 
@@ -613,15 +517,13 @@ const goToResult = () => {
   width: 20px;
   height: 20px;
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
+  border-top-color: var(--color-on-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 @media (min-width: 640px) {
@@ -629,20 +531,16 @@ const goToResult = () => {
     padding: 60px 40px 80px;
   }
 
-  .hero-title {
-    font-size: 52px;
-  }
-
   .features {
     flex-direction: row;
-    gap: 16px;
+    gap: var(--space-4);
   }
 
   .feature-card {
     flex: 1;
     flex-direction: column;
     text-align: center;
-    padding: 28px 20px;
+    padding: var(--space-7) var(--space-5);
   }
 
   .cta-button {
@@ -657,16 +555,17 @@ const goToResult = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 8px 16px;
-  margin-bottom: 16px;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-4);
   z-index: 1;
 }
 
 .version-badge {
-  padding: 4px 10px;
+  padding: var(--space-1) var(--space-2);
   background: var(--color-surface-low);
-  border-radius: 100px;
+  border-radius: var(--radius-pill);
   font-size: 11px;
   font-weight: 700;
   color: var(--color-primary);

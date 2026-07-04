@@ -205,8 +205,8 @@ onUnmounted(() => {
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 
   &.active {
-    .nav-icon { color: #22d3ee; }
-    .nav-label { color: #22d3ee; }
+    .nav-icon { color: var(--color-nav-active); }
+    .nav-label { color: var(--color-nav-active); }
   }
 
   &:not(.active) {
@@ -239,7 +239,7 @@ onUnmounted(() => {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #22d3ee;
+  background: var(--color-nav-active);
 }
 
 /* ============================================
