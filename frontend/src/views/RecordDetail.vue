@@ -408,11 +408,11 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
   margin-bottom: 24px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(74, 141, 213, 0.06);
+  box-shadow: 0 8px 32px /* ponytail: rgba(74, 141, 213, 0.06) */ rgba(74, 141, 213, 0.06);
   transition: box-shadow 0.4s ease, transform 0.4s var(--ease-out-soft);
 
   &:hover {
-    box-shadow: 0 12px 40px rgba(74, 141, 213, 0.1);
+    box-shadow: 0 12px 40px /* ponytail: rgba(74, 141, 213, 0.1) */ rgba(74, 141, 213, 0.1);
     transform: translateY(-2px);
   }
 }

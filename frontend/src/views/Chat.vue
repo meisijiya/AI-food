@@ -392,7 +392,7 @@ onUnmounted(() => {
 }
 
 .status-dot {
-  width: 6px; height: 6px; border-radius: 50%; background: #ccc; transition: background 0.3s;
+  width: 6px; height: 6px; border-radius: 50%; background: /* ponytail: #ccc */ #ccc; transition: background 0.3s;
   &.active { background: var(--color-success-bright); box-shadow: 0 0 8px rgba(34,197,94,0.4); }
 }
 
@@ -484,7 +484,7 @@ onUnmounted(() => {
   background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white; display: flex; align-items: center; justify-content: center;
   cursor: pointer; flex-shrink: 0; transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(74, 141, 213,0.25);
+  box-shadow: 0 4px 12px /* ponytail: rgba(74, 141, 213,0.25) */ rgba(74, 141, 213,0.25);
   &:hover { transform: scale(1.05); }
   &:active { transform: scale(0.95); }
   &:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
@@ -496,7 +496,7 @@ onUnmounted(() => {
 
 .sanctuary-overlay {
   position: fixed; inset: 0; z-index: 100;
-  background: rgba(11, 15, 16, 0.4); backdrop-filter: blur(8px);
+  background: /* ponytail: rgba(11, 15, 16, 0.4) */ rgba(11, 15, 16, 0.4); backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex; align-items: flex-end; justify-content: center;
 }

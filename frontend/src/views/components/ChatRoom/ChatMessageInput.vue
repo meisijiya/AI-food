@@ -173,7 +173,7 @@ defineExpose({
   text-align: center;
   font-size: 12px;
   color: var(--color-danger-bright);
-  background: rgba(239, 68, 68, 0.06);
+  background: var(--color-danger-06);
   flex-shrink: 0;
 }
 
@@ -206,7 +206,7 @@ defineExpose({
   transition: background 0.2s, color 0.2s;
   &:active { background: var(--color-surface-low); }
   &:disabled { opacity: 0.3; cursor: not-allowed; }
-  &.active { color: var(--color-primary); background: rgba(74, 141, 213, 0.08); }
+  &.active { color: var(--color-primary); background: var(--focus-ring-color); }
 }
 
 .plus-btn {
@@ -226,7 +226,7 @@ defineExpose({
   &:disabled { opacity: 0.3; cursor: not-allowed; }
   &.active {
     color: var(--color-primary);
-    background: rgba(74, 141, 213, 0.08);
+    background: var(--focus-ring-color);
     svg { transform: rotate(45deg); }
   }
 }
@@ -267,11 +267,11 @@ defineExpose({
 
 /* Attachment panel */
 .attachment-panel {
-  background: rgba(255, 255, 255, 0.6);
+  background: /* ponytail: rgba(255, 255, 255, 0.6) */ rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 1.5rem 1.5rem 0 0;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-on-inverse-overlay-sm);
   box-shadow: var(--shadow-flat-bottom-sm);
   flex-shrink: 0;
 }
@@ -281,7 +281,7 @@ defineExpose({
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  border-bottom: 1px solid var(--color-on-inverse-overlay-md);
 }
 
 .attachment-panel-title {
@@ -323,12 +323,12 @@ defineExpose({
   padding: 16px 24px;
   border: none;
   border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--color-on-inverse-overlay-fg-strong);
   cursor: pointer;
   transition: background 0.2s, transform 0.15s;
 
   &:active:not(:disabled) {
-    background: rgba(74, 141, 213, 0.08);
+    background: var(--focus-ring-color);
     transform: scale(0.95);
   }
 
@@ -347,13 +347,13 @@ defineExpose({
   justify-content: center;
 
   &.photo-icon {
-    background: linear-gradient(135deg, rgba(74, 141, 213, 0.12), rgba(74, 141, 213, 0.06));
+    background: linear-gradient(135deg, /* ponytail: primary 12% 渐变起点，无 token */ rgba(74, 141, 213, 0.12), var(--color-primary-06));
     color: var(--color-primary);
   }
 
   &.file-icon {
-    background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(34, 211, 238, 0.06));
-    color: #0891b2;
+    background: linear-gradient(135deg, /* ponytail: rgba(34, 211, 238, 0.15) */ rgba(34, 211, 238, 0.15), rgba(34, 211, 238, 0.06));
+    color: /* ponytail: #0891b2 */ #0891b2;
   }
 }
 

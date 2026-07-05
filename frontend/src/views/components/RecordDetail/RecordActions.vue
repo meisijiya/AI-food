@@ -214,7 +214,7 @@ defineExpose({ setPublishPreview, insertEmoji })
   background: none;
   color: var(--color-primary);
 
-  &:hover { background: rgba(74, 141, 213, 0.06); }
+  &:hover { background: var(--color-primary-06); }
 }
 
 .publish-chip {
@@ -222,15 +222,15 @@ defineExpose({ setPublishPreview, insertEmoji })
   background: none;
   color: var(--color-cyan-deep);
 
-  &:hover { background: rgba(6, 182, 212, 0.06); }
+  &:hover { background: /* ponytail: rgba(6, 182, 212, 0.06) */ rgba(6, 182, 212, 0.06); }
 }
 
 .unpublish-chip {
   border: 1.5px solid var(--color-danger);
-  background: rgba(200, 52, 74, 0.04);
+  background: /* ponytail: rgba(200, 52, 74, 0.04) */ rgba(200, 52, 74, 0.04);
   color: var(--color-danger);
 
-  &:hover { background: rgba(200, 52, 74, 0.08); }
+  &:hover { background: /* ponytail: rgba(200, 52, 74, 0.08) */ rgba(200, 52, 74, 0.08); }
 }
 
 /* ===== Share Link Card ===== */
@@ -238,7 +238,7 @@ defineExpose({ setPublishPreview, insertEmoji })
   background: var(--color-surface-lowest);
   border-radius: 2rem;
   padding: 20px 24px;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-on-inverse-overlay-sm);
   box-shadow: var(--shadow-flat-sm);
   margin-bottom: 24px;
 }
@@ -286,7 +286,7 @@ defineExpose({ setPublishPreview, insertEmoji })
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(11, 15, 16, 0.7);
+  background: /* ponytail: rgba(11, 15, 16, 0.7) */ rgba(11, 15, 16, 0.7);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   display: flex;
@@ -402,7 +402,7 @@ defineExpose({ setPublishPreview, insertEmoji })
 
   &:focus {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(74, 141, 213, 0.08);
+    box-shadow: 0 0 0 3px var(--focus-ring-color);
   }
 
   &::placeholder {
@@ -476,12 +476,12 @@ defineExpose({ setPublishPreview, insertEmoji })
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(74, 141, 213, 0.2);
+  box-shadow: 0 4px 16px /* ponytail: rgba(74, 141, 213, 0.2) */ rgba(74, 141, 213, 0.2);
   transition: all 0.25s;
 
   &:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(74, 141, 213, 0.3);
+    box-shadow: 0 6px 20px /* ponytail: rgba(74, 141, 213, 0.3) */ rgba(74, 141, 213, 0.3);
   }
 
   &:disabled {

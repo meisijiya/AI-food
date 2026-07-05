@@ -124,7 +124,7 @@ function handleUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
   overflow: hidden;
   border-radius: 2rem;
   background: var(--color-surface-lowest);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-on-inverse-overlay-sm);
   box-shadow: var(--shadow-flat-md);
 }
 
@@ -176,14 +176,14 @@ function handleUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
   justify-content: center;
   cursor: pointer;
   transition: all 0.25s;
-  background: rgba(255, 255, 255, 0.85);
+  background: /* ponytail: rgba(255, 255, 255, 0.85) */ rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: var(--color-on-surface);
   box-shadow: var(--shadow-flat-sm);
 
   &:hover {
-    background: rgba(255, 255, 255, 0.95);
+    background: /* ponytail: rgba(255, 255, 255, 0.95) */ rgba(255, 255, 255, 0.95);
     transform: scale(1.08);
   }
 
@@ -193,7 +193,7 @@ function handleUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
 
   &.delete {
     color: var(--color-danger-bright);
-    &:hover { background: rgba(255, 240, 240, 0.95); }
+    &:hover { background: /* ponytail: rgba(255, 240, 240, 0.95) */ rgba(255, 240, 240, 0.95); }
   }
 }
 
@@ -202,7 +202,7 @@ function handleUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(11, 15, 16, 0.7);
+  background: /* ponytail: rgba(11, 15, 16, 0.7) */ rgba(11, 15, 16, 0.7);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   display: flex;
@@ -233,7 +233,7 @@ function handleUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
   height: 40px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--color-on-inverse-overlay-md);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: white;
@@ -244,7 +244,7 @@ function handleUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
   transition: all 0.2s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--color-on-inverse-overlay-md);
     transform: scale(1.1);
   }
 }

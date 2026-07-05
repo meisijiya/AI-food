@@ -104,15 +104,15 @@ function onUploaded(data: Photo) {
   transition: all 0.2s;
 
   &.replace {
-    background: rgba(74, 141, 213, 0.08);
+    background: var(--focus-ring-color);
     color: var(--color-primary);
-    &:active { background: rgba(74, 141, 213, 0.15); }
+    &:active { background: /* ponytail: rgba(74, 141, 213, 0.15) */ rgba(74, 141, 213, 0.15); }
   }
 
   &.delete {
-    background: rgba(239, 68, 68, 0.08);
+    background: var(--color-danger-bright);
     color: var(--color-danger-bright);
-    &:active { background: rgba(239, 68, 68, 0.15); }
+    &:active { background: var(--color-danger-bright); }
   }
 }
 
@@ -173,7 +173,7 @@ function onUploaded(data: Photo) {
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--color-on-inverse-overlay-md);
   color: white;
   display: flex;
   align-items: center;
@@ -182,7 +182,7 @@ function onUploaded(data: Photo) {
   transition: background 0.2s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--color-on-inverse-overlay-md);
   }
 }
 

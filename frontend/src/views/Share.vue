@@ -295,7 +295,7 @@ onMounted(fetchShare)
   font-weight: 700;
   letter-spacing: 0.05em;
   text-decoration: none;
-  box-shadow: 0 8px 24px -6px rgba(74, 141, 213, 0.4);
+  box-shadow: 0 8px 24px -6px /* ponytail: rgba(74, 141, 213, 0.4) */ rgba(74, 141, 213, 0.4);
   white-space: nowrap;
   transition: all 0.2s;
   &:active { transform: scale(0.96); }
@@ -361,7 +361,7 @@ onMounted(fetchShare)
 }
 
 .reason-text {
-  font-size: 14px; line-height: 1.8; color: rgba(255, 255, 255, 0.65);
+  font-size: 14px; line-height: 1.8; color: /* ponytail: rgba(255, 255, 255, 0.65) */ rgba(255, 255, 255, 0.65);
   position: relative; z-index: 1;
 }
 

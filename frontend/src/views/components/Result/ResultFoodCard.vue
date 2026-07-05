@@ -37,7 +37,7 @@ defineProps<{
   right: -40px;
   width: 160px;
   height: 160px;
-  background: rgba(140, 225, 243, 0.08);
+  background: /* ponytail: rgba(140, 225, 243, 0.08) */ rgba(140, 225, 243, 0.08);
   border-radius: 50%;
   filter: blur(40px);
 }
@@ -55,7 +55,7 @@ defineProps<{
 .food-reason {
   font-size: 14px;
   line-height: 1.8;
-  color: rgba(255, 255, 255, 0.65);
+  color: /* ponytail: rgba(255, 255, 255, 0.65) */ rgba(255, 255, 255, 0.65);
   position: relative;
   z-index: 1;
 }

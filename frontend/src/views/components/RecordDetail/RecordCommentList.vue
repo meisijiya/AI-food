@@ -148,7 +148,7 @@ defineExpose({ onSaveSuccess, onSaveError })
   padding: 20px 24px;
   background: var(--color-surface-lowest);
   border-radius: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-on-inverse-overlay-sm);
   box-shadow: var(--shadow-flat-sm);
 }
 
@@ -166,7 +166,7 @@ defineExpose({ onSaveSuccess, onSaveError })
   height: 36px;
   border: none;
   border-radius: 50%;
-  background: rgba(74, 141, 213, 0.06);
+  background: var(--color-primary-06);
   color: var(--color-primary);
   display: flex;
   align-items: center;
@@ -174,7 +174,7 @@ defineExpose({ onSaveSuccess, onSaveError })
   cursor: pointer;
   transition: all 0.25s;
 
-  &:hover { background: rgba(74, 141, 213, 0.12); }
+  &:hover { background: /* ponytail: rgba(74, 141, 213, 0.12) */ rgba(74, 141, 213, 0.12); }
   &:active { transform: scale(0.92); }
 }
 
@@ -246,10 +246,10 @@ defineExpose({ onSaveSuccess, onSaveError })
   font-weight: 700;
   letter-spacing: 0.05em;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(74, 141, 213, 0.2);
+  box-shadow: 0 4px 16px /* ponytail: rgba(74, 141, 213, 0.2) */ rgba(74, 141, 213, 0.2);
   transition: all 0.25s;
 
-  &:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(74, 141, 213, 0.3); }
+  &:hover { transform: translateY(-1px); box-shadow: 0 6px 20px /* ponytail: rgba(74, 141, 213, 0.3) */ rgba(74, 141, 213, 0.3); }
   &:active { transform: scale(0.97); }
   &:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 }

@@ -63,7 +63,7 @@ const emit = defineEmits<{
   transition: all 0.2s;
 
   &:hover {
-    background: rgba(74, 141, 213, 0.06);
+    background: var(--color-primary-06);
   }
 
   &:active {

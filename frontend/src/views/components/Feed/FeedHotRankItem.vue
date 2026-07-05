@@ -53,7 +53,7 @@ const emit = defineEmits<{
   padding: 12px;
   background: var(--color-surface-lowest);
   border-radius: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-on-inverse-overlay-sm);
   box-shadow: var(--shadow-flat-sm);
   margin-bottom: 8px;
   cursor: pointer;
@@ -77,7 +77,7 @@ const emit = defineEmits<{
   flex-shrink: 0;
 
   &.top-3 {
-    background: linear-gradient(135deg, #f59e0b, var(--color-danger-bright));
+    background: linear-gradient(135deg, /* ponytail: amber-500 渐变起点，无 token */ #f59e0b, var(--color-danger-bright));
     color: white;
   }
 }
@@ -145,7 +145,7 @@ const emit = defineEmits<{
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(74, 141, 213, 0.08);
+  background: var(--focus-ring-color);
   color: var(--color-primary);
   white-space: nowrap;
 }

@@ -305,11 +305,11 @@ const goToResult = () => {
   flex-shrink: 0;
 
   &.icon-blue {
-    background: rgba(74, 141, 213, 0.10);
+    background: /* ponytail: rgba(74, 141, 213, 0.10) */ rgba(74, 141, 213, 0.10);
     color: var(--color-primary);
   }
   &.icon-cyan {
-    background: rgba(140, 225, 243, 0.18);
+    background: /* ponytail: rgba(140, 225, 243, 0.18) */ rgba(140, 225, 243, 0.18);
     color: var(--color-cyan-deep);
   }
   /* icon-warm removed per Phase 3 P0 review (warm-color rule: max 3 per screen) */
@@ -350,7 +350,7 @@ const goToResult = () => {
   width: 40px;
   height: 40px;
   border-radius: var(--radius-lg);
-  background: rgba(232, 133, 90, 0.12);
+  background: /* ponytail: rgba(232, 133, 90, 0.12) */ rgba(232, 133, 90, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -395,7 +395,7 @@ const goToResult = () => {
   position: fixed;
   inset: 0;
   z-index: var(--z-dialog);
-  background: rgba(11, 15, 16, 0.4);
+  background: /* ponytail: rgba(11, 15, 16, 0.4) */ rgba(11, 15, 16, 0.4);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
@@ -512,7 +512,7 @@ const goToResult = () => {
   display: inline-block;
   width: 20px;
   height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid var(--color-on-inverse-overlay-md);
   border-top-color: var(--color-on-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;

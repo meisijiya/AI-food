@@ -236,7 +236,7 @@ defineExpose({
       border-radius: 1.25rem 1.25rem 4px 1.25rem;
     }
     .message-time {
-      color: rgba(255, 255, 255, 0.7);
+      color: var(--color-on-inverse-overlay-fg-bold);
     }
   }
 
@@ -367,7 +367,7 @@ defineExpose({
   height: 24px;
   border: none;
   border-radius: 50%;
-  background: rgba(239, 68, 68, 0.1);
+  background: /* ponytail: rgba(239, 68, 68, 0.1) */ rgba(239, 68, 68, 0.1);
   color: var(--color-danger-bright);
   display: flex;
   align-items: center;
@@ -377,7 +377,7 @@ defineExpose({
   flex-shrink: 0;
 
   &:active {
-    background: rgba(239, 68, 68, 0.2);
+    background: /* ponytail: rgba(239, 68, 68, 0.2) */ rgba(239, 68, 68, 0.2);
     transform: scale(0.9);
   }
 
@@ -429,11 +429,11 @@ defineExpose({
   }
 
   &.action-btn-delete {
-    background: rgba(239, 68, 68, 0.1);
+    background: /* ponytail: rgba(239, 68, 68, 0.1) */ rgba(239, 68, 68, 0.1);
     color: var(--color-danger-bright);
 
     &:active {
-      background: rgba(239, 68, 68, 0.2);
+      background: /* ponytail: rgba(239, 68, 68, 0.2) */ rgba(239, 68, 68, 0.2);
     }
   }
 }

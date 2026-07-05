@@ -43,9 +43,9 @@ const emit = defineEmits<{
   letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
-  box-shadow: 0 12px 32px -8px rgba(74, 141, 213, 0.35);
-  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-  &:hover { transform: translateY(-2px); box-shadow: 0 16px 40px -8px rgba(74, 141, 213, 0.45); }
+  box-shadow: 0 12px 32px -8px var(--shadow-glow);
+  transition: all 0.3s var(--ease-out-soft);
+  &:hover { transform: translateY(-2px); box-shadow: 0 16px 40px -8px var(--shadow-glow-hover); }
   &:active { transform: translateY(0); }
 }
 

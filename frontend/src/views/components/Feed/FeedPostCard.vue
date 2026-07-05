@@ -93,7 +93,7 @@ const emit = defineEmits<{
   margin-bottom: 10px;
   background: var(--color-surface-lowest);
   border-radius: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-on-inverse-overlay-sm);
   box-shadow: var(--shadow-flat-sm);
   overflow: hidden;
   cursor: pointer;
@@ -145,7 +145,7 @@ const emit = defineEmits<{
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(74, 141, 213, 0.08);
+  background: var(--focus-ring-color);
   color: var(--color-primary);
   white-space: nowrap;
 }

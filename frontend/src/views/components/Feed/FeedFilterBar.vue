@@ -84,7 +84,7 @@ function apply() {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(11, 15, 16, 0.4);
+  background: /* ponytail: rgba(11, 15, 16, 0.4) */ rgba(11, 15, 16, 0.4);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;

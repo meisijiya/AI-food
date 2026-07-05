@@ -364,7 +364,7 @@ onMounted(() => {
 .signin-title {
   font-size: 14px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-on-inverse-overlay-fg-bold);
 }
 
 .signin-count {
@@ -391,12 +391,12 @@ onMounted(() => {
 
   .day-num {
     font-size: 11px;
-    color: rgba(255, 255, 255, 0.2);
+    color: /* ponytail: rgba(255, 255, 255, 0.2) */ rgba(255, 255, 255, 0.2);
     font-weight: 500;
   }
 
   &.signed {
-    background: rgba(255, 255, 255, 0.06);
+    background: /* ponytail: rgba(255, 255, 255, 0.06) */ rgba(255, 255, 255, 0.06);
     border-radius: 50%;
 
     .signed-circle {
@@ -404,12 +404,12 @@ onMounted(() => {
       height: 22px;
       border-radius: 50%;
       background: var(--color-primary);
-      box-shadow: 0 2px 8px rgba(74, 141, 213, 0.4);
+      box-shadow: 0 2px 8px /* ponytail: rgba(74, 141, 213, 0.4) */ rgba(74, 141, 213, 0.4);
     }
   }
 
   &.today {
-    outline: 1.5px solid rgba(34, 211, 238, 0.5);
+    outline: 1.5px solid /* ponytail: rgba(34, 211, 238, 0.5) */ rgba(34, 211, 238, 0.5);
   }
 }
 
@@ -421,7 +421,7 @@ onMounted(() => {
 
 .continuous {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-on-inverse-overlay-fg-strong);
 }
 
 .signin-btn {
@@ -429,7 +429,7 @@ onMounted(() => {
   border: none;
   border-radius: 100px;
   background: var(--color-cyan-bright);
-  color: #1e1e1e;
+  color: /* ponytail: #1e1e1e */ #1e1e1e;
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 700;
@@ -445,8 +445,8 @@ onMounted(() => {
   }
 
   &:disabled {
-    background: rgba(255, 255, 255, 0.15);
-    color: rgba(255, 255, 255, 0.4);
+    background: var(--color-on-inverse-overlay-md);
+    color: var(--color-on-inverse-overlay-fg);
     cursor: not-allowed;
   }
 }

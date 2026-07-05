@@ -130,7 +130,7 @@ function insertEmoji(icon: string) {
   transition: all 0.2s;
 
   &:hover {
-    background: rgba(34, 211, 238, 0.06);
+    background: /* ponytail: rgba(34, 211, 238, 0.06) */ rgba(34, 211, 238, 0.06);
   }
 
   &:active {
@@ -143,9 +143,9 @@ function insertEmoji(icon: string) {
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  border: 1.5px solid rgba(239, 68, 68, 0.4);
+  border: 1.5px solid /* ponytail: rgba(239, 68, 68, 0.4) */ rgba(239, 68, 68, 0.4);
   border-radius: 2rem;
-  background: rgba(239, 68, 68, 0.06);
+  background: var(--color-danger-06);
   color: var(--color-danger-bright);
   font-family: var(--font-sans);
   font-size: 13px;
@@ -154,7 +154,7 @@ function insertEmoji(icon: string) {
   transition: all 0.2s;
 
   &:hover {
-    background: rgba(239, 68, 68, 0.12);
+    background: /* ponytail: rgba(239, 68, 68, 0.12) */ rgba(239, 68, 68, 0.12);
   }
 
   &:active {
@@ -253,7 +253,7 @@ function insertEmoji(icon: string) {
   padding: 12px;
   border: none;
   border-radius: 1rem;
-  background: linear-gradient(135deg, var(--color-cyan-bright), #0891b2);
+  background: linear-gradient(135deg, var(--color-cyan-bright), /* ponytail: cyan-600 渐变端点，无 token */ #0891b2);
   color: white;
   font-size: 14px;
   font-weight: 600;

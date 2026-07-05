@@ -139,7 +139,7 @@ function onSave() {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(74, 141, 213, 0.2);
+  box-shadow: 0 4px 12px /* ponytail: rgba(74, 141, 213, 0.2) */ rgba(74, 141, 213, 0.2);
   transition: all 0.2s;
   &:hover { transform: translateY(-1px); }
   &:active { transform: scale(0.97); }

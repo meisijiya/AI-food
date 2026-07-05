@@ -537,7 +537,7 @@ onMounted(async () => {
 }
 
 .reason-text {
-  font-size: 14px; line-height: 1.8; color: rgba(255, 255, 255, 0.65);
+  font-size: 14px; line-height: 1.8; color: /* ponytail: rgba(255, 255, 255, 0.65) */ rgba(255, 255, 255, 0.65);
   position: relative; z-index: 1;
 }
 
@@ -621,7 +621,7 @@ onMounted(async () => {
   cursor: pointer; transition: all 0.2s;
   &.liked {
     border-color: var(--color-danger-bright); color: var(--color-danger-bright);
-    background: rgba(239, 68, 68, 0.06);
+    background: var(--color-danger-06);
   }
   &:active { transform: scale(0.95); }
 }
@@ -642,7 +642,7 @@ onMounted(async () => {
 
 .comment-item {
   display: flex; gap: 10px; padding: 12px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid /* ponytail: rgba(255, 255, 255, 0.05) */ rgba(255, 255, 255, 0.05);
 }
 
 .comment-avatar {
@@ -804,7 +804,7 @@ onMounted(async () => {
 /* Comment attachment panel */
 .comment-attach-panel {
   position: fixed; bottom: 64px; left: 0; right: 0;
-  background: rgba(255, 255, 255, 0.6);
+  background: /* ponytail: rgba(255, 255, 255, 0.6) */ rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 1.5rem 1.5rem 0 0;
@@ -857,7 +857,7 @@ onMounted(async () => {
   width: 48px; height: 48px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   &.attach-photo-icon {
-    background: linear-gradient(135deg, rgba(74, 141, 213, 0.12), rgba(74, 141, 213, 0.06));
+    background: linear-gradient(135deg, /* ponytail: primary 12% 渐变起点，无 token */ rgba(74, 141, 213, 0.12), var(--color-primary-06));
     color: var(--color-primary);
   }
 }
@@ -931,7 +931,7 @@ onMounted(async () => {
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--color-on-inverse-overlay-md);
   color: white;
   display: flex;
   align-items: center;
