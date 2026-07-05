@@ -1,7 +1,5 @@
 <template>
-  <div class="match-page">
-    <!-- Decorative glow -->
-    <div class="page-glow"></div>
+  <div class="match-page bg-winter-sunrise">
 
     <!-- Header -->
     <div class="match-header animate-fade-up">
@@ -536,7 +534,7 @@ onDeactivated(() => {
   box-shadow: 0 8px 20px rgba(74, 141, 213, 0.25);
   transition: all 0.2s;
   &:hover {
-    box-shadow: 0 12px 28px rgba(74, 141, 213, 0.35);
+    box-shadow: 0 12px 28px var(--shadow-glow);
     transform: translateY(-2px);
   }
   &:active {
@@ -617,7 +615,7 @@ onDeactivated(() => {
   height: 100px;
   margin: 0 auto 24px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(74, 141, 213, 0.08), rgba(140, 225, 243, 0.08));
+  background: linear-gradient(135deg, var(--focus-ring-color), rgba(140, 225, 243, 0.08));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -653,7 +651,7 @@ onDeactivated(() => {
   box-shadow: 0 8px 20px rgba(74, 141, 213, 0.25);
   transition: all 0.2s;
   &:hover {
-    box-shadow: 0 12px 28px rgba(74, 141, 213, 0.35);
+    box-shadow: 0 12px 28px var(--shadow-glow);
     transform: translateY(-2px);
   }
   &:active {

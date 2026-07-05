@@ -1,8 +1,5 @@
 <template>
-  <div class="share-page">
-    <!-- Decorative glows -->
-    <div class="share-glow glow-1"></div>
-    <div class="share-glow glow-2"></div>
+  <div class="share-page bg-winter-sunrise">
 
     <!-- Loading -->
     <div v-if="loading" class="loading-state">
@@ -387,7 +384,7 @@ onMounted(fetchShare)
   padding: 12px 16px;
   background: var(--color-surface-lowest);
   border-radius: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-on-inverse-overlay-sm);
 }
 
 .param-key { font-size: 10px; color: var(--color-on-surface-variant); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
@@ -399,7 +396,7 @@ onMounted(fetchShare)
 .comment-text {
   padding: 16px 20px;
   background: var(--color-surface-lowest);
-  border-radius: 1.25rem; border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 1.25rem; border: 1px solid var(--color-on-inverse-overlay-sm);
   font-size: 14px; line-height: 1.7; color: var(--color-on-surface);
   white-space: pre-wrap;
 }
@@ -430,7 +427,7 @@ onMounted(fetchShare)
 .timeline-content {
   background: var(--color-surface-lowest);
   border-radius: 1rem; padding: 12px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-on-inverse-overlay-sm);
 }
 
 .timeline-role {
@@ -473,7 +470,7 @@ onMounted(fetchShare)
   background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white; font-family: var(--font-sans); font-size: 13px; font-weight: 700;
   text-decoration: none; white-space: nowrap;
-  box-shadow: 0 6px 20px -6px rgba(74, 141, 213, 0.35);
+  box-shadow: 0 6px 20px -6px var(--shadow-glow);
   transition: all 0.2s;
   &:active { transform: scale(0.96); }
 }

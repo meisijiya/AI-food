@@ -1,5 +1,5 @@
 <template>
-  <div class="chat-page">
+  <div class="chat-page bg-cold-canvas">
     <!-- Header -->
     <div class="chat-header animate-fade-up">
       <button class="header-btn" @click="onClickLeft">

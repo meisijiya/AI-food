@@ -1,6 +1,5 @@
 <template>
-  <div class="detail-page" @click="closePanels">
-    <div class="bg-glow bg-glow-1"></div>
+  <div class="detail-page bg-cold-canvas" @click="closePanels">
 
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
@@ -501,7 +500,7 @@ onMounted(async () => {
   font-family: var(--font-sans); font-style: normal;
   font-size: 11px; font-weight: 700;
   padding: 4px 10px; border-radius: 6px;
-  background: rgba(74, 141, 213, 0.08);
+  background: var(--focus-ring-color);
   color: var(--color-primary);
 }
 
@@ -557,7 +556,7 @@ onMounted(async () => {
 .param-item {
   display: flex; flex-direction: column; gap: 2px;
   padding: 12px 16px; background: var(--color-surface-lowest);
-  border-radius: 1.25rem; border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 1.25rem; border: 1px solid var(--color-on-inverse-overlay-sm);
 }
 
 .param-key { font-size: 10px; color: var(--color-on-surface-variant); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
@@ -707,7 +706,7 @@ onMounted(async () => {
 .guest-comments-prompt {
   display: flex; flex-direction: column; align-items: center;
   padding: 40px 20px; background: var(--color-surface-lowest);
-  border-radius: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 1.5rem; border: 1px solid var(--color-on-inverse-overlay-sm);
   margin-top: 16px; z-index: 1; position: relative;
 }
 
@@ -752,7 +751,7 @@ onMounted(async () => {
   cursor: pointer; border-radius: 50%; flex-shrink: 0;
   transition: background 0.2s, color 0.2s;
   &:active { background: var(--color-surface-low); }
-  &.active { color: var(--color-primary); background: rgba(74, 141, 213, 0.08); }
+  &.active { color: var(--color-primary); background: var(--focus-ring-color); }
 }
 
 .plus-btn-comment {
@@ -764,7 +763,7 @@ onMounted(async () => {
   &:active { background: var(--color-surface-low); }
   &.active {
     color: var(--color-primary);
-    background: rgba(74, 141, 213, 0.08);
+    background: var(--focus-ring-color);
     svg { transform: rotate(45deg); }
   }
 }
@@ -809,7 +808,7 @@ onMounted(async () => {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 1.5rem 1.5rem 0 0;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-on-inverse-overlay-sm);
   box-shadow: var(--shadow-flat-bottom-sm);
   z-index: 101;
 }
@@ -817,7 +816,7 @@ onMounted(async () => {
 .attach-panel-header {
   display: flex; justify-content: space-between; align-items: center;
   padding: 12px 16px 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  border-bottom: 1px solid var(--color-on-inverse-overlay-md);
 }
 
 .attach-panel-title {
@@ -849,7 +848,7 @@ onMounted(async () => {
   cursor: pointer;
   transition: background 0.2s, transform 0.15s;
   &:active {
-    background: rgba(74, 141, 213, 0.08);
+    background: var(--focus-ring-color);
     transform: scale(0.95);
   }
 }
@@ -941,7 +940,7 @@ onMounted(async () => {
   transition: background 0.2s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--color-on-inverse-overlay-md);
   }
 }
 

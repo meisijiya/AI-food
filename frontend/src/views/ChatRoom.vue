@@ -1,5 +1,5 @@
 <template>
-  <div class="chat-room-container">
+  <div class="chat-room-container bg-cold-canvas">
     <!-- Header -->
     <ChatRoomHeader :nickname="nickname" @back="router.back()" @clear="handleClearChat" />
 

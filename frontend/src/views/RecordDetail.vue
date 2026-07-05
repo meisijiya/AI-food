@@ -1,7 +1,5 @@
 <template>
-  <div class="detail-container">
-    <div class="bg-glow bg-glow-1"></div>
-    <div class="bg-glow bg-glow-2"></div>
+  <div class="detail-container bg-cold-canvas">
 
     <!-- Loading -->
     <div v-if="loading" class="loading-state">
@@ -404,7 +402,7 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
 /* ===== Recommend Card (Light) ===== */
 .recommend-card {
   background: var(--color-surface-lowest);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-on-inverse-overlay-sm);
   border-radius: 2.5rem;
   padding: 32px 28px;
   margin-bottom: 24px;
@@ -586,7 +584,7 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
   background: var(--color-surface-lowest);
   border-radius: 1.5rem;
   padding: 16px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-on-inverse-overlay-sm);
   box-shadow: var(--shadow-flat-xs);
   transition: box-shadow 0.2s;
 
@@ -637,7 +635,7 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
     border-color: var(--color-primary);
     color: var(--color-primary);
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(74, 141, 213, 0.08);
+    box-shadow: 0 4px 16px var(--focus-ring-color);
   }
 
   &:active {

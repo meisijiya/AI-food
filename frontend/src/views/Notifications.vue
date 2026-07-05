@@ -1,7 +1,5 @@
 <template>
-  <div class="notifications-container">
-    <div class="bg-glow bg-glow-1"></div>
-    <div class="bg-glow bg-glow-2"></div>
+  <div class="notifications-container bg-cold-canvas">
 
     <!-- Header -->
     <div class="page-header animate-fade-up">
@@ -399,8 +397,8 @@ onMounted(() => {
   padding: 16px;
   background: var(--color-surface-lowest);
   border-radius: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--color-on-inverse-overlay-sm);
+  box-shadow: var(--shadow-flat-sm);
   margin-bottom: 10px;
   cursor: pointer;
   transition: transform 0.15s;
@@ -443,7 +441,7 @@ onMounted(() => {
   height: 18px;
   padding: 0 5px;
   border-radius: 100px;
-  background: #ef4444;
+  background: var(--color-danger-bright);
   color: white;
   font-size: 10px;
   font-weight: 700;

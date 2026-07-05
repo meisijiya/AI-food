@@ -1,6 +1,5 @@
 <template>
-  <div class="chat-list-container">
-    <div class="bg-glow bg-glow-1"></div>
+  <div class="chat-list-container bg-cold-canvas">
 
     <!-- Header -->
     <div class="page-header animate-fade-up">
@@ -215,7 +214,7 @@ onUnmounted(() => {
   padding: 12px 16px;
   background: var(--color-surface-lowest);
   border-radius: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-on-inverse-overlay-sm);
   box-shadow: var(--shadow-flat-sm);
   margin-bottom: 8px;
   cursor: pointer;
