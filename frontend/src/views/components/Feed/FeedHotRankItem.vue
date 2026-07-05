@@ -54,7 +54,7 @@ const emit = defineEmits<{
   background: var(--color-surface-lowest);
   border-radius: 1.25rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-flat-sm);
   margin-bottom: 8px;
   cursor: pointer;
   transition: transform 0.2s;
@@ -77,7 +77,7 @@ const emit = defineEmits<{
   flex-shrink: 0;
 
   &.top-3 {
-    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    background: linear-gradient(135deg, #f59e0b, var(--color-danger-bright));
     color: white;
   }
 }

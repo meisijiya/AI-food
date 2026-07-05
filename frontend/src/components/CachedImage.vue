@@ -59,7 +59,7 @@ onMounted(loadPhoto)
   width: 20px;
   height: 20px;
   border: 2px solid rgba(255, 255, 255, 0.1);
-  border-top-color: var(--color-primary, #22d3ee);
+  border-top-color: var(--color-primary, var(--color-cyan-bright));
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

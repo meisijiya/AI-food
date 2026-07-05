@@ -122,7 +122,7 @@ onUnmounted(() => {
 
 /* Sanctuary page transition */
 .sanctuary-fade-enter-active {
-  animation: sanctuary-fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: sanctuary-fade-up 0.4s var(--ease-out-soft) forwards;
 }
 
 .sanctuary-fade-leave-active {
@@ -144,7 +144,7 @@ onUnmounted(() => {
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.35s var(--ease-out-soft);
 
   &.collapsed {
     // Tab peeks just above bottom edge
@@ -172,7 +172,7 @@ onUnmounted(() => {
 }
 
 .nav-pop-enter-active {
-  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: all 0.3s var(--ease-out-soft);
 }
 
 .nav-pop-leave-active {
@@ -202,7 +202,7 @@ onUnmounted(() => {
   padding: 8px 20px;
   border-radius: 100px;
   text-decoration: none;
-  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: all 0.3s var(--ease-out-soft);
 
   &.active {
     .nav-icon { color: var(--color-nav-active); }

@@ -17,6 +17,7 @@
   --color-primary-grad-bottom: #3a7bc0;
   --color-cyan: #8ce1f3;
   --color-cyan-deep: #06b6d4;  /* 状态指示 · 比 --color-cyan 更饱和 (publish chip 等) */
+  --color-cyan-bright: #22d3ee; /* 高亮 cyan · signin / share badge (历史遗留色) */
 
   /* --- 暖色点缀 · 旭日 --- */
   --color-accent-warm: #e8855a;
@@ -36,7 +37,9 @@
 
   /* --- 语义 --- */
   --color-danger: #c8344a;
+  --color-danger-bright: #ef4444; /* Tailwind red-500 · 兼容性 (历史遗留色) */
   --color-success: #2f9e6e;
+  --color-success-bright: #22c55e; /* Tailwind green-500 · 兼容性 (历史遗留色) */
 
   /* --- Nav 激活态 --- */
   --color-nav-active: #22d3ee;
@@ -63,6 +66,11 @@
   --shadow-glow: 0 12px 32px -8px rgba(74, 141, 213, 0.22);
   --shadow-warm: 0 12px 32px -8px rgba(232, 133, 90, 0.25);
 
+  /* 纯黑阴影 (neutral, 用于分隔 / 浮起) — 区别于 --shadow-* 的暖色调 */
+  --shadow-flat-sm: var(--shadow-flat-sm);
+  --shadow-flat-md: var(--shadow-flat-md);
+  --shadow-flat-lg: var(--shadow-flat-lg);
+
   /* --- 玻璃 --- */
   --glass-bg: rgba(255, 255, 255, 0.62);
   --glass-bg-strong: rgba(255, 255, 255, 0.82);
@@ -71,9 +79,10 @@
   --glass-border: rgba(255, 255, 255, 0.4);
 
   /* --- 动效 --- */
-  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-soft: var(--ease-out-soft);
   --ease-in-soft: cubic-bezier(0.55, 0, 0.45, 0);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-material: var(--ease-material); /* Material standard · 兼容老代码 */
   --dur-fast: 180ms;
   --dur-base: 280ms;
   --dur-slow: 480ms;

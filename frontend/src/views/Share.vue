@@ -418,7 +418,7 @@ onMounted(fetchShare)
   position: absolute; left: -10px; top: 4px;
   width: 12px; height: 12px; border-radius: 50%;
   border: 2px solid var(--color-primary); background: var(--color-surface);
-  &.assistant { border-color: #22d3ee; }
+  &.assistant { border-color: var(--color-cyan-bright); }
   &.user { border-color: var(--color-primary); }
 }
 
@@ -435,7 +435,7 @@ onMounted(fetchShare)
 
 .timeline-role {
   font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.1em; color: #22d3ee; margin-bottom: 4px;
+  letter-spacing: 0.1em; color: var(--color-cyan-bright); margin-bottom: 4px;
   &.user-role { color: var(--color-primary); }
 }
 

@@ -312,7 +312,7 @@ onMounted(() => {
   background: var(--color-surface-lowest);
   border-radius: 1.25rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-flat-sm);
   margin-bottom: 8px;
 }
 

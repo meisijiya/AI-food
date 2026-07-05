@@ -183,7 +183,7 @@ async function upload() {
   padding: 32px 20px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: all 0.3s var(--ease-out-soft);
   background: var(--color-surface-lowest);
   position: relative;
   overflow: hidden;
@@ -298,7 +298,7 @@ async function upload() {
   letter-spacing: 0.05em;
   cursor: pointer;
   box-shadow: 0 8px 24px -6px rgba(74, 141, 213, 0.3);
-  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: all 0.3s var(--ease-out-soft);
 
   &:hover {
     transform: translateY(-1px);
@@ -314,7 +314,7 @@ async function upload() {
   position: relative;
   border-radius: 1.5rem;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-flat-md);
   cursor: pointer;
   transition: transform 0.2s;
 

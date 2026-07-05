@@ -78,7 +78,7 @@ function handleUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
 <style lang="scss" scoped>
 /* ===== Card Entrance Animation (self-contained, no parent dependency) ===== */
 .card-enter {
-  animation: card-slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: card-slide-up 0.5s var(--ease-out-soft) both;
 }
 .card-delay-2 { animation-delay: 0.1s; }
 
@@ -148,7 +148,7 @@ function handleUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
   max-height: 360px;
   object-fit: cover;
   cursor: pointer;
-  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.5s var(--ease-out-soft);
   position: relative;
   z-index: 1;
 
@@ -192,7 +192,7 @@ function handleUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
   }
 
   &.delete {
-    color: #ef4444;
+    color: var(--color-danger-bright);
     &:hover { background: rgba(255, 240, 240, 0.95); }
   }
 }

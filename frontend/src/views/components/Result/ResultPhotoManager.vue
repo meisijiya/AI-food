@@ -111,7 +111,7 @@ function onUploaded(data: Photo) {
 
   &.delete {
     background: rgba(239, 68, 68, 0.08);
-    color: #ef4444;
+    color: var(--color-danger-bright);
     &:active { background: rgba(239, 68, 68, 0.15); }
   }
 }
@@ -138,9 +138,9 @@ function onUploaded(data: Photo) {
   display: block;
   max-height: 300px;
   object-fit: cover;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-flat-md);
   cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.3s var(--ease-out-soft);
 
   &:hover {
     transform: scale(1.01);

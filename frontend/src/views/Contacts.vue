@@ -194,7 +194,7 @@ onMounted(() => {
   background: var(--color-surface-lowest);
   border-radius: 1.25rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-flat-sm);
   margin-bottom: 8px;
   cursor: pointer;
   transition: transform 0.2s;
@@ -232,7 +232,7 @@ onMounted(() => {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #22c55e;
+  background: var(--color-success-bright);
   border: 2px solid var(--color-surface);
 }
 

@@ -94,7 +94,7 @@ const emit = defineEmits<{
   background: var(--color-surface-lowest);
   border-radius: 1.25rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-flat-sm);
   overflow: hidden;
   cursor: pointer;
   transition:
@@ -211,7 +211,7 @@ const emit = defineEmits<{
   color: var(--color-on-surface-variant);
   flex-shrink: 0;
   svg {
-    color: #ef4444;
+    color: var(--color-danger-bright);
   }
 }
 

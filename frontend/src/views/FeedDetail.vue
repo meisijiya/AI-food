@@ -513,7 +513,7 @@ onMounted(async () => {
   max-height: 400px; object-fit: cover;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.3s var(--ease-out-soft);
   &:hover {
     transform: scale(1.01);
   }
@@ -621,7 +621,7 @@ onMounted(async () => {
   color: var(--color-on-surface-variant); font-size: 13px; font-weight: 600;
   cursor: pointer; transition: all 0.2s;
   &.liked {
-    border-color: #ef4444; color: #ef4444;
+    border-color: var(--color-danger-bright); color: var(--color-danger-bright);
     background: rgba(239, 68, 68, 0.06);
   }
   &:active { transform: scale(0.95); }
@@ -671,7 +671,7 @@ onMounted(async () => {
 .comment-delete-btn {
   border: none;
   background: transparent;
-  color: var(--color-danger, #ef4444);
+  color: var(--color-danger, var(--color-danger-bright));
   font-size: 12px;
   cursor: pointer;
   padding: 0;
@@ -874,10 +874,10 @@ onMounted(async () => {
 
 /* Panel slide transition */
 .panel-slide-enter-active {
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
+  transition: transform 0.25s var(--ease-material), opacity 0.2s;
 }
 .panel-slide-leave-active {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s;
+  transition: transform 0.2s var(--ease-material), opacity 0.15s;
 }
 .panel-slide-enter-from {
   transform: translateY(100%);

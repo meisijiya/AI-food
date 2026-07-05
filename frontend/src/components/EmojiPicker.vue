@@ -113,10 +113,10 @@ const emojis = emojiData.list
 
 /* Panel transitions */
 .emoji-panel-enter-active {
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
+  transition: transform 0.25s var(--ease-material), opacity 0.2s;
 }
 .emoji-panel-leave-active {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s;
+  transition: transform 0.2s var(--ease-material), opacity 0.15s;
 }
 .emoji-panel-enter-from {
   transform: translateY(100%);

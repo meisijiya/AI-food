@@ -398,7 +398,7 @@ const goHome = () => {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #22c55e, #16a34a);
+  background: linear-gradient(135deg, var(--color-success-bright), #16a34a);
   color: white;
   display: flex;
   align-items: center;

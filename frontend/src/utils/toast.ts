@@ -91,7 +91,7 @@ function injectStyles() {
 
     .sanctuary-toast-overlay {
       pointer-events: none;
-      animation: toast-fade-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      animation: toast-fade-in 0.3s var(--ease-out-soft) forwards;
     }
 
     .sanctuary-toast-overlay[style*="display: none"],

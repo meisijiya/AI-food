@@ -119,10 +119,10 @@ function insertEmoji(icon: string) {
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  border: 1.5px solid #22d3ee;
+  border: 1.5px solid var(--color-cyan-bright);
   border-radius: 2rem;
   background: none;
-  color: #22d3ee;
+  color: var(--color-cyan-bright);
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 600;
@@ -146,7 +146,7 @@ function insertEmoji(icon: string) {
   border: 1.5px solid rgba(239, 68, 68, 0.4);
   border-radius: 2rem;
   background: rgba(239, 68, 68, 0.06);
-  color: #ef4444;
+  color: var(--color-danger-bright);
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 600;
@@ -253,7 +253,7 @@ function insertEmoji(icon: string) {
   padding: 12px;
   border: none;
   border-radius: 1rem;
-  background: linear-gradient(135deg, #22d3ee, #0891b2);
+  background: linear-gradient(135deg, var(--color-cyan-bright), #0891b2);
   color: white;
   font-size: 14px;
   font-weight: 600;

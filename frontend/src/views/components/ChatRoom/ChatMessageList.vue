@@ -273,7 +273,7 @@ defineExpose({
   padding: 10px 14px;
   background: var(--color-surface-lowest);
   border-radius: 1.25rem 1.25rem 1.25rem 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-flat-sm);
   position: relative;
 
   &.bubble-clickable {
@@ -368,7 +368,7 @@ defineExpose({
   border: none;
   border-radius: 50%;
   background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  color: var(--color-danger-bright);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -430,7 +430,7 @@ defineExpose({
 
   &.action-btn-delete {
     background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
+    color: var(--color-danger-bright);
 
     &:active {
       background: rgba(239, 68, 68, 0.2);

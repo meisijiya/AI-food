@@ -393,7 +393,7 @@ onUnmounted(() => {
 
 .status-dot {
   width: 6px; height: 6px; border-radius: 50%; background: #ccc; transition: background 0.3s;
-  &.active { background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,0.4); }
+  &.active { background: var(--color-success-bright); box-shadow: 0 0 8px rgba(34,197,94,0.4); }
 }
 
 /* Progress */
@@ -409,7 +409,7 @@ onUnmounted(() => {
 
 .progress-fill {
   height: 100%; background: linear-gradient(90deg, var(--color-primary-soft), var(--color-primary));
-  border-radius: 2px; transition: width 0.6s cubic-bezier(0.22,1,0.36,1);
+  border-radius: 2px; transition: width 0.6s var(--ease-out-soft);
 }
 
 .progress-label {
@@ -506,7 +506,7 @@ onUnmounted(() => {
   background: var(--color-surface-lowest);
   border-radius: 2rem 2rem 0 0;
   padding: 12px 20px 32px;
-  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-flat-lg);
 }
 
 .sheet-handle {
@@ -605,12 +605,12 @@ onUnmounted(() => {
 .overlay-fade-enter-from,
 .overlay-fade-leave-to { opacity: 0; }
 
-.sheet-slide-enter-active { transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
+.sheet-slide-enter-active { transition: transform 0.35s var(--ease-out-soft); }
 .sheet-slide-leave-active { transition: transform 0.25s ease-in; }
 .sheet-slide-enter-from,
 .sheet-slide-leave-to { transform: translateY(100%); }
 
-.dialog-pop-enter-active { transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+.dialog-pop-enter-active { transition: all 0.3s var(--ease-out-soft); }
 .dialog-pop-leave-active { transition: all 0.2s ease-in; }
 .dialog-pop-enter-from { opacity: 0; transform: scale(0.9); }
 .dialog-pop-leave-to { opacity: 0; transform: scale(0.95); }

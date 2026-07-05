@@ -277,7 +277,7 @@ onMounted(() => {
   background: var(--color-surface-lowest);
   border-radius: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-flat-sm);
   z-index: 1;
   cursor: pointer;
   transition: transform 0.2s;
@@ -364,7 +364,7 @@ onMounted(() => {
   font-family: var(--font-serif);
   font-style: italic;
   font-size: 20px;
-  color: #22d3ee;
+  color: var(--color-cyan-bright);
 }
 
 .calendar-grid {
@@ -421,7 +421,7 @@ onMounted(() => {
   padding: 8px 24px;
   border: none;
   border-radius: 100px;
-  background: #22d3ee;
+  background: var(--color-cyan-bright);
   color: #1e1e1e;
   font-family: var(--font-sans);
   font-size: 13px;
@@ -500,7 +500,7 @@ onMounted(() => {
   background: var(--color-surface-lowest);
   border-radius: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-flat-sm);
   z-index: 1;
 }
 
@@ -572,7 +572,7 @@ onMounted(() => {
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 12px 32px -8px rgba(74, 141, 213, 0.35);
-  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: all 0.3s var(--ease-out-soft);
   margin-bottom: 12px;
 
   &:hover {

@@ -172,7 +172,7 @@ defineExpose({
   padding: 8px 16px;
   text-align: center;
   font-size: 12px;
-  color: #ef4444;
+  color: var(--color-danger-bright);
   background: rgba(239, 68, 68, 0.06);
   flex-shrink: 0;
 }
@@ -369,10 +369,10 @@ defineExpose({
 
 /* Panel slide transition */
 .panel-slide-enter-active {
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
+  transition: transform 0.25s var(--ease-material), opacity 0.2s;
 }
 .panel-slide-leave-active {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s;
+  transition: transform 0.2s var(--ease-material), opacity 0.15s;
 }
 .panel-slide-enter-from {
   transform: translateY(100%);
