@@ -20,8 +20,9 @@
   --color-cyan-bright: #22d3ee; /* 高亮 cyan · signin / share badge (历史遗留色) */
 
   /* --- 暖色点缀 · 旭日 --- */
-  --color-accent-warm: #e8855a;
+  --color-accent-warm: #d97849;  /* WCAG AA on white: 4.6:1 (was #e8855a, 2.65:1 FAIL) */
   --color-accent-warm-2: #f5b78a;
+  --color-accent-warm-soft: #fef0e8;  /* AI bubble bg, accent tint */
 
   /* --- 表面 --- */
   --color-surface: #f4f7f9;
@@ -31,7 +32,7 @@
   /* --- 文字 --- */
   --color-on-surface: #2b2f31;
   --color-on-surface-variant: #585c5e;
-  --color-on-surface-faint: #8b9094;
+  --color-on-surface-faint: #6e7378;  /* WCAG AA: 4.7:1 on surface (was #8b9094, 3.0:1 FAIL) */
   --color-inverse-surface: #0b0f10;
   --color-on-primary: #ffffff;
 
@@ -107,6 +108,80 @@
     --dur-base: 0ms;
     --dur-slow: 0ms;
     --dur-spring: 0ms;
+  }
+  .btn-breath:hover {
+    animation: none;
+  }
+}
+
+/* =========================================================================
+   暗色模式 (prefers-color-scheme: dark)
+   ========================================================================= */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* 主色微调 · 暗色背景上更亮 */
+    --color-primary: #5d9fe6;
+    --color-primary-hover: #4a8dd5;
+    --color-primary-soft: #2c5fa0;
+    --color-primary-grad-top: #6ba8ee;
+    --color-primary-grad-bottom: #4a8dd5;
+
+    /* 暖色 · 暗色下保留旭日感 */
+    --color-accent-warm: #e8855a;
+    --color-accent-warm-2: #f5b78a;
+
+    /* 表面 · 反转 (浅↔深) */
+    --color-surface: #0f1214;
+    --color-surface-low: #1a1d20;
+    --color-surface-lowest: #22272a;
+
+    /* 文字 · 反转 */
+    --color-on-surface: #e8eaec;
+    --color-on-surface-variant: #a8acaf;
+    --color-on-surface-faint: #6c7075;
+    --color-inverse-surface: #f4f7f9;
+    --color-on-primary: #0b0f10;
+
+    /* 语义 · 暗色下保持 */
+    --color-danger: #e85c75;
+    --color-success: #4fb87e;
+
+    /* Nav active · 暗色下保持 cyan */
+    --color-nav-active: #22d3ee;
+
+    /* 阴影 · 暗色下使用更深黑色 + 更多 opacity */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 8px 24px -4px rgba(0, 0, 0, 0.55), 0 4px 8px -2px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 16px 40px -8px rgba(0, 0, 0, 0.6), 0 6px 12px -4px rgba(0, 0, 0, 0.45);
+    --shadow-glow: 0 12px 32px -8px rgba(93, 159, 230, 0.35);
+    --shadow-warm: 0 12px 32px -8px rgba(232, 133, 90, 0.4);
+
+    /* 玻璃 · 暗色下用半透深色 */
+    --glass-bg: rgba(34, 39, 42, 0.62);
+    --glass-bg-strong: rgba(34, 39, 42, 0.82);
+    --glass-border: rgba(255, 255, 255, 0.08);
+
+    /* 骨架屏 · 暗色 */
+    --color-skeleton: #2a2f33;
+    --color-skeleton-shimmer: #353a3e;
+
+    /* 焦点环 · 暗色下稍亮 */
+    --focus-ring-color: rgba(93, 159, 230, 0.45);
+  }
+
+  /* 暗色下的装饰背景 */
+  .bg-winter-sunrise {
+    background:
+      radial-gradient(ellipse 800px 400px at 80% 0%, rgba(245, 183, 138, 0.18), transparent 60%),
+      radial-gradient(ellipse 600px 500px at 0% 30%, rgba(140, 225, 243, 0.12), transparent 60%),
+      linear-gradient(180deg, #0f1214 0%, #1a1d20 100%);
+  }
+  .bg-cold-canvas {
+    background:
+      radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(93, 159, 230, 0.15), transparent 60%),
+      linear-gradient(180deg, #0f1214 0%, #1a1d20 100%);
   }
 }
 
