@@ -214,6 +214,19 @@
 .font-sans { font-family: var(--font-sans); }
 .font-serif { font-family: var(--font-serif); }
 
+/* --- CTA hover breathing (hover 时循环缩放 1 -> 1.05 -> 1) ---
+   纯 CSS · 无需 motion 库 · 移开即停 */
+.btn-breath {
+  transform-origin: center;
+}
+.btn-breath:hover {
+  animation: btn-breath 2s var(--ease-out-soft) infinite;
+}
+@keyframes btn-breath {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
 /* --- Vant 4 CSS 变量覆盖 (仅 3 个起步) --- */
 :root {
   --van-primary-color: var(--color-primary);

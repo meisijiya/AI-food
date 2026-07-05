@@ -127,7 +127,7 @@
       >
         <span>登录后开始体验</span>
       </button>
-      <button v-else class="cta-button btn-primary-gradient" @click="startChat" :disabled="loading">
+      <button v-else class="cta-button btn-primary-gradient btn-breath" @click="startChat" :disabled="loading">
         <span v-if="loading" class="cta-loading"></span>
         <span v-else>开始美食之旅</span>
       </button>
