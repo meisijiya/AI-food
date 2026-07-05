@@ -511,7 +511,7 @@ onMounted(async () => {
 .detail-photo {
   width: 100%; border-radius: 2rem; display: block;
   max-height: 400px; object-fit: cover;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-flat-lg);
   cursor: pointer;
   transition: transform 0.3s var(--ease-out-soft);
   &:hover {
@@ -780,7 +780,7 @@ onMounted(async () => {
   position: absolute; top: 2px; right: 2px;
   width: 16px; height: 16px;
   border: none; border-radius: 50%;
-  background: rgba(0, 0, 0, 0.5); color: white;
+  background: var(--color-overlay-modal); color: white;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
 }
@@ -810,7 +810,7 @@ onMounted(async () => {
   -webkit-backdrop-filter: blur(20px);
   border-radius: 1.5rem 1.5rem 0 0;
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-flat-bottom-sm);
   z-index: 101;
 }
 
@@ -834,7 +834,7 @@ onMounted(async () => {
   display: flex; align-items: center;
   border-radius: 50%;
   transition: background 0.2s;
-  &:active { background: rgba(0, 0, 0, 0.05); }
+  &:active { background: var(--color-overlay-pressed); }
 }
 
 .attach-grid {
@@ -891,7 +891,7 @@ onMounted(async () => {
 .back-btn {
   position: fixed; top: 16px; left: 16px;
   width: 36px; height: 36px; border: none; border-radius: 50%;
-  background: rgba(0, 0, 0, 0.3); color: white;
+  background: var(--color-overlay-modal); color: white;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; z-index: 100; backdrop-filter: blur(8px);
   &:active { transform: scale(0.9); }
@@ -902,7 +902,7 @@ onMounted(async () => {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(0, 0, 0, 0.85);
+  background: var(--color-overlay-modal);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   display: flex;

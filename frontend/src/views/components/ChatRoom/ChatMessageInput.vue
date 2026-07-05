@@ -272,7 +272,7 @@ defineExpose({
   -webkit-backdrop-filter: blur(20px);
   border-radius: 1.5rem 1.5rem 0 0;
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-flat-bottom-sm);
   flex-shrink: 0;
 }
 
@@ -306,7 +306,7 @@ defineExpose({
   align-items: center;
   border-radius: 50%;
   transition: background 0.2s;
-  &:active { background: rgba(0, 0, 0, 0.05); }
+  &:active { background: var(--color-overlay-pressed); }
 }
 
 .attachment-grid {

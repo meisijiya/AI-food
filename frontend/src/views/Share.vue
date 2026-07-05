@@ -334,7 +334,7 @@ onMounted(fetchShare)
 .hero-photo {
   width: 100%; border-radius: 2rem; display: block;
   max-height: 320px; object-fit: cover;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-flat-lg);
 }
 
 /* Food title */

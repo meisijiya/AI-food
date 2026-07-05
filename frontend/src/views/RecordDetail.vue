@@ -368,7 +368,7 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
 
 /* ===== Card Entrance Animation (parent-owned cards) ===== */
 .card-enter {
-  animation: card-slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: card-slide-up 0.5s var(--ease-out-soft) both;
 }
 .card-delay-1 { animation-delay: 0.05s; }
 .card-delay-5 { animation-delay: 0.25s; }
@@ -411,7 +411,7 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
   position: relative;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(74, 141, 213, 0.06);
-  transition: box-shadow 0.4s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: box-shadow 0.4s ease, transform 0.4s var(--ease-out-soft);
 
   &:hover {
     box-shadow: 0 12px 40px rgba(74, 141, 213, 0.1);
@@ -511,11 +511,11 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
   border-radius: 100px;
   border: 1px solid var(--color-surface-low);
   font-size: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+  box-shadow: var(--shadow-flat-xs);
   transition: box-shadow 0.2s;
 
   &:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-flat-sm);
   }
 }
 
@@ -587,11 +587,11 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
   border-radius: 1.5rem;
   padding: 16px 20px;
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  box-shadow: var(--shadow-flat-xs);
   transition: box-shadow 0.2s;
 
   &:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-flat-sm);
   }
 }
 
@@ -631,7 +631,7 @@ async function onConfirmPublish(preview: string, visibility: 'public' | 'friends
   cursor: pointer;
   transition: all 0.25s;
   margin-top: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-flat-xs);
 
   &:hover {
     border-color: var(--color-primary);

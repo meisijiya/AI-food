@@ -110,7 +110,7 @@ defineExpose({ onSaveSuccess, onSaveError })
 <style lang="scss" scoped>
 /* ===== Card Entrance Animation (self-contained, no parent dependency) ===== */
 .card-enter {
-  animation: card-slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: card-slide-up 0.5s var(--ease-out-soft) both;
 }
 .card-delay-3 { animation-delay: 0.15s; }
 
@@ -149,7 +149,7 @@ defineExpose({ onSaveSuccess, onSaveError })
   background: var(--color-surface-lowest);
   border-radius: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-flat-sm);
 }
 
 .comment-text {
@@ -183,7 +183,7 @@ defineExpose({ onSaveSuccess, onSaveError })
   background: var(--color-surface-lowest);
   border-radius: 2rem;
   border: 1px solid var(--color-surface-low);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-flat-sm);
 }
 
 .comment-textarea {

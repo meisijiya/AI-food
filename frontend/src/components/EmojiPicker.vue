@@ -43,7 +43,7 @@ const emojis = emojiData.list
   -webkit-backdrop-filter: blur(20px);
   border-radius: 1.5rem 1.5rem 0 0;
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-flat-bottom-sm);
   max-height: 280px;
   display: flex;
   flex-direction: column;

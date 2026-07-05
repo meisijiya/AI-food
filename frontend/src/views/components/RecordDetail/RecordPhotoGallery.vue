@@ -125,7 +125,7 @@ function handleUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
   border-radius: 2rem;
   background: var(--color-surface-lowest);
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-flat-md);
 }
 
 .photo-glow {
@@ -180,7 +180,7 @@ function handleUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: var(--color-on-surface);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-flat-sm);
 
   &:hover {
     background: rgba(255, 255, 255, 0.95);
@@ -222,7 +222,7 @@ function handleUploaded(data: { thumbnailUrl: string; originalUrl: string }) {
   max-height: 85vh;
   border-radius: 1.5rem;
   object-fit: contain;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-flat-xl);
 }
 
 .photo-modal-close {

@@ -387,7 +387,7 @@ defineExpose({
     left: -4px;
     width: 22px;
     height: 22px;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--color-overlay-modal);
     color: white;
     opacity: 0;
     transition: opacity 0.2s;
@@ -403,7 +403,7 @@ defineExpose({
   background: var(--color-surface-lowest);
   border-radius: 8px;
   padding: 6px 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-flat-md);
   z-index: 100;
   white-space: nowrap;
 

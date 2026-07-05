@@ -149,7 +149,7 @@ defineExpose({ setPublishPreview, insertEmoji })
 <style lang="scss" scoped>
 /* ===== Card Entrance Animation (self-contained, no parent dependency) ===== */
 .card-enter {
-  animation: card-slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: card-slide-up 0.5s var(--ease-out-soft) both;
 }
 .card-delay-4 { animation-delay: 0.2s; }
 
@@ -239,7 +239,7 @@ defineExpose({ setPublishPreview, insertEmoji })
   border-radius: 2rem;
   padding: 20px 24px;
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-flat-sm);
   margin-bottom: 24px;
 }
 
@@ -303,7 +303,7 @@ defineExpose({ setPublishPreview, insertEmoji })
   padding: 32px 28px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-flat-xl);
 }
 
 .publish-dialog-glow {

@@ -108,7 +108,7 @@ img {
 }
 
 .animate-fade-up {
-  animation: sanctuary-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: sanctuary-fade-up 0.5s var(--ease-out-soft) forwards;
 }
 
 .animate-fade-in {
@@ -116,11 +116,11 @@ img {
 }
 
 .animate-scale-in {
-  animation: sanctuary-scale-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: sanctuary-scale-in 0.4s var(--ease-out-soft) forwards;
 }
 
 .animate-slide-right {
-  animation: sanctuary-slide-right 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: sanctuary-slide-right 0.5s var(--ease-out-soft) forwards;
 }
 
 /* Stagger delays */
@@ -149,10 +149,10 @@ img {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--color-scrollbar-thumb);
   border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--color-scrollbar-thumb-hover);
 }

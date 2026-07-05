@@ -312,7 +312,7 @@ onDeactivated(() => {
   justify-content: center;
   cursor: pointer;
   color: var(--color-on-surface-variant);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-flat-sm);
   transition: all 0.2s;
   &:active {
     transform: scale(0.95);

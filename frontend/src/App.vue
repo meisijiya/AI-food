@@ -163,12 +163,12 @@ onUnmounted(() => {
   align-items: center;
   gap: 4px;
   padding: 8px 8px 8px 16px;
-  background: rgba(11, 15, 16, 0.92);
+  background: var(--color-inverse-surface-92);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-radius: 100px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-flat-xl);
+  border: 1px solid var(--color-on-inverse-overlay-sm);
 }
 
 .nav-pop-enter-active {
@@ -210,8 +210,8 @@ onUnmounted(() => {
   }
 
   &:not(.active) {
-    .nav-icon { color: rgba(255, 255, 255, 0.4); }
-    .nav-label { color: rgba(255, 255, 255, 0.4); }
+    .nav-icon { color: var(--color-on-inverse-overlay-fg); }
+    .nav-label { color: var(--color-on-inverse-overlay-fg); }
   }
 
   &:active {
@@ -253,8 +253,8 @@ onUnmounted(() => {
   border: none;
   margin-left: 6px;
   margin-right: 2px;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.45);
+  background: var(--color-on-inverse-overlay-sm);
+  color: var(--color-on-inverse-overlay-fg-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -263,8 +263,8 @@ onUnmounted(() => {
   transition: all 0.2s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.14);
-    color: rgba(255, 255, 255, 0.7);
+    background: var(--color-on-inverse-overlay-md);
+    color: var(--color-on-inverse-overlay-fg-bold);
   }
 
   &:active {
@@ -285,17 +285,17 @@ onUnmounted(() => {
   margin: 0 auto;
   border: none;
   border-radius: 12px 12px 0 0;
-  background: rgba(11, 15, 16, 0.85);
+  background: var(--color-inverse-surface-85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-on-inverse-overlay-fg-strong);
   cursor: pointer;
-  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-flat-bottom-md);
   transition: all 0.2s;
 
   &:hover {
-    color: rgba(255, 255, 255, 0.8);
-    background: rgba(11, 15, 16, 0.95);
+    color: var(--color-on-inverse-overlay-fg-active);
+    background: var(--color-inverse-surface-95);
   }
 
   &:active {

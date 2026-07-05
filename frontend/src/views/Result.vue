@@ -426,7 +426,7 @@ const goHome = () => {
   border-radius: 2rem;
   padding: 28px 24px;
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-flat-sm);
   margin-bottom: 32px;
   position: relative;
   overflow: hidden;
@@ -500,7 +500,7 @@ const goHome = () => {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(0, 0, 0, 0.85);
+  background: var(--color-overlay-modal);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   display: flex;

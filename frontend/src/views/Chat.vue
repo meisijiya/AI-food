@@ -550,7 +550,7 @@ onUnmounted(() => {
   background: var(--color-surface-lowest);
   border-radius: 2rem; padding: 36px 28px 24px;
   text-align: center;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-flat-overlay);
   margin: auto 24px;
 }
 
