@@ -526,7 +526,7 @@ onMounted(async () => {
   &::after {
     content: ''; position: absolute;
     top: -40px; right: -40px; width: 140px; height: 140px;
-    background: rgba(140, 225, 243, 0.08); border-radius: 50%; filter: blur(40px);
+    background: /* ponytail: 装饰青色径向渐变，无对应 token */ rgba(140, 225, 243, 0.08); border-radius: 50%; filter: blur(40px);
   }
 }
 
@@ -844,7 +844,7 @@ onMounted(async () => {
   display: flex; flex-direction: column; align-items: center;
   gap: 8px; padding: 16px 24px;
   border: none; border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--color-on-inverse-overlay-fg-strong);
   cursor: pointer;
   transition: background 0.2s, transform 0.15s;
   &:active {

@@ -245,7 +245,7 @@ onMounted(fetchShare)
 
 /* App card — top floating */
 .app-card {
-  background: linear-gradient(135deg, var(--color-inverse-surface), #1a2332);
+  background: linear-gradient(135deg, var(--color-inverse-surface), /* ponytail: #1a2332 深色背景渐变端点，无对应 token */ #1a2332);
   border-radius: 2rem;
   padding: 20px 24px;
   margin-bottom: 20px;
@@ -281,7 +281,7 @@ onMounted(fetchShare)
 }
 
 .app-card-desc {
-  font-size: 12px; color: rgba(255, 255, 255, 0.5);
+  font-size: 12px; color: var(--color-on-inverse-overlay-fg-strong);
 }
 
 .app-cta-btn {
@@ -350,7 +350,7 @@ onMounted(fetchShare)
   &::after {
     content: ''; position: absolute;
     top: -40px; right: -40px; width: 140px; height: 140px;
-    background: rgba(140, 225, 243, 0.08); border-radius: 50%; filter: blur(40px);
+    background: /* ponytail: 装饰青色径向渐变，无对应 token */ rgba(140, 225, 243, 0.08); border-radius: 50%; filter: blur(40px);
   }
 }
 

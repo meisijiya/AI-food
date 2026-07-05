@@ -615,7 +615,7 @@ onDeactivated(() => {
   height: 100px;
   margin: 0 auto 24px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--focus-ring-color), rgba(140, 225, 243, 0.08));
+  background: linear-gradient(135deg, var(--focus-ring-color), /* ponytail: 装饰青色径向渐变端点，无对应 token */ rgba(140, 225, 243, 0.08));
   display: flex;
   align-items: center;
   justify-content: center;
