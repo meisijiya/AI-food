@@ -283,7 +283,7 @@ onMounted(() => {
   padding: 24px;
   background: var(--color-surface-lowest);
   border-radius: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-on-inverse-overlay-fg-active);
   box-shadow: var(--shadow-flat-sm);
   z-index: 1;
   cursor: pointer;
@@ -526,7 +526,7 @@ onMounted(() => {
   padding: 40px 24px;
   background: var(--color-surface-lowest);
   border-radius: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-on-inverse-overlay-fg-active);
   box-shadow: var(--shadow-flat-sm);
   z-index: 1;
 }
@@ -598,13 +598,13 @@ onMounted(() => {
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 12px 32px -8px rgba(74, 141, 213, 0.35);
+  box-shadow: 0 12px 32px -8px var(--shadow-glow);
   transition: all 0.3s var(--ease-out-soft);
   margin-bottom: 12px;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 16px 40px -8px rgba(74, 141, 213, 0.45);
+    box-shadow: 0 16px 40px -8px var(--shadow-glow-hover);
   }
 
   &:active {

@@ -592,7 +592,7 @@ onUnmounted(() => {
 .dialog-btn-confirm {
   background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white;
-  box-shadow: 0 4px 16px rgba(74, 141, 213, 0.25);
+  box-shadow: 0 4px 16px var(--focus-ring-color);
   &:active { transform: scale(0.97); }
 }
 

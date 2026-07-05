@@ -531,7 +531,7 @@ onDeactivated(() => {
   font-weight: 700;
   letter-spacing: 0.05em;
   cursor: pointer;
-  box-shadow: 0 8px 20px rgba(74, 141, 213, 0.25);
+  box-shadow: 0 8px 20px var(--focus-ring-color);
   transition: all 0.2s;
   &:hover {
     box-shadow: 0 12px 28px var(--shadow-glow);
@@ -648,7 +648,7 @@ onDeactivated(() => {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 8px 20px rgba(74, 141, 213, 0.25);
+  box-shadow: 0 8px 20px var(--focus-ring-color);
   transition: all 0.2s;
   &:hover {
     box-shadow: 0 12px 28px var(--shadow-glow);
