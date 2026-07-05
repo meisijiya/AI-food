@@ -484,7 +484,7 @@ onUnmounted(() => {
   background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
   color: white; display: flex; align-items: center; justify-content: center;
   cursor: pointer; flex-shrink: 0; transition: all 0.2s;
-  box-shadow: 0 4px 12px /* ponytail: rgba(74, 141, 213,0.25) */ rgba(74, 141, 213,0.25);
+  box-shadow: 0 4px 12px var(--focus-ring-color);
   &:hover { transform: scale(1.05); }
   &:active { transform: scale(0.95); }
   &:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
