@@ -141,10 +141,201 @@
 }
 
 /* =========================================================================
-   暗色模式 (prefers-color-scheme: dark)
+   暗色模式
+   - data-theme="dark": 强制暗色
+   - data-theme="light": 强制亮色（覆盖系统偏好）
+   - 无 data-theme 属性: 跟随系统 (prefers-color-scheme: dark)
    ========================================================================= */
+
+/* 显式暗色（用户选择） */
+:root[data-theme="dark"] {
+  /* 主色微调 · 暗色背景上更亮 */
+  --color-primary: #5d9fe6;
+  --color-primary-hover: #4a8dd5;
+  --color-primary-soft: #2c5fa0;
+  --color-primary-grad-top: #6ba8ee;
+  --color-primary-grad-bottom: #4a8dd5;
+
+  /* 暖色 · 暗色下保留旭日感 */
+  --color-accent-warm: #e8855a;
+  --color-accent-warm-2: #f5b78a;
+  --color-accent-warm-soft: #2a1f18;  /* 暗色下 AI bubble bg: 暗暖色 (不再是白色补丁) */
+
+  /* 次级冷色 · 暗色下调亮 */
+  --color-cyan: #8ce1f3;
+  --color-cyan-deep: #06b6d4;
+  --color-cyan-bright: #22d3ee;
+  --color-success-bright: #4ade80;
+  --color-danger-bright: #f87171;
+
+  /* 表面 · 反转 (浅↔深) */
+  --color-surface: #0f1214;
+  --color-surface-low: #1a1d20;
+  --color-surface-lowest: #22272a;
+
+  /* 文字 · 反转 */
+  --color-on-surface: #e8eaec;
+  --color-on-surface-variant: #a8acaf;
+  --color-on-surface-faint: #6c7075;
+  --color-inverse-surface: #f4f7f9;
+  --color-on-primary: #0b0f10;
+
+  /* 语义 · 暗色下保持 */
+  --color-danger: #e85c75;
+  --color-success: #4fb87e;
+
+  /* Nav active · 暗色下保持 cyan */
+  --color-nav-active: #22d3ee;
+
+  /* 阴影 · 暗色下保持中性不过重 */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.32), 0 1px 3px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.35), 0 2px 4px -1px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 8px 24px -4px rgba(0, 0, 0, 0.4), 0 4px 8px -2px rgba(0, 0, 0, 0.32);
+  --shadow-xl: 0 16px 40px -8px rgba(0, 0, 0, 0.45), 0 6px 12px -4px rgba(0, 0, 0, 0.36);
+  --shadow-glow: 0 12px 32px -8px rgba(93, 159, 230, 0.35);
+  --shadow-warm: 0 12px 32px -8px rgba(232, 133, 90, 0.4);
+  --shadow-flat-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-flat-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-flat-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --shadow-flat-xl: 0 20px 60px rgba(0, 0, 0, 0.3);
+  --shadow-flat-bottom-sm: 0 -4px 24px rgba(0, 0, 0, 0.06);
+  --shadow-flat-bottom-md: 0 -2px 12px rgba(0, 0, 0, 0.15);
+  --shadow-flat-bottom-lg: 0 -8px 40px rgba(0, 0, 0, 0.1);
+  --shadow-flat-overlay: 0 24px 64px rgba(0, 0, 0, 0.15);
+
+  /* 玻璃 · 暗色下用半透深色 */
+  --glass-bg: rgba(34, 39, 42, 0.62);
+  --glass-bg-strong: rgba(34, 39, 42, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.08);
+
+  /* 骨架屏 · 暗色 */
+  --color-skeleton: #2a2f33;
+  --color-skeleton-shimmer: #353a3e;
+
+  /* 焦点环 · 暗色下稍亮 */
+  --focus-ring-color: rgba(93, 159, 230, 0.45);
+
+  /* 中性蒙层 · 暗色下加深 */
+  --color-overlay-modal: rgba(0, 0, 0, 0.7);
+  --color-overlay-pressed: rgba(255, 255, 255, 0.08);
+  --color-scrollbar-thumb: rgba(255, 255, 255, 0.1);
+  --color-scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+}
+
+/* 系统偏好（当未设置 data-theme 属性时） */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    /* 复用 data-theme="dark" 同一套 token (CSS variable 自引用) */
+    --color-primary: #5d9fe6;
+    --color-primary-hover: #4a8dd5;
+    --color-primary-soft: #2c5fa0;
+    --color-primary-grad-top: #6ba8ee;
+    --color-primary-grad-bottom: #4a8dd5;
+    --color-accent-warm: #e8855a;
+    --color-accent-warm-2: #f5b78a;
+    --color-accent-warm-soft: #2a1f18;
+    --color-cyan: #8ce1f3;
+    --color-cyan-deep: #06b6d4;
+    --color-cyan-bright: #22d3ee;
+    --color-success-bright: #4ade80;
+    --color-danger-bright: #f87171;
+    --color-surface: #0f1214;
+    --color-surface-low: #1a1d20;
+    --color-surface-lowest: #22272a;
+    --color-on-surface: #e8eaec;
+    --color-on-surface-variant: #a8acaf;
+    --color-on-surface-faint: #6c7075;
+    --color-inverse-surface: #f4f7f9;
+    --color-on-primary: #0b0f10;
+    --color-danger: #e85c75;
+    --color-success: #4fb87e;
+    --color-nav-active: #22d3ee;
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.32), 0 1px 3px rgba(0, 0, 0, 0.24);
+    --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.35), 0 2px 4px -1px rgba(0, 0, 0, 0.28);
+    --shadow-lg: 0 8px 24px -4px rgba(0, 0, 0, 0.4), 0 4px 8px -2px rgba(0, 0, 0, 0.32);
+    --shadow-xl: 0 16px 40px -8px rgba(0, 0, 0, 0.45), 0 6px 12px -4px rgba(0, 0, 0, 0.36);
+    --shadow-glow: 0 12px 32px -8px rgba(93, 159, 230, 0.35);
+    --shadow-warm: 0 12px 32px -8px rgba(232, 133, 90, 0.4);
+    --shadow-flat-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --shadow-flat-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --shadow-flat-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+    --shadow-flat-xl: 0 20px 60px rgba(0, 0, 0, 0.3);
+    --shadow-flat-bottom-sm: 0 -4px 24px rgba(0, 0, 0, 0.06);
+    --shadow-flat-bottom-md: 0 -2px 12px rgba(0, 0, 0, 0.15);
+    --shadow-flat-bottom-lg: 0 -8px 40px rgba(0, 0, 0, 0.1);
+    --shadow-flat-overlay: 0 24px 64px rgba(0, 0, 0, 0.15);
+    --glass-bg: rgba(34, 39, 42, 0.62);
+    --glass-bg-strong: rgba(34, 39, 42, 0.82);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --color-skeleton: #2a2f33;
+    --color-skeleton-shimmer: #353a3e;
+    --focus-ring-color: rgba(93, 159, 230, 0.45);
+    --color-overlay-modal: rgba(0, 0, 0, 0.7);
+    --color-overlay-pressed: rgba(255, 255, 255, 0.08);
+    --color-scrollbar-thumb: rgba(255, 255, 255, 0.1);
+    --color-scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* 显式亮色（用户选择 · 即使系统偏好暗色也强制亮色） */
+:root[data-theme="light"] {
+  /* 完整 light tokens（覆盖 system dark） */
+  --color-primary: #4a8dd5;
+  --color-primary-hover: #2c5fa0;
+  --color-primary-soft: #c5dcf0;
+  --color-primary-grad-top: #5b9be0;
+  --color-primary-grad-bottom: #3a7bc0;
+  --color-accent-warm: #d97849;
+  --color-accent-warm-2: #f5b78a;
+  --color-accent-warm-soft: #fef0e8;
+  --color-cyan: #8ce1f3;
+  --color-cyan-deep: #06b6d4;
+  --color-cyan-bright: #22d3ee;
+  --color-success-bright: #22c55e;
+  --color-danger-bright: #ef4444;
+  --color-surface: #f4f7f9;
+  --color-surface-low: #edf1f3;
+  --color-surface-lowest: #ffffff;
+  --color-on-surface: #2b2f31;
+  --color-on-surface-variant: #585c5e;
+  --color-on-surface-faint: #6e7378;
+  --color-inverse-surface: #0b0f10;
+  --color-on-primary: #ffffff;
+  --color-danger: #c8344a;
+  --color-success: #2f9e6e;
+  --color-nav-active: #22d3ee;
+  --shadow-xs: 0 1px 2px rgba(11, 15, 16, 0.05);
+  --shadow-sm: 0 1px 2px rgba(11, 15, 16, 0.06), 0 1px 3px rgba(11, 15, 16, 0.04);
+  --shadow-md: 0 4px 12px -2px rgba(11, 15, 16, 0.08), 0 2px 4px -1px rgba(11, 15, 16, 0.04);
+  --shadow-lg: 0 8px 24px -4px rgba(11, 15, 16, 0.10), 0 4px 8px -2px rgba(11, 15, 16, 0.06);
+  --shadow-xl: 0 16px 40px -8px rgba(11, 15, 16, 0.14), 0 6px 12px -4px rgba(11, 15, 16, 0.08);
+  --shadow-glow: 0 12px 32px -8px rgba(74, 141, 213, 0.22);
+  --shadow-warm: 0 12px 32px -8px rgba(232, 133, 90, 0.25);
+  --shadow-flat-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-flat-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-flat-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --shadow-flat-xl: 0 20px 60px rgba(0, 0, 0, 0.3);
+  --shadow-flat-bottom-sm: 0 -4px 24px rgba(0, 0, 0, 0.06);
+  --shadow-flat-bottom-md: 0 -2px 12px rgba(0, 0, 0, 0.15);
+  --shadow-flat-bottom-lg: 0 -8px 40px rgba(0, 0, 0, 0.1);
+  --shadow-flat-overlay: 0 24px 64px rgba(0, 0, 0, 0.15);
+  --glass-bg: rgba(255, 255, 255, 0.62);
+  --glass-bg-strong: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --color-skeleton: #e8ecf0;
+  --color-skeleton-shimmer: #f4f6f8;
+  --focus-ring-color: rgba(74, 141, 213, 0.25);
+  --color-overlay-modal: rgba(0, 0, 0, 0.5);
+  --color-overlay-pressed: rgba(0, 0, 0, 0.05);
+  --color-scrollbar-thumb: rgba(0, 0, 0, 0.1);
+  --color-scrollbar-thumb-hover: rgba(0, 0, 0, 0.2);
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
+    /* 暗色模式 (system pref, 无 data-theme 时) */
     /* 主色微调 · 暗色背景上更亮 */
     --color-primary: #5d9fe6;
     --color-primary-hover: #4a8dd5;
@@ -191,10 +382,14 @@
     --shadow-xl: 0 16px 40px -8px rgba(0, 0, 0, 0.45), 0 6px 12px -4px rgba(0, 0, 0, 0.36);
     --shadow-glow: 0 12px 32px -8px rgba(93, 159, 230, 0.35);
     --shadow-warm: 0 12px 32px -8px rgba(232, 133, 90, 0.4);
-    /* flat shadows: dark uses same rgba(0,0,0) values, just darker base due to bg */
     --shadow-flat-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
     --shadow-flat-md: 0 4px 20px rgba(0, 0, 0, 0.08);
-    --shadow-flat-lg: 0 -8px 40px rgba(0, 0, 0, 0.1);
+    --shadow-flat-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+    --shadow-flat-xl: 0 20px 60px rgba(0, 0, 0, 0.3);
+    --shadow-flat-bottom-sm: 0 -4px 24px rgba(0, 0, 0, 0.06);
+    --shadow-flat-bottom-md: 0 -2px 12px rgba(0, 0, 0, 0.15);
+    --shadow-flat-bottom-lg: 0 -8px 40px rgba(0, 0, 0, 0.1);
+    --shadow-flat-overlay: 0 24px 64px rgba(0, 0, 0, 0.15);
 
     /* 玻璃 · 暗色下用半透深色 */
     --glass-bg: rgba(34, 39, 42, 0.62);
@@ -207,19 +402,43 @@
 
     /* 焦点环 · 暗色下稍亮 */
     --focus-ring-color: rgba(93, 159, 230, 0.45);
+
+    /* 中性蒙层 · 暗色下加深 */
+    --color-overlay-modal: rgba(0, 0, 0, 0.7);
+    --color-overlay-pressed: rgba(255, 255, 255, 0.08);
+    --color-scrollbar-thumb: rgba(255, 255, 255, 0.1);
+    --color-scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+
+    /* 装饰背景渐变 (暗色下加深) */
+    --bg-winter-sunrise-1: rgba(245, 183, 138, 0.18);
+    --bg-winter-sunrise-2: rgba(140, 225, 243, 0.12);
+    --bg-winter-sunrise-bg-1: #0f1214;
+    --bg-winter-sunrise-bg-2: #1a1d20;
+    --bg-cold-canvas-1: rgba(93, 159, 230, 0.15);
+    --bg-cold-canvas-bg-1: #0f1214;
+    --bg-cold-canvas-bg-2: #1a1d20;
   }
 
-  /* 暗色下的装饰背景 */
-  .bg-winter-sunrise {
-    background:
-      radial-gradient(ellipse 800px 400px at 80% 0%, rgba(245, 183, 138, 0.18), transparent 60%),
-      radial-gradient(ellipse 600px 500px at 0% 30%, rgba(140, 225, 243, 0.12), transparent 60%),
-      linear-gradient(180deg, #0f1214 0%, #1a1d20 100%);
+  /* 装饰背景渐变 (深色模式 · 显式) */
+  :root[data-theme="dark"] {
+    --bg-winter-sunrise-1: rgba(245, 183, 138, 0.18);
+    --bg-winter-sunrise-2: rgba(140, 225, 243, 0.12);
+    --bg-winter-sunrise-bg-1: #0f1214;
+    --bg-winter-sunrise-bg-2: #1a1d20;
+    --bg-cold-canvas-1: rgba(93, 159, 230, 0.15);
+    --bg-cold-canvas-bg-1: #0f1214;
+    --bg-cold-canvas-bg-2: #1a1d20;
   }
-  .bg-cold-canvas {
-    background:
-      radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(93, 159, 230, 0.15), transparent 60%),
-      linear-gradient(180deg, #0f1214 0%, #1a1d20 100%);
+
+  /* 浅色显式（保持默认） */
+  :root[data-theme="light"] {
+    --bg-winter-sunrise-1: rgba(245, 183, 138, 0.35);
+    --bg-winter-sunrise-2: rgba(140, 225, 243, 0.25);
+    --bg-winter-sunrise-bg-1: #f4f7f9;
+    --bg-winter-sunrise-bg-2: #edf1f3;
+    --bg-cold-canvas-1: rgba(74, 141, 213, 0.18);
+    --bg-cold-canvas-bg-1: #f4f7f9;
+    --bg-cold-canvas-bg-2: #ffffff;
   }
 }
 
@@ -257,14 +476,14 @@
 }
 .bg-winter-sunrise {
   background:
-    radial-gradient(ellipse 800px 400px at 80% 0%, rgba(245, 183, 138, 0.35), transparent 60%),
-    radial-gradient(ellipse 600px 500px at 0% 30%, rgba(140, 225, 243, 0.25), transparent 60%),
-    linear-gradient(180deg, #f4f7f9 0%, #edf1f3 100%);
+    radial-gradient(ellipse 800px 400px at 80% 0%, var(--bg-winter-sunrise-1), transparent 60%),
+    radial-gradient(ellipse 600px 500px at 0% 30%, var(--bg-winter-sunrise-2), transparent 60%),
+    linear-gradient(180deg, var(--bg-winter-sunrise-bg-1) 0%, var(--bg-winter-sunrise-bg-2) 100%);
 }
 .bg-cold-canvas {
   background:
-    radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(74, 141, 213, 0.18), transparent 60%),
-    linear-gradient(180deg, #f4f7f9 0%, #ffffff 100%);
+    radial-gradient(ellipse 1200px 600px at 50% -10%, var(--bg-cold-canvas-1), transparent 60%),
+    linear-gradient(180deg, var(--bg-cold-canvas-bg-1) 0%, var(--bg-cold-canvas-bg-2) 100%);
 }
 
 /* --- 字体层级 (Editorial 克制) ---

@@ -97,6 +97,12 @@
         <StatCard :number="conversationCount" label="推荐记录" />
       </div>
 
+      <!-- Theme switcher -->
+      <div class="theme-section animate-fade-up delay-300 animate-start-hidden">
+        <div class="theme-section__label">外观主题</div>
+        <ThemeSwitcher />
+      </div>
+
       <!-- Logout -->
       <button class="logout-btn animate-fade-up delay-400 animate-start-hidden" @click="handleLogout">
         退出登录
@@ -114,6 +120,7 @@ import { useAuthStore } from '@/stores/auth'
 import { userApi, recordApi, followApi } from '@/api'
 import { showSuccess, showError } from '@/utils/toast'
 import StatCard from '@/components/ui/StatCard.vue'
+import ThemeSwitcher from '@/components/ui/ThemeSwitcher.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -466,6 +473,26 @@ onMounted(() => {
 }
 
 /* .stat-item / .stat-value / .stat-label removed per Phase 5 P0 cleanup (using StatCard component) */
+
+/* Theme section */
+.theme-section {
+  margin-top: var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-surface-lowest);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-surface-low);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  z-index: 1;
+}
+.theme-section__label {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-on-surface);
+}
 
 /* Logout */
 .logout-btn {
