@@ -1,6 +1,5 @@
 <template>
-  <div class="records-container" ref="scrollContainer" @scroll="onScroll">
-    <div class="bg-glow bg-glow-1"></div>
+  <div class="records-container bg-cold-canvas" ref="scrollContainer" @scroll="onScroll">
 
     <!-- Header row -->
     <div class="header-row animate-fade-up">
@@ -445,7 +444,7 @@ onMounted(() => {
   padding: 6px 16px;
   border: none;
   border-radius: 100px;
-  background: #ef4444;
+  background: var(--color-danger-bright);
   color: white;
   font-size: 12px;
   font-weight: 600;
@@ -505,10 +504,10 @@ onMounted(() => {
   padding: 20px 24px;
   background: var(--color-surface-lowest);
   border-radius: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--color-on-inverse-overlay-sm);
+  box-shadow: var(--shadow-flat-sm);
   cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease, border-color 0.2s;
+  transition: transform 0.3s var(--ease-out-soft), box-shadow 0.3s ease, border-color 0.2s;
 
   &:active {
     transform: scale(0.98);
@@ -516,7 +515,7 @@ onMounted(() => {
 
   &.selected {
     border-color: var(--color-primary-soft);
-    background: rgba(104, 160, 255, 0.05);
+    background: var(--color-primary-05);
   }
 }
 
@@ -568,8 +567,8 @@ onMounted(() => {
   height: 36px;
   border: none;
   border-radius: 50%;
-  background: rgba(239, 68, 68, 0.08);
-  color: #ef4444;
+  background: var(--color-danger-bright);
+  color: var(--color-danger-bright);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -577,7 +576,7 @@ onMounted(() => {
   transition: all 0.2s;
 
   &:active {
-    background: rgba(239, 68, 68, 0.15);
+    background: var(--color-danger-bright);
     transform: scale(0.9);
   }
 }
@@ -682,13 +681,13 @@ onMounted(() => {
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 12px 32px -8px rgba(74, 141, 213, 0.35);
-  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 12px 32px -8px var(--shadow-glow);
+  transition: all 0.3s var(--ease-out-soft);
   margin-bottom: 12px;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 16px 40px -8px rgba(74, 141, 213, 0.45);
+    box-shadow: 0 16px 40px -8px var(--shadow-glow-hover);
   }
 
   &:active {

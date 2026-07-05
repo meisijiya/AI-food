@@ -1,7 +1,5 @@
 <template>
-  <div class="profile-edit-container">
-    <div class="bg-glow bg-glow-1"></div>
-    <div class="bg-glow bg-glow-2"></div>
+  <div class="profile-edit-container bg-winter-sunrise">
 
     <!-- Header -->
     <div class="page-header animate-fade-up">
@@ -344,8 +342,8 @@ async function savePassword() {
 .section-card {
   background: var(--color-surface-lowest);
   border-radius: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--color-on-inverse-overlay-sm);
+  box-shadow: var(--shadow-flat-sm);
   padding: 24px;
   margin-bottom: 16px;
   z-index: 1;

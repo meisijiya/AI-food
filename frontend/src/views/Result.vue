@@ -1,9 +1,5 @@
 <template>
-  <div class="result-page">
-    <!-- Decorative glows -->
-    <div class="result-glow glow-1"></div>
-    <div class="result-glow glow-2"></div>
-
+  <div class="result-page bg-cold-canvas">
     <!-- Loading -->
     <div v-if="loading" class="loading-state">
       <div class="loading-spinner"></div>
@@ -398,13 +394,13 @@ const goHome = () => {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-success-bright), #16a34a);
+  background: linear-gradient(135deg, var(--color-success-bright), var(--color-success-bright));
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 20px;
-  box-shadow: 0 12px 32px -8px rgba(34, 197, 94, 0.4);
+  box-shadow: 0 12px 32px -8px var(--shadow-warm);
 }
 
 .result-title {
@@ -425,7 +421,7 @@ const goHome = () => {
   background: var(--color-surface-lowest);
   border-radius: 2rem;
   padding: 28px 24px;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-on-inverse-overlay-sm);
   box-shadow: var(--shadow-flat-sm);
   margin-bottom: 32px;
   position: relative;

@@ -1,6 +1,5 @@
 <template>
-  <div class="feed-container" ref="scrollContainer" @scroll="onScroll">
-    <div class="bg-glow bg-glow-1"></div>
+  <div class="feed-container bg-cold-canvas" ref="scrollContainer" @scroll="onScroll">
 
     <!-- Header -->
     <div class="feed-header animate-fade-up">
@@ -510,7 +509,7 @@ onMounted(() => {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-flat-sm);
   transition: all 0.2s;
   &:active {
     background: var(--color-surface-low);
@@ -563,7 +562,7 @@ onMounted(() => {
   height: 16px;
   padding: 0 4px;
   border-radius: 8px;
-  background: #ef4444;
+  background: var(--color-danger-bright);
   color: white;
   font-size: 10px;
   font-weight: 700;
@@ -649,8 +648,8 @@ onMounted(() => {
   padding: 12px;
   background: var(--color-surface-lowest);
   border-radius: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--color-on-inverse-overlay-sm);
+  box-shadow: var(--shadow-flat-sm);
   margin-bottom: 8px;
   cursor: pointer;
   transition: transform 0.2s;
@@ -807,7 +806,7 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.2s;
   svg {
-    color: #ef4444;
+    color: var(--color-danger-bright);
   }
   &:active {
     transform: scale(0.96);

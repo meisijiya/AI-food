@@ -1,10 +1,5 @@
 <template>
-  <div class="login-container">
-    <!-- Decorative background glows -->
-    <div class="bg-glow bg-glow-1"></div>
-    <div class="bg-glow bg-glow-2"></div>
-    <div class="bg-glow bg-glow-3"></div>
-
+  <div class="login-container bg-winter-sunrise">
     <!-- Decorative badge -->
     <div class="hero-badge animate-fade-up animate-start-hidden">
       <span>AI 美食</span>
@@ -390,7 +385,7 @@ const goAsGuest = () => {
   height: calc(100% - 8px);
   background: var(--color-surface-low);
   border-radius: 1.75rem;
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.35s var(--ease-out-soft);
   z-index: 0;
 }
 
@@ -422,7 +417,7 @@ const goAsGuest = () => {
 
   &:focus-within {
     border-color: var(--color-primary-soft);
-    box-shadow: 0 0 0 3px rgba(74, 141, 213, 0.08);
+    box-shadow: 0 0 0 3px var(--focus-ring-color);
   }
 
   &.input-pill-code {
@@ -494,14 +489,14 @@ const goAsGuest = () => {
   font-weight: 700;
   letter-spacing: 0.15em;
   cursor: pointer;
-  box-shadow: 0 12px 32px -8px rgba(74, 141, 213, 0.35);
-  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 12px 32px -8px var(--shadow-glow);
+  transition: all 0.3s var(--ease-out-soft);
   position: relative;
   overflow: hidden;
 
   &:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 16px 40px -8px rgba(74, 141, 213, 0.45);
+    box-shadow: 0 16px 40px -8px var(--shadow-glow-hover);
   }
 
   &:active:not(:disabled) {
@@ -518,7 +513,7 @@ const goAsGuest = () => {
   display: inline-block;
   width: 20px;
   height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid var(--color-on-inverse-overlay-md);
   border-top-color: white;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
