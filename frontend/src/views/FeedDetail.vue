@@ -23,6 +23,14 @@
         <div class="reason-text">{{ post.reason }}</div>
       </div>
 
+      <!-- Category + Flavor Tags -->
+      <div v-if="post.category || flavorTags.length" class="params-section animate-fade-up delay-225 animate-start-hidden">
+        <div v-if="post.category" class="detail-category-chip">{{ post.category }}</div>
+        <div v-if="flavorTags.length" class="detail-flavor-tags">
+          <span v-for="tag in flavorTags" :key="tag" class="detail-flavor-tag">{{ tag }}</span>
+        </div>
+      </div>
+
       <!-- Collected params -->
       <div v-if="collectedParams.length" class="params-section animate-fade-up delay-250 animate-start-hidden">
         <div class="section-label">收集信息</div>
@@ -203,6 +211,16 @@ const isGuest = computed(() => authStore.isGuest)
 
 const post = ref<any>(null)
 const loading = ref(true)
+
+// Parse flavorTags from post (may be JSON string)
+const flavorTags = computed(() => {
+  if (!post.value?.flavorTags) return []
+  try {
+    return typeof post.value.flavorTags === 'string'
+      ? JSON.parse(post.value.flavorTags)
+      : post.value.flavorTags
+  } catch { return [] }
+})
 const photoModalUrl = ref<string | null>(null)
 const isLiked = ref(false)
 const likeCount = ref(0)

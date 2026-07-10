@@ -133,7 +133,6 @@ interface RecordItem {
   reason: string
   createdAt: string
   status?: string
-  mode?: string
 }
 
 const router = useRouter()
@@ -290,7 +289,7 @@ function displayFoodName(record: RecordItem) {
 }
 
 function displayReason(record: RecordItem) {
-  return record.reason || `会话状态：${record.status || 'completed'} · 模式：${record.mode || 'inertia'}`
+  return record.reason || `会话状态：${record.status || 'completed'}`
 }
 
 onMounted(() => {

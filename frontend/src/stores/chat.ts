@@ -15,6 +15,13 @@ export interface Progress {
   collected: string[]
 }
 
+interface RecommendationResult {
+  foodName: string
+  reason: string
+  category?: string
+  flavorTags?: string[] | string  // 服务端返回 JSON 字符串
+}
+
 export const useChatStore = defineStore('chat', () => {
   const sessionId = ref<string>('')
   const messages = ref<ChatMessage[]>([])
@@ -22,7 +29,7 @@ export const useChatStore = defineStore('chat', () => {
   const isConnected = ref(false)
   const isLoading = ref(false)
   const currentPhase = ref<'chat' | 'recommend'>('chat')
-  const recommendationResult = ref<any>(null)
+  const recommendationResult = ref<RecommendationResult | null>(null)
 
   function setSessionId(id: string) { sessionId.value = id }
 

@@ -14,7 +14,7 @@
         <div class="recommend-food">{{ foodName }}</div>
         <div class="recommend-reason" v-if="reason">{{ reason }}</div>
         <div v-if="detail.session" class="recommend-meta">
-          <span v-if="detail.session.mode">{{ detail.session.mode === 'inertia' ? '惯性模式' : '随机模式' }}</span>
+          <span>AI 推荐</span>
           <span v-if="detail.session.totalQuestions">{{ detail.session.currentQuestionCount }}/{{ detail.session.totalQuestions }} 轮</span>
           <span v-if="detail.session.createdAt">{{ formatDate(detail.session.createdAt) }}</span>
         </div>

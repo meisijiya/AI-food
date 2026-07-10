@@ -19,6 +19,18 @@
       <!-- Food Card -->
       <ResultFoodCard :food-name="foodName" :reason="reason" />
 
+      <!-- Category + Flavor Tags -->
+      <div
+        v-if="result.category || (result.flavorTags && result.flavorTags.length)"
+        class="params-card animate-fade-up delay-300 animate-start-hidden"
+      >
+        <div class="params-glow"></div>
+        <div v-if="result.category" class="result-category-chip">{{ result.category }}</div>
+        <div v-if="result.flavorTags && result.flavorTags.length" class="result-flavor-tags">
+          <span v-for="tag in result.flavorTags" :key="tag" class="flavor-tag-chip">{{ tag }}</span>
+        </div>
+      </div>
+
       <!-- Params Card(轻量,留父组件内联) -->
       <div
         class="params-card animate-fade-up delay-400 animate-start-hidden"
@@ -169,23 +181,26 @@ const sessionId = computed(() => {
   return pendingData.value?.sessionId || chatStore.sessionId
 })
 
-const foodName = computed(() => {
+const result = computed(() => {
   try {
-    const result = JSON.parse(chatStore.recommendationResult || '{}')
-    return result.foodName || '暂无推荐'
+    const raw = chatStore.recommendationResult
+    if (!raw) return { foodName: '暂无推荐', reason: '', category: '', flavorTags: [] }
+    const r = typeof raw === 'string' ? JSON.parse(raw) : raw
+    return {
+      foodName: r.foodName || '暂无推荐',
+      reason: r.reason || '',
+      category: r.category || '',
+      flavorTags: r.flavorTags
+        ? (typeof r.flavorTags === 'string' ? JSON.parse(r.flavorTags) : r.flavorTags)
+        : []
+    }
   } catch {
-    return '暂无推荐'
+    return { foodName: '暂无推荐', reason: '', category: '', flavorTags: [] }
   }
 })
 
-const reason = computed(() => {
-  try {
-    const result = JSON.parse(chatStore.recommendationResult || '{}')
-    return result.reason || ''
-  } catch {
-    return ''
-  }
-})
+const foodName = computed(() => result.value.foodName)
+const reason = computed(() => result.value.reason)
 
 const collectedParams = computed(() => {
   const paramValues = pendingData.value?.paramValues || {}
@@ -203,14 +218,12 @@ const collectedParams = computed(() => {
   }))
 })
 
-// 发布弹窗的初始预览值(取自 chatStore.recommendationResult.reason,截前 30 字)
+// 发布弹窗的初始预览值(取自 result.category + reason,截前 30 字)
 const initialPublishPreview = computed(() => {
-  try {
-    const result = JSON.parse(chatStore.recommendationResult || '{}')
-    return result.reason ? result.reason.substring(0, 30) : ''
-  } catch {
-    return ''
-  }
+  const preview = result.value.category
+    ? `${result.value.category} ${result.value.reason}`
+    : result.value.reason
+  return preview ? preview.substring(0, 30) : ''
 })
 
 // ===== Photo handlers =====

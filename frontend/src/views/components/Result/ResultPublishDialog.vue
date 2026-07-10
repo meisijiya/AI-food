@@ -63,7 +63,7 @@ const props = defineProps<{
   isPublished: boolean
   publishing: boolean
   unpublishing: boolean
-  initialPublishPreview?: string  // 打开弹窗时的初始预览值(取自 chatStore.recommendationResult.reason)
+  initialPublishPreview?: string  // 打开弹窗时的初始预览值(取自 chatStore recommendationResult.category + reason)
 }>()
 
 const emit = defineEmits<{
