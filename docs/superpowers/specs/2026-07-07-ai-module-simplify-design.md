@@ -30,6 +30,9 @@
 | **超限行为** | 硬拒绝 | WS 发 `system` 错误消息"今日 token 额度已用完"，AI 调用数 0 |
 | **限额配置层级** | 默认 → 全局配置 → 单用户覆盖（per-user 优先） | 2 层覆盖，admin 后台管理 |
 | **异常退出清理** | `sweepIdle` / `afterConnectionClosed` / `handleTransportError` 全部调 `cancelSession` 软删 DB | 用户选 A：异常退出记录不保留 |
+| **异常退出必须先 setCancelled** | 异常路径**先** `state.setCancelled(true)` **再** `cancelSession` | P0-2 修订：阻止 aiExecutor 异步任务 race 写入 |
+| **退出标志命名** | `state.gracefulExit` (Lombok 生成 `isGracefulExit()`)，**不**用 `completed` | P0-1 修订：避免覆盖现有 `isCompleted()` 7 问语义，10+ 处调用点不破坏 |
+| **userId 注入** | `handleStart` 中 `state.setUserId(userId)`（从 `session.getAttributes()` 拿） | P0-3 修订：`processAnswer` 入口不传 userId 但要查限额，必须 state 注入 |
 | **OOM 防御** | `state.pendingMessages` List 大小上限 + `conversationStates` Map 大小上限 | 防御恶意刷连接 / 抢话堆积 |
 | **OOM MAX 值** | `pendingMessages` MAX=10 / `conversationStates` MAX=3,000（实测机器 4GB/swap 已用 1.3GB 后保守值） | 触顶返"服务繁忙"，不触发 swap |
 
@@ -133,7 +136,7 @@ random 模式的设计存在根本问题：
 | 9 | `recommendation_result.old_food` 字段 | DB 列 | production 从不写入 |
 | 10 | `recommendation_result.similarity_score` 字段 | DB 列 | production 从不写入 |
 | 11 | `RecordService.java:117` `item.setSimilarityScore(result.getSimilarityScore())` | 代码行 | 跟随 #10 删除，否则编译爆 |
-| 12 | `RecordService.RecordItem` 类对应 `similarityScore` 字段 | 代码 | 跟随 #10 移除 |
+| 12 | `RecordService.RecordListItem` 类对应 `similarityScore` 字段（P2-8 修订：实际类名是 `RecordListItem` 不是 `RecordItem`） | 代码 | 跟随 #10 移除 |
 | 13 | `ShareService.java:132` `result.put("mode", rec.getMode())` | 代码行 | 跟随 #8 删除，否则编译爆 |
 | 14 | `frontend/src/views/Share.vue` 中 mode 字段引用 | 代码（如有） | 跟随 #8 删除（先 grep 验证） |
 
@@ -242,20 +245,25 @@ public List<WebSocketMessage> processAnswer(String sessionId, String content, Co
 }
 ```
 
-#### 3.2.10 改 `ConversationState`（加 userId + completed 字段）
+#### 3.2.10 改 `ConversationState`（加 userId + gracefulExit 字段）
 
 ```java
-private Long userId;          // 新增：构造时由 ConversationService 注入
-private boolean completed;    // 新增：handleComplete 时设 true
+private Long userId;             // 新增：handleStart 中由 Handler 注入
+private boolean gracefulExit;    // 新增：handleComplete 时设 true，区分"用户正常退出"vs"异常断开"
 ```
+
+**关键命名（P0-1 修订）**：`isCompleted()` 在 `ConversationState.java:58-60` 已存在，语义是"`currentQuestionCount >= totalQuestions`"（7 问答完）。Lombok `@Data` 为 `boolean completed` 生成的 `isCompleted()` getter **会覆盖**现有方法，导致 `MessageTagParser:54/57`、`ConversationService:168` 等 10+ 处调用点拿错误值。
+
+**修复**：新字段命名为 `gracefulExit`，Lombok 生成 `isGracefulExit()` getter，不与现有 `isCompleted()` 冲突。
 
 #### 3.2.11 改 `ConversationWebSocketHandler`（异常退出清理 + OOM 防御）
 
 详见 Section 11.3：
 
-- `afterConnectionClosed` 调 `cancelSession` 软删 DB（if state != null && !state.isCompleted()）
-- `handleTransportError` 调 `cancelSession` 软删 DB
-- `handleComplete` 设 `state.setCompleted(true)`
+- `afterConnectionClosed` 调 `cancelSession` 软删 DB（if state != null && !state.isGracefulExit()）**P0-2 修订：先 `state.setCancelled(true)` 阻止 async 任务 race 写入**
+- `handleTransportError` 调 `cancelSession` 软删 DB**P0-2 修订：同上，先 setCancelled(true)**
+- `handleComplete` 设 `state.setGracefulExit(true)`**P0-1 修订：避免命名碰撞**
+- `handleStart` 设 `state.setUserId(userId)`**P0-3 修订：从 `session.getAttributes()` 注入**
 - `state.addPendingMessage` 加 size 上限（MAX=10）
 - `conversationStates` Map size 上限（MAX=3,000，机器 4GB/swap 已用 1.3GB 保守值）
 
@@ -313,7 +321,7 @@ public class SystemConfigController {
 |---|---|
 | `frontend/src/views/Result.vue` | 加 `category` chip + `flavorTags[]` chips 展示；`foodName` / `reason` 保留 |
 | `frontend/src/views/RecordDetail.vue:17` | 删 mode 标签（inertia/随机模式），老数据兜底显示"AI 推荐" |
-| `frontend/src/views/Records.vue:136` | `RecordItem` interface 移除 `mode?: string` |
+| `frontend/src/views/Records.vue:136` | `RecordListItem` interface 移除 `mode?: string`（P2-8 修订） |
 | `frontend/src/views/Records.vue:293` | `displayReason` fallback 改静态字符串，不用 `record.mode` |
 | `frontend/src/views/FeedDetail.vue` | 加 `category` + `flavorTags` chips 展示 |
 | `frontend/src/views/components/Result/ResultPublishDialog.vue` | 发布预览改用 `category + reason` |
@@ -338,7 +346,7 @@ public class SystemConfigController {
 
 ### 3.7 数据迁移
 
-**Flyway `V6__ai_module_simplify.sql`**：
+**Flyway `V6__ai_module_simplify.sql`**（P1-7 修订：拆 V6/V7 后这是 V6 内容）：
 
 ```sql
 -- 删除 production 从不写入的 3 个字段
@@ -347,10 +355,11 @@ ALTER TABLE recommendation_result
     DROP COLUMN old_food,
     DROP COLUMN similarity_score;
 
--- 新增 2 个字段：category (菜系) + flavor_tags (口味标签 JSON 数组)
+-- 新增 3 个字段：category (菜系) + flavor_tags (口味标签 JSON 数组) + total_tokens (推荐级 token)
 ALTER TABLE recommendation_result
     ADD COLUMN category VARCHAR(64) DEFAULT NULL COMMENT '菜系/品类',
-    ADD COLUMN flavor_tags JSON DEFAULT NULL COMMENT '口味标签 JSON 数组';
+    ADD COLUMN flavor_tags JSON DEFAULT NULL COMMENT '口味标签 JSON 数组',
+    ADD COLUMN total_tokens INT DEFAULT NULL COMMENT '本次推荐消耗 token';
 ```
 
 **注意**：`flavor_tags` 用 MySQL JSON 类型（5.7+ 原生支持），不用 VARCHAR(512)（oracle 修订 #6：可建索引、防格式错误、无长度限制）。
@@ -424,11 +433,12 @@ conversation_session.mode                → ConversationQueryReq.mode 过滤用
 | T10 | **回归** admin-web 会话管理页 | 浏览器 | session 模式下拉仍能过滤（`conversation_session.mode` 表未动） |
 | T11 | **回归** bench 脚本 | `bash scripts/bench/run-all-benchmarks.sh` | 注释 `/api/ai/chat` 后剩余 case 仍通过 |
 | T12 | **新增** `TokenQuotaServiceTest` | 同 T1 | 测试限额检查 4 场景：per-user 覆盖 / 全局配置 / 默认 fallback / 超限拒绝 |
-| T13 | **新增** `ConversationWebSocketHandlerTest` | 同 T1 | 测试异常退出清理：cancel / complete / sweepIdle / connectionClose / transportError 5 路径 |
+| T13 | **新增** `ConversationWebSocketHandlerTest` | 同 T1 | 测试异常退出清理：5 路径 × 2 子场景（正常/async race）= 10+ 用例：<br>1. cancel 时 async 任务还在跑 → DB 不残留<br>2. cancel 时 async 已完成 → DB 软删 + 任务结果丢弃<br>3. complete 正常 → DB 保留<br>4. sweepIdle 触发 close → DB 软删 + async race 阻断<br>5. connectionClose 异常 + async 任务还在跑 → DB 全清除<br>6. connectionClose 异常 + async 已完成 → DB 软删 + 结果丢弃<br>7. transportError + async 任务还在跑 → DB 全清除<br>8. transportError + async 已完成 → DB 软删 + 结果丢弃<br>9. handleStart 设 userId → state.getUserId() 正确<br>10. handleComplete 设 gracefulExit → state.isGracefulExit() 正确 |
 | T14 | **新增** `OomDefenseTest` | 同 T1 | 测试 `pendingMessages` size cap + `conversationStates` size cap |
-| T15 | 集成手测 token 限额 | 浏览器 | 用户用满 1M tokens → 下次 answer 时 WS 发"额度已用完"，AI 不调用 |
+| T15 | 集成手测 token 限额 | **SQL 预插入 + WS 验证**（P1-4 修订） | SQL 预插入 qa_record 使 SUM(total_tokens) 达限额 → WS 发 answer → 验证 WS 发 system 错误"额度已用完"，**AI 不调用**（mock chatModel 验证 call count = 0） |
 | T16 | 集成手测 admin-web token 限额管理 | 浏览器 | admin 改全局默认 + 单用户覆盖 → 立即生效 |
 | T17 | **回归** 异常退出不污染 DB | 浏览器 + SQL | 用户答 2 题后关浏览器 → SQL 查 `qa_record` 应无该 session 记录 |
+| T18 | **新增** 跨日限额测试（P2-11） | 同 T1 | 23:59 插入 800K tokens → 00:01 同用户再插入 800K → 验证新一日限额从 0 重计（不延续前日） |
 
 ---
 
@@ -446,19 +456,19 @@ conversation_session.mode                → ConversationQueryReq.mode 过滤用
 6.  删 AiController + RecommendationController + 修 RecordService:117 + 修 ShareService:132
     + 删 AiService.calculateSimilarity/validateAnswer/loadPrompts 部分
     + 删 prompts/answer-validation.txt + similarity.txt
-    + 删 RecordItem.similarityScore 字段
+    + 删 RecordListItem.similarityScore 字段（P2-8 修订）
 7.  改 admin-server RecommendationController（删 mode 参数 + mode 过滤）    ← 不改 ConversationQueryReq
 
 阶段 B: Token 统计与限额
 8.  新增 TokenQuotaService + QaRecord 累加（recordUsage）
-9.  改 ConversationService.processAnswer 入口（checkAndReject + 调 recordUsage）
-10. 改 ConversationState（加 userId + completed 字段）
+9.  改 ConversationService.processAnswer 入口（checkAndReject + 调 recordUsage）  ← P2-12：依赖 10
+10. 改 ConversationState（加 userId + gracefulExit 字段 [P0-1]）  ← 必须先于 9 完成
 11. 改 MessageTagParser（用 token 累加 + 限额检查）
 12. 新增 admin-server SystemConfigController + UserTokenQuotaController + 2 service
 13. 新增 admin-web token-quota 视图 + api/tokenQuota.ts + 路由
 
 阶段 C: 异常退出 + OOM 防御
-14. 改 ConversationWebSocketHandler（afterConnectionClosed / handleTransportError 调 cancelSession + state.completed）
+14. 改 ConversationWebSocketHandler（afterConnectionClosed / handleTransportError 调 cancelSession + state.gracefulExit + state.setUserId in handleStart）
 15. 改 ConversationState（pendingMessages size cap + OOM 防御）
 
 阶段 D: 前端
@@ -500,8 +510,8 @@ conversation_session.mode                → ConversationQueryReq.mode 过滤用
 | R10 | 老 `recommendation_result` 数据迁移后字段为 NULL | 低 | 历史 mode 字段删除，老数据自然降级；前端兜底"AI 推荐" |
 | R11 | admin-web `recommendation/index.vue` 视觉验证不全 | 低 | T9 明确要求"模式列消失、相似度列消失、模式下拉消失" |
 | R12 | Token 累加影响性能 | 中 | 写 QaRecord 是同步 SQL，每答一题就一次。168/168 单测验证无回归 |
-| R13 | 限额检查时区错乱 | 中 | 用 `LocalDate.now()` + 业务库时区；明确用 DB 时区（MySQL `created_at` 是 DATETIME，无时区信息）；查询 `WHERE created_at >= ?` 用 `LocalDateTime.of(date, LocalTime.MIN)` |
-| R14 | 异常退出时 AI 正在异步处理中 | 中 | state.isCancelled() 已经在异步任务里检查；再加 isCompleted 区分；异步任务检查 isCompleted() 后丢弃结果 |
+| R13 | 限额检查时区错乱 | 中 | P2-10 修订：用 `LocalDate.now()` 取 JVM 时区（本机 `Asia/Shanghai`），JVM 与 cloud MySQL 同地域同区，**确保 JVM 和 DB 在同一时区**；服务启动时校验 `ZoneId.systemDefault()` = `Asia/Shanghai`，否则启动失败。MySQL `created_at` 是 DATETIME 无时区信息，存的是应用层 JVM 时间 |
+| R14 | 异常退出时 AI 正在异步处理中 | 高（P0 修订） | 异常路径必须**先** `state.setCancelled(true)` **再** `cancelSession`，否则 aiExecutor 异步任务 race 写入 DB。oracle v4 审查 P0-2 已修 |
 | R15 | user_token_quota 唯一约束 vs 多用户覆盖 | 低 | user_id 设 UNIQUE；同一用户只能有一条覆盖 |
 | R16 | system_config 通用 key 命名冲突 | 低 | 用 `daily_token_limit_default` 唯一 key；未来加新配置走 `xxx_xxx` snake_case 命名规范 |
 | R17 | admin 改限额后用户已开始的会话不感知 | 低 | 限额查询是每次入口实时查，无需通知；改完立即生效 |
@@ -510,7 +520,7 @@ conversation_session.mode                → ConversationQueryReq.mode 过滤用
 | R20 | 异常退出 cancelSession 软删时 user 已经答了 5 题 | 低 | 用户已选 A：异常断开记录不保留；可接受 |
 | R21 | OOM 防御 `pendingMessages` 上限影响抢话功能 | 低 | MAX=10 足够，正常用户抢话 ≤ 3 次 |
 | R22 | OOM 防御 `conversationStates` 上限影响正常用户 | 中 | MAX=3,000 超正常活跃用户量（< 1,000），且 swap 已用 1.3GB 选保守值；触顶时返回"服务繁忙" |
-| R23 | `state.completed` 标志在并发场景下丢失 | 中 | boolean 写无原子性问题；handleComplete 单一入口写；读取处加 volatile |
+| R23 | `state.gracefulExit` 标志在并发场景下丢失 | 中 | 字段重命名避免与 `isCompleted()` 碰撞（P0-1 修订）；boolean 写无原子性问题；handleComplete 单一入口写 |
 
 ---
 
@@ -553,19 +563,20 @@ conversation_session.mode                → ConversationQueryReq.mode 过滤用
 - `backend/ai-food-app/src/main/resources/prompts/answer-validation.txt`
 - `backend/ai-food-app/src/main/resources/prompts/similarity.txt`
 - `backend/ai-food-app/src/main/java/com/ai/food/service/ai/AiService.java`（删 2 方法 + 2 行 loadPrompts）
-- `backend/ai-food-app/src/main/java/com/ai/food/service/record/RecordService.java`（删 1 行 + RecordItem 字段）
+- `backend/ai-food-app/src/main/java/com/ai/food/service/record/RecordService.java`（删 1 行 + RecordListItem 字段 [P2-8]）
 - `backend/ai-food-app/src/main/java/com/ai/food/service/share/ShareService.java`（删 1 行）
 
 **修改**（6 文件 + 1 新文件 + 1 新 service）：
 - `backend/ai-food-app/src/main/resources/prompts/recommendation.txt`（4 字段 schema）
-- `backend/ai-food-app/src/main/java/com/ai/food/common/model/RecommendationResult.java`（-3 +3 字段：category/flavor_tags/total_tokens）
+- `backend/ai-food-common/src/main/java/com/ai/food/common/model/RecommendationResult.java`（-3 +3 字段：category/flavor_tags/total_tokens，P2-9 修订：实际在 common 模块不在 app 模块）
 - `backend/ai-food-app/src/main/java/com/ai/food/common/model/QaRecord.java`（+userId）
-- `backend/ai-food-app/src/main/java/com/ai/food/dto/ConversationState.java`（+userId +completed 字段 + pendingMessages size cap）
+- `backend/ai-food-app/src/main/java/com/ai/food/dto/ConversationState.java`（+userId +gracefulExit 字段 [P0-1 改名] + pendingMessages size cap）
 - `backend/ai-food-app/src/main/java/com/ai/food/service/conversation/ConversationAiService.java`（解析 + 持久化 + token 累加）
 - `backend/ai-food-app/src/main/java/com/ai/food/service/conversation/ConversationService.java`（processAnswer 入口加限额检查 + recordUsage）
-- `backend/ai-food-app/src/main/java/com/ai/food/websocket/ConversationWebSocketHandler.java`（afterConnectionClosed/handleTransportError 调 cancelSession + state.completed 标志）
+- `backend/ai-food-app/src/main/java/com/ai/food/websocket/ConversationWebSocketHandler.java`（afterConnectionClosed/handleTransportError 调 cancelSession + state.setCancelled(true) [P0-2] + state.setGracefulExit(true) [P0-1] + state.setUserId in handleStart [P0-3]）
 - `backend/ai-food-app/src/main/java/com/ai/food/service/token/TokenQuotaService.java`（**新增**）
-- `backend/ai-food-app/src/main/resources/db/migration/V6__ai_module_simplify.sql`（**新增**）
+- `backend/ai-food-app/src/main/resources/db/migration/V6__ai_module_simplify.sql`（**新增**，recommendation_result 字段改 + qa_record 加 user_id）
+- `backend/ai-food-app/src/main/resources/db/migration/V7__token_quota_tables.sql`（**新增**，P1-7 修订：新建 system_config + user_token_quota + 初始 seed）
 
 ### 9.2 后端 admin-server
 
@@ -625,15 +636,14 @@ conversation_session.mode                → ConversationQueryReq.mode 过滤用
 
 ### 10.3 数据模型
 
-#### 10.3.1 `qa_record` 表加字段
+**P1-7 修订：拆分 V6 / V7**
 
-**Flyway `V6__add_user_id_to_qa_record.sql`**：
+| 版本 | 内容 | 风险 |
+|---|---|---|
+| **V6** | `recommendation_result` 字段改（删 3 + 加 3）+ `qa_record` 加 `user_id` + 索引 | DROP COLUMN 不可逆 → 单独版本便于回滚 |
+| **V7** | 新建 `system_config` + 新建 `user_token_quota` + 初始 seed | 建表是低风险操作；失败重跑即可 |
 
-```sql
-ALTER TABLE qa_record
-    ADD COLUMN user_id BIGINT DEFAULT NULL COMMENT '用户ID（关联 sys_user）' AFTER session_id,
-    ADD INDEX idx_user_created (user_id, created_at, total_tokens);
-```
+#### 10.3.1 `qa_record` 表加字段（V6 合并到 3.7 后的 V6）
 
 **`QaRecord.java` 实体加字段**：
 
@@ -642,9 +652,7 @@ ALTER TABLE qa_record
 private Long userId;
 ```
 
-#### 10.3.2 新表 `system_config`（全局限额配置）
-
-**Flyway `V6__create_system_config.sql`**（与 10.3.1 合并为 V6）：
+#### 10.3.2 新表 `system_config`（全局限额配置，V7）
 
 ```sql
 CREATE TABLE system_config (
@@ -729,6 +737,11 @@ private Integer totalTokens;
 | 单用户覆盖 | `PUT` | `/admin/api/token-quota/{userId}` | 改/新建单用户覆盖 |
 | 单用户覆盖 | `DELETE` | `/admin/api/token-quota/{userId}` | 删除单用户覆盖（fallback 到全局） |
 
+**鉴权声明（P1-6 修订）**：
+- `TokenQuotaController` 和 `SystemConfigController` 必须**显式声明** `@PreAuthorize("hasRole('ADMIN')")` 或通过 Spring Security WebSecurityConfig 加 URL guard
+- admin-web 前端 `/token-quota` 菜单项必须**只在 ADMIN 角色下可见**（用 `v-if="$store.state.user.role === 'ADMIN'"`）
+- 否则普通用户能改全局限额是严重安全事故
+
 admin-web 前端对应视图：复用现有 `admin-web/src/views/model/index.vue` 或新增 `token-quota/index.vue`。
 
 ### 10.7 限额时机与状态
@@ -782,9 +795,13 @@ public void afterConnectionClosed(WebSocketSession session, CloseStatus status) 
         sessions.remove(sessionId);
         registry.unregister(sessionId);
         // ponytail: 异常关闭也走 cancel 流程,DB 不留脏记录
-        // 检查 state 是否已正常 complete 或 cancel,避免重复清理
         ConversationState state = conversationStates.get(sessionId);
-        if (state != null && !state.isCompleted()) {
+        if (state != null && !state.isGracefulExit()) {       // P0-1: 改名避免 isCompleted() 碰撞
+            // P0-2 关键: 必须先 setCancelled(true) 阻止 aiExecutor 异步任务 race 写入 DB
+            // aiExecutor.execute() 内的 if (state.isCancelled()) 检查才能生效
+            state.setCancelled(true);
+            state.setAiProcessing(false);
+            state.clearPendingMessages();
             conversationService.cancelSession(sessionId);
             log.info("[{}] abnormal close, cleaned DB records", sessionId);
         }
@@ -796,7 +813,7 @@ public void afterConnectionClosed(WebSocketSession session, CloseStatus status) 
 
 #### 11.3.3 `handleTransportError` 复用同一逻辑
 
-复用 `afterConnectionClosed` 行为（`handleTransportError` 现有已清 state，**加 DB 软删**）：
+复用 `afterConnectionClosed` 行为（`handleTransportError` 现有已清 state，**加 DB 软删 + P0-2 修复**）：
 
 ```java
 @Override
@@ -805,7 +822,11 @@ public void handleTransportError(WebSocketSession session, Throwable exception) 
     log.error("Transport error for session {}: {}", sessionId, exception.getMessage());
     if (sessionId != null) {
         ConversationState state = conversationStates.get(sessionId);
-        if (state != null && !state.isCompleted()) {
+        if (state != null && !state.isGracefulExit()) {       // P0-1
+            // P0-2 关键: 同 afterConnectionClosed,先 setCancelled
+            state.setCancelled(true);
+            state.setAiProcessing(false);
+            state.clearPendingMessages();
             conversationService.cancelSession(sessionId);
         }
         sessions.remove(sessionId);
@@ -815,29 +836,50 @@ public void handleTransportError(WebSocketSession session, Throwable exception) 
 }
 ```
 
-#### 11.3.4 `ConversationState.isCompleted` 字段
+#### 11.3.4 `ConversationState.gracefulExit` 字段
 
-加 boolean 字段，跟 `isCancelled` 区分：
+加 boolean 字段，跟现有 `isCompleted()`（7 问答完）区分：
 
-- `isCompleted = true`：用户正常完成 7 问 / 调 `complete` action → **不删 DB**
-- `isCancelled = true`：用户主动 cancel → **删 DB**
+- `gracefulExit = true`：用户正常完成 7 问 / 调 `complete` action → **不删 DB**
+- `cancelled = true`：用户主动 cancel → **删 DB**
 - 都没设：异常断开 → **删 DB**（新行为）
 
 ```java
-// ConversationState.java 加
-private boolean completed = false;
-public boolean isCompleted() { return completed; }
-public void setCompleted(boolean completed) { this.completed = completed; }
+// ConversationState.java 加（P0-1: 命名必须避开 isCompleted）
+private boolean gracefulExit = false;
+public boolean isGracefulExit() { return gracefulExit; }
+public void setGracefulExit(boolean gracefulExit) { this.gracefulExit = gracefulExit; }
 ```
 
-#### 11.3.5 `handleComplete` 设置 `completed = true`
+**P0-1 警告**：**不要**命名 `completed`！Lombok `@Data` 生成的 `isCompleted()` 会**覆盖**现有 `currentQuestionCount >= totalQuestions` 语义，导致 `MessageTagParser:54/57`、`ConversationService:168` 等 10+ 处调用点全部拿错误值，状态机判断逻辑断裂。
+
+#### 11.3.5 `handleComplete` 设置 `gracefulExit = true`
 
 ```java
 private void handleComplete(WebSocketSession session, String sessionId, ConversationState state) {
-    state.setCompleted(true);  // ← 新增
+    state.setGracefulExit(true);  // P0-1: 改名
     // ... 现有代码
 }
 ```
+
+#### 11.3.6 `handleStart` 注入 userId（P0-3 修复）
+
+```java
+// ConversationWebSocketHandler.handleStart
+private void handleStart(WebSocketSession session, String sessionId) throws IOException {
+    Long userId = (Long) session.getAttributes().get("userId");
+    ConversationState state = conversationService.initializeConversation(sessionId);
+    state.setUserId(userId);                              // P0-3: 注入 userId 给后续 processAnswer 用
+    conversationStates.put(sessionId, state);
+    WebSocketMessage firstQuestion = conversationService.getFirstQuestion(state);
+    sendMessage(session, firstQuestion);
+    log.debug("Conversation started: {}", sessionId);
+}
+```
+
+**P0-3 背景**：`processAnswer(sessionId, content, state)` 入口要查限额需 userId，但参数列表无 userId，state 也无 userId 字段。两种方案：
+- a) Handler 在 `handleStart` 中 `state.setUserId(userId)`（spec 选这个）
+- b) `processAnswer` 调 DB 查 session 拿 userId（多一次 SQL 查询，**不选**）
 
 ### 11.4 OOM 防御
 
