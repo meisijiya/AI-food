@@ -42,6 +42,15 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
 
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
     private final Map<String, ConversationState> conversationStates = new ConcurrentHashMap<>();
+    private static final int MAX_CONCURRENT_STATES = 3_000;
+
+    private void registerState(String sessionId, ConversationState state) {
+        if (conversationStates.size() >= MAX_CONCURRENT_STATES) {
+            log.error("conversationStates full ({}), refusing new session {}", conversationStates.size(), sessionId);
+            throw new IllegalStateException("服务繁忙，请稍后再试");
+        }
+        conversationStates.put(sessionId, state);
+    }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -108,7 +117,7 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
         Long userId = (Long) session.getAttributes().get("userId");
         ConversationState state = conversationService.initializeConversation(sessionId);
         state.setUserId(userId);  // P0-3: 注入给 processAnswer 限额检查用
-        conversationStates.put(sessionId, state);
+        registerState(sessionId, state);
         WebSocketMessage firstQuestion = conversationService.getFirstQuestion(state);
         sendMessage(session, firstQuestion);
         log.debug("Conversation started: {}", sessionId);
