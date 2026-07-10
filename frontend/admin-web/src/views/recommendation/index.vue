@@ -11,7 +11,6 @@ const query = ref({
   page: 1,
   size: 20,
   sessionId: '' as string,
-  mode: '' as string,
   foodName: '' as string
 })
 
@@ -20,7 +19,6 @@ async function load() {
   try {
     const params: any = { page: query.value.page, size: query.value.size }
     if (query.value.sessionId) params.sessionId = query.value.sessionId
-    if (query.value.mode) params.mode = query.value.mode
     if (query.value.foodName) params.foodName = query.value.foodName
     const res: any = await listRecommendations(params)
     list.value = res.data?.records || []
@@ -36,7 +34,7 @@ function onSearch() {
 }
 
 function onReset() {
-  query.value = { page: 1, size: 20, sessionId: '', mode: '', foodName: '' }
+  query.value = { page: 1, size: 20, sessionId: '', foodName: '' }
   load()
 }
 
@@ -48,12 +46,6 @@ onMounted(load)
     <SearchForm @search="onSearch" @reset="onReset">
       <el-form-item label="会话 ID">
         <el-input v-model="query.sessionId" placeholder="精确匹配" clearable style="width: 200px" />
-      </el-form-item>
-      <el-form-item label="模式">
-        <el-select v-model="query.mode" placeholder="全部" clearable style="width: 140px">
-          <el-option label="random" value="random" />
-          <el-option label="similarity" value="similarity" />
-        </el-select>
       </el-form-item>
       <el-form-item label="食物名">
         <el-input v-model="query.foodName" placeholder="模糊匹配" clearable style="width: 180px" />
@@ -67,14 +59,7 @@ onMounted(load)
       <el-table :data="list" stripe v-loading="loading">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="sessionId" label="会话 ID" width="220" show-overflow-tooltip />
-        <el-table-column prop="mode" label="模式" width="120" />
         <el-table-column prop="foodName" label="推荐食物" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="similarityScore" label="相似度" width="100">
-          <template #default="{ row }">
-            <span v-if="row.similarityScore != null">{{ Number(row.similarityScore).toFixed(2) }}</span>
-            <span v-else class="placeholder">-</span>
-          </template>
-        </el-table-column>
         <el-table-column prop="reason" label="推荐理由" min-width="200" show-overflow-tooltip />
         <el-table-column prop="createdAt" label="时间" width="170" />
       </el-table>

@@ -116,23 +116,24 @@ if [ -z "$TOKEN" ]; then
     echo "Login failed, skip rate limit test"
     add_result "ai_rate_limit" '{"error": "login failed"}'
 else
-    # 11 次 /api/ai/chat 看 status
-    RATE_RESULTS=""
-    for i in {1..11}; do
-        HTTP=$(curl -sS -o /dev/null -w "%{http_code}" \
-            -X POST "http://localhost:8080/api/ai/chat?systemPrompt=test&message=test" \
-            -H "Authorization: Bearer $TOKEN")
-        echo "  Request $i: HTTP $HTTP"
-        RATE_RESULTS="$RATE_RESULTS $HTTP"
-    done
-    # 解析：前 10 次 200/401，第 11 次 429
-    RATE_JSON=$(python3 -c "
-statuses = '$RATE_RESULTS'.strip().split()
-limit_triggered = '429' in statuses
-trigger_at = statuses.index('429') + 1 if limit_triggered else -1
-print(json.dumps({'requests': statuses, 'limit_triggered': limit_triggered, 'trigger_at_request': trigger_at}))
-")
-    add_result "ai_rate_limit" "$RATE_JSON"
+    # 11 次 /api/ai/chat 看 status (AiController.java 已删，该 endpoint 不存在，暂时注释)
+    # RATE_RESULTS=""
+    # for i in {1..11}; do
+    #     HTTP=$(curl -sS -o /dev/null -w "%{http_code}" \
+    #         -X POST "http://localhost:8080/api/ai/chat?systemPrompt=test&message=test" \
+    #         -H "Authorization: Bearer $TOKEN")
+    #     echo "  Request $i: HTTP $HTTP"
+    #     RATE_RESULTS="$RATE_RESULTS $HTTP"
+    # done
+    # # 解析：前 10 次 200/401，第 11 次 429
+    # RATE_JSON=$(python3 -c "
+# statuses = '$RATE_RESULTS'.strip().split()
+# limit_triggered = '429' in statuses
+# trigger_at = statuses.index('429') + 1 if limit_triggered else -1
+# print(json.dumps({'requests': statuses, 'limit_triggered': limit_triggered, 'trigger_at_request': trigger_at}))
+# ")
+    # add_result "ai_rate_limit" "$RATE_JSON"
+    add_result "ai_rate_limit" '{"skipped": "AiController removed, /api/ai/chat not available"}'
 fi
 
 # === 5. WS 并发压测 ===
