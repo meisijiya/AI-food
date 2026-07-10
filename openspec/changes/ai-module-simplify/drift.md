@@ -29,3 +29,10 @@
 - **决策**: 在当前 task（A.6+A.7+A.8）中一并修复；不再追回 A.5 阶段重测。
 - **Level**: 1（事实偏差，已在当前 task 修正，不触发回退）
 
+### B.2: Clock 注入非真正 Spring Bean
+
+- **Spec 引用**: §3.2.8 + P1-2 修订（"注入 Clock 支持跨日测试"）
+- **问题**: `TokenQuotaService.clock` 声明为 `private final Clock clock = Clock.systemDefaultZone();` — 这是 inline 初始化，不是 Spring Bean 注入。`@MockBean Clock` 无法替换它，跨日测试无法 mock。
+- **决策**: 按 task spec 简化版保留当前写法。后续需改为 `@Bean Clock` + constructor injection 才支持测试注入。B.3+ 测试覆盖时再修。
+- **Level**: 1（Temporary patch illusion — 已知变通，task spec 明确标记"简化版"）
+
