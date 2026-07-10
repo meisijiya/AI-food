@@ -105,7 +105,9 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
     // ==================== 开始对话 ====================
 
     private void handleStart(WebSocketSession session, String sessionId) throws IOException {
+        Long userId = (Long) session.getAttributes().get("userId");
         ConversationState state = conversationService.initializeConversation(sessionId);
+        state.setUserId(userId);  // P0-3: 注入给 processAnswer 限额检查用
         conversationStates.put(sessionId, state);
         WebSocketMessage firstQuestion = conversationService.getFirstQuestion(state);
         sendMessage(session, firstQuestion);
@@ -211,6 +213,7 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
             sendError(session, "Conversation not started");
             return;
         }
+        state.setGracefulExit(true);  // P0-1: 改名避免 isCompleted() 碰撞
         WebSocketMessage recommend = conversationService.generateRecommendationMessage(sessionId, state);
         sendMessage(session, recommend);
         conversationStates.remove(sessionId);
@@ -251,6 +254,15 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
         if (sessionId != null) {
             sessions.remove(sessionId);
             registry.unregister(sessionId);
+            ConversationState state = conversationStates.get(sessionId);
+            if (state != null && !state.isGracefulExit()) {
+                // P0-2 关键: 必须先 setCancelled(true) 阻止 aiExecutor 异步任务 race 写入
+                state.setCancelled(true);
+                state.setAiProcessing(false);
+                state.clearPendingMessages();
+                conversationService.cancelSession(sessionId);
+                log.info("[{}] abnormal close, cleaned DB records", sessionId);
+            }
             conversationStates.remove(sessionId);
             log.debug("WebSocket closed: {}", sessionId);
         }
@@ -260,9 +272,15 @@ public class ConversationWebSocketHandler extends TextWebSocketHandler {
     public void handleTransportError(WebSocketSession session, Throwable exception) {
         String sessionId = extractSessionId(session);
         log.error("Transport error for session {}: {}", sessionId, exception.getMessage());
-        // ponytail: 跟 afterConnectionClosed 一致,transportError 时 conversationStates
-        // 也要清 — 否则连接异常断开的会话 state 会持续在 Map 里堆,几天后 OOM
         if (sessionId != null) {
+            ConversationState state = conversationStates.get(sessionId);
+            if (state != null && !state.isGracefulExit()) {
+                // P0-2 同 afterConnectionClosed
+                state.setCancelled(true);
+                state.setAiProcessing(false);
+                state.clearPendingMessages();
+                conversationService.cancelSession(sessionId);
+            }
             sessions.remove(sessionId);
             registry.unregister(sessionId);
             conversationStates.remove(sessionId);
