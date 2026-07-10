@@ -26,9 +26,7 @@ public class AiService {
     private final ChatModel chatModel;
 
     private String questionGenerationPrompt;
-    private String answerValidationPrompt;
     private String recommendationPrompt;
-    private String similarityPrompt;
 
     public AiService(ChatModel chatModel) {
         this.chatModel = chatModel;
@@ -37,9 +35,7 @@ public class AiService {
     @PostConstruct
     public void loadPrompts() {
         questionGenerationPrompt = loadPrompt("prompts/question-generation.txt");
-        answerValidationPrompt = loadPrompt("prompts/answer-validation.txt");
         recommendationPrompt = loadPrompt("prompts/recommendation.txt");
-        similarityPrompt = loadPrompt("prompts/similarity.txt");
         log.info("AI prompt templates loaded successfully");
     }
 
@@ -117,24 +113,6 @@ public class AiService {
     }
 
     /**
-     * 校验用户回答是否有效
-     *
-     * @param param    参数类型
-     * @param question 问题内容
-     * @param answer   用户回答
-     * @return 是否有效
-     */
-    public boolean validateAnswer(String param, String question, String answer) {
-        String prompt = answerValidationPrompt
-                .replace("{param}", param != null ? param : "")
-                .replace("{question}", question != null ? question : "")
-                .replace("{answer}", answer != null ? answer : "");
-
-        String result = chat("你是一个回答验证助手。", prompt).getText();
-        return "true".equalsIgnoreCase(result.trim());
-    }
-
-    /**
      * 根据收集的用户信息生成美食推荐
      *
      * @param collectedParams 收集到的参数信息
@@ -147,24 +125,4 @@ public class AiService {
         return chat("你是一个专业的美食推荐助手。", prompt).getText();
     }
 
-    /**
-     * 计算两种食物的相似度
-     *
-     * @param food1 食物A
-     * @param food2 食物B
-     * @return 相似度评分（0-1）
-     */
-    public double calculateSimilarity(String food1, String food2) {
-        String prompt = similarityPrompt
-                .replace("{food1}", food1 != null ? food1 : "")
-                .replace("{food2}", food2 != null ? food2 : "");
-
-        try {
-            String result = chat("你是一个食物相似度评估助手。", prompt).getText();
-            return Double.parseDouble(result.trim());
-        } catch (NumberFormatException e) {
-            log.error("Error parsing similarity score", e);
-            return 0.5;
-        }
-    }
 }

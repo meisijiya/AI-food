@@ -114,7 +114,6 @@ public class RecordService extends ServiceImpl<ConversationSessionMapper, Conver
                 item.setReason(result.getReason());
                 item.setPhotoUrl(result.getPhotoUrl());
                 item.setComment(result.getComment());
-                item.setSimilarityScore(result.getSimilarityScore());
             }
 
             Photo photo = photoMap.get(session.getSessionId());
@@ -370,7 +369,6 @@ public class RecordService extends ServiceImpl<ConversationSessionMapper, Conver
         private String reason;
         private String photoUrl;
         private String comment;
-        private Number similarityScore;
         private String thumbnailUrl;
     }
 

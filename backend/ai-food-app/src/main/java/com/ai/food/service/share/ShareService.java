@@ -129,7 +129,6 @@ public class ShareService extends ServiceImpl<ShareRecordMapper, ShareRecord> {
             result.put("foodName", rec.getFoodName());
             result.put("reason", rec.getReason());
             result.put("comment", rec.getComment());
-            result.put("mode", rec.getMode());
         }
 
         // 照片
