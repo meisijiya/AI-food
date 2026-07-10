@@ -31,6 +31,7 @@
 | **限额配置层级** | 默认 → 全局配置 → 单用户覆盖（per-user 优先） | 2 层覆盖，admin 后台管理 |
 | **异常退出清理** | `sweepIdle` / `afterConnectionClosed` / `handleTransportError` 全部调 `cancelSession` 软删 DB | 用户选 A：异常退出记录不保留 |
 | **OOM 防御** | `state.pendingMessages` List 大小上限 + `conversationStates` Map 大小上限 | 防御恶意刷连接 / 抢话堆积 |
+| **OOM MAX 值** | `pendingMessages` MAX=10 / `conversationStates` MAX=3,000（实测机器 4GB/swap 已用 1.3GB 后保守值） | 触顶返"服务繁忙"，不触发 swap |
 
 ---
 
@@ -256,7 +257,7 @@ private boolean completed;    // 新增：handleComplete 时设 true
 - `handleTransportError` 调 `cancelSession` 软删 DB
 - `handleComplete` 设 `state.setCompleted(true)`
 - `state.addPendingMessage` 加 size 上限（MAX=10）
-- `conversationStates` Map size 上限（MAX=10,000）
+- `conversationStates` Map size 上限（MAX=3,000，机器 4GB/swap 已用 1.3GB 保守值）
 
 ### 3.3 后端 admin-server — 同步改
 
@@ -508,7 +509,7 @@ conversation_session.mode                → ConversationQueryReq.mode 过滤用
 | R19 | token 累加与 limit 检查 race condition | 中 | 限额检查用 `SUM(total_tokens)` 而非 Redis 计数器，无原子性问题；用户连续调用时可能短暂超限（误差 < 1 次调用）可接受 |
 | R20 | 异常退出 cancelSession 软删时 user 已经答了 5 题 | 低 | 用户已选 A：异常断开记录不保留；可接受 |
 | R21 | OOM 防御 `pendingMessages` 上限影响抢话功能 | 低 | MAX=10 足够，正常用户抢话 ≤ 3 次 |
-| R22 | OOM 防御 `conversationStates` 上限影响正常用户 | 中 | MAX=10,000 远超正常用户量（活跃用户通常 < 1,000）；触顶时返回"服务繁忙" |
+| R22 | OOM 防御 `conversationStates` 上限影响正常用户 | 中 | MAX=3,000 超正常活跃用户量（< 1,000），且 swap 已用 1.3GB 选保守值；触顶时返回"服务繁忙" |
 | R23 | `state.completed` 标志在并发场景下丢失 | 中 | boolean 写无原子性问题；handleComplete 单一入口写；读取处加 volatile |
 
 ---
@@ -859,15 +860,19 @@ public void addPendingMessage(String msg) {
 
 #### 11.4.2 `conversationStates` Map 大小上限
 
-防止恶意大量建连接：
+**机器配置（2026-07-10 实测）**：4GB 内存，3.6GB 实际，**Swap 已用 1.3GB**，可用 863MB。LSP/opencode 已占 980+671+184=1.8GB，前后端 Java 仅 174+119=293MB。
+
+**OOM 风险**：每 state 约 3-5KB。10K state ≈ 50MB 触发 swap 概率高。
+
+**MAX = 3,000**（保守，~15MB）。
 
 ```java
 // ConversationWebSocketHandler.java
-private static final int MAX_CONCURRENT_STATES = 10_000;
+private static final int MAX_CONCURRENT_STATES = 3_000;
 
 private void registerState(String sessionId, ConversationState state) {
     if (conversationStates.size() >= MAX_CONCURRENT_STATES) {
-        log.error("conversationStates full, refusing new session {}", sessionId);
+        log.error("conversationStates full ({}), refusing new session {}", conversationStates.size(), sessionId);
         throw new IllegalStateException("服务繁忙，请稍后再试");
     }
     conversationStates.put(sessionId, state);
