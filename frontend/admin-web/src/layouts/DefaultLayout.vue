@@ -18,6 +18,7 @@ const menus = [
   { path: '/user',          title: '用户管理',   icon: 'User' },
   { path: '/conversation',  title: 'AI 对话',    icon: 'ChatDotRound' },
   { path: '/token-usage',   title: 'Token 用量', icon: 'Coin' },
+  { path: '/token-quota',   title: 'Token 限额', icon: 'DataBoard' },
   { path: '/model',         title: '模型管理',   icon: 'Cpu' },
   { path: '/recommendation',title: '推荐记录',   icon: 'List' },
   { path: '/monitor',       title: '系统监控',   icon: 'Monitor' },

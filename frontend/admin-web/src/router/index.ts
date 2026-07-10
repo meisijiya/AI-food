@@ -14,6 +14,7 @@ const router = createRouter({
         { path: 'user', name: 'user', component: () => import('@/views/user/index.vue'), meta: { title: '用户管理' } },
         { path: 'conversation', name: 'conversation', component: () => import('@/views/conversation/index.vue'), meta: { title: 'AI 对话' } },
         { path: 'token-usage', name: 'token-usage', component: () => import('@/views/token-usage/index.vue'), meta: { title: 'Token 用量' } },
+        { path: 'token-quota', name: 'token-quota', component: () => import('@/views/token-quota/index.vue'), meta: { title: 'Token 限额' } },
         { path: 'model', name: 'model', component: () => import('@/views/model/index.vue'), meta: { title: '模型管理' } },
         { path: 'recommendation', name: 'recommendation', component: () => import('@/views/recommendation/index.vue'), meta: { title: '推荐记录' } },
         { path: 'monitor', name: 'monitor', component: () => import('@/views/monitor/index.vue'), meta: { title: '系统监控' } },
