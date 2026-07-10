@@ -104,11 +104,17 @@ public class ConversationAiService {
         try {
             RecommendationResult existing = recommendationResultMapper.findBySessionId(sessionId);
             RecommendationResult result = existing != null ? existing : new RecommendationResult();
-            Map<String, String> payload = parseRecommendationPayload(recommendationJson);
+            Map<String, Object> payload = parseRecommendationPayload(recommendationJson);
             result.setSessionId(sessionId);
-            result.setMode(state.getMode());
-            result.setFoodName(payload.getOrDefault("foodName", "暂无推荐结果"));
-            result.setReason(payload.getOrDefault("reason", "该会话暂无可展示的推荐说明"));
+            // mode 已从实体删除 (A.2)
+            result.setFoodName((String) payload.getOrDefault("foodName", "暂无推荐结果"));
+            result.setReason((String) payload.getOrDefault("reason", "该会话暂无可展示的推荐说明"));
+            // 持久化新字段: category + flavorTags (JSON 数组)
+            Object flavorTagsObj = payload.get("flavorTags");
+            if (flavorTagsObj instanceof List<?> flavorList) {
+                result.setFlavorTags(OBJECT_MAPPER.writeValueAsString(flavorList));
+            }
+            result.setCategory((String) payload.get("category"));
             if (existing == null) {
                 recommendationResultMapper.insert(result);
             } else {
@@ -141,12 +147,12 @@ public class ConversationAiService {
     /**
      * 解析 AI 返回的 JSON；失败回退为 foodName=原文。
      */
-    private Map<String, String> parseRecommendationPayload(String json) {
+    private Map<String, Object> parseRecommendationPayload(String json) {
         if (json == null || json.isBlank()) {
             return Map.of();
         }
         try {
-            return OBJECT_MAPPER.readValue(json, new TypeReference<Map<String, String>>() {});
+            return OBJECT_MAPPER.readValue(json, new TypeReference<Map<String, Object>>() {});
         } catch (Exception e) {
             log.warn("Failed to parse recommendation json, using fallback text: {}", json);
             return Map.of("foodName", json, "reason", "根据您的需求为您推荐");

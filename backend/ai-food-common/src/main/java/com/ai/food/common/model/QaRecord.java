@@ -22,6 +22,9 @@ public class QaRecord {
     @TableField("session_id")
     private String sessionId;
 
+    @TableField("user_id")
+    private Long userId;
+
     @TableField("question_type")
     private String questionType; // question/chat/2question/interrupt
 
