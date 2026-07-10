@@ -2,7 +2,6 @@ package com.ai.food.common.model;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -20,18 +19,19 @@ public class RecommendationResult {
     @TableField("session_id")
     private String sessionId;
 
-    private String mode;
-
     @TableField("food_name")
     private String foodName;
 
-    @TableField("old_food")
-    private String oldFood; // 随机模式的旧值
-
-    @TableField("similarity_score")
-    private BigDecimal similarityScore;
-
     private String reason;
+
+    @TableField("category")
+    private String category;
+
+    @TableField("flavor_tags")
+    private String flavorTags;
+
+    @TableField("total_tokens")
+    private Integer totalTokens;
 
     @TableField("photo_url")
     private String photoUrl;
