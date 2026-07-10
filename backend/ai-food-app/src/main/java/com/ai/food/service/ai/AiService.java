@@ -113,6 +113,20 @@ public class AiService {
     }
 
     /**
+     * 同 generateQuestion，但返回 ChatResult（含 token 用量），供 token 累加使用。
+     *
+     * @param param   参数类型
+     * @param context 已收集的参数信息摘要
+     * @return ChatResult，含 text + token 计数 + model
+     */
+    public ChatResult generateQuestion2(String param, String context) {
+        String prompt = questionGenerationPrompt
+                .replace("{param}", param != null ? param : "")
+                .replace("{context}", context != null ? context : "");
+        return chat("你是一个友好的美食推荐助手。", prompt);
+    }
+
+    /**
      * 根据收集的用户信息生成美食推荐
      *
      * @param collectedParams 收集到的参数信息

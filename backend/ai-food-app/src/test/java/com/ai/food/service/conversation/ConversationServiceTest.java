@@ -85,7 +85,7 @@ class ConversationServiceTest {
     @BeforeEach
     void setUp() {
         MessageValidator messageValidator = new MessageValidator();
-        MessageTagParser messageTagParser = new MessageTagParser(messageValidator, aiService);
+        MessageTagParser messageTagParser = new MessageTagParser(messageValidator, aiService, tokenQuotaService);
 
         // 手工构造两个子 service（用真实 MessageTagParser + 真实子 service 行为，mock 掉所有 mapper 依赖）
         ConversationParamService paramService = new ConversationParamService(

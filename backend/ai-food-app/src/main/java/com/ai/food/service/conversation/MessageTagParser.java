@@ -1,7 +1,9 @@
 package com.ai.food.service.conversation;
 
+import com.ai.food.common.ai.ChatResult;
 import com.ai.food.dto.ConversationState;
 import com.ai.food.service.ai.AiService;
+import com.ai.food.service.token.TokenQuotaService;
 import com.ai.food.validator.MessageValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +18,7 @@ public class MessageTagParser {
 
     private final MessageValidator messageValidator;
     private final AiService aiService;
+    private final TokenQuotaService tokenQuotaService;
 
     private static final Map<String, String> PARAM_DISPLAY_NAMES = Map.of(
             "time", "时间",
@@ -101,9 +104,19 @@ public class MessageTagParser {
             log.debug("Free form stage optional param '{}', generating AI question", param);
             try {
                 String context = buildContextSummary(state);
-                String aiQuestion = aiService.generateQuestion(param, context);
+                ChatResult aiResult = aiService.generateQuestion2(param, context);
+                String aiQuestion = aiResult.getText();
                 if (aiQuestion != null && !aiQuestion.isBlank() && !aiQuestion.startsWith("抱歉")) {
                     log.debug("AI generated question for '{}': {}", param, aiQuestion);
+                    // B.5: 累加 token 用量
+                    tokenQuotaService.recordUsage(
+                            state.getUserId(),
+                            aiResult.getPromptTokens() != null ? aiResult.getPromptTokens().intValue() : 0,
+                            aiResult.getCompletionTokens() != null ? aiResult.getCompletionTokens().intValue() : 0,
+                            aiResult.getTotalTokens() != null ? aiResult.getTotalTokens().intValue() : 0,
+                            aiResult.getModel(),
+                            state.getSessionId(),
+                            param);
                     return aiQuestion.trim();
                 }
             } catch (Exception e) {

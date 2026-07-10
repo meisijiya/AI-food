@@ -1,7 +1,9 @@
 package com.ai.food.service.conversation;
 
+import com.ai.food.common.ai.ChatResult;
 import com.ai.food.dto.ConversationState;
 import com.ai.food.service.ai.AiService;
+import com.ai.food.service.token.TokenQuotaService;
 import com.ai.food.validator.MessageValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,17 +30,21 @@ class MessageTagParserTest {
     @Mock
     private AiService aiService;
 
+    @Mock
+    private TokenQuotaService tokenQuotaService;
+
     private ConversationState state;
 
     @BeforeEach
     void setUp() {
         messageValidator = new MessageValidator();
-        messageTagParser = new MessageTagParser(messageValidator, aiService);
+        messageTagParser = new MessageTagParser(messageValidator, aiService, tokenQuotaService);
         state = new ConversationState("test-session", 7, "inertia");
+        state.setUserId(1L);  // B.5: token 累加需要 userId
 
         // 默认 mock AI 调用返回 fallback 文本
-        when(aiService.generateQuestion(anyString(), anyString()))
-                .thenReturn("您有什么饮食禁忌或过敏的食物吗？");
+        when(aiService.generateQuestion2(anyString(), anyString()))
+                .thenReturn(ChatResult.of("您有什么饮食禁忌或过敏的食物吗？"));
     }
 
     @Nested
@@ -177,8 +183,8 @@ class MessageTagParserTest {
                 state.saveParamValue(p, "test");
             }
 
-            when(aiService.generateQuestion(anyString(), anyString()))
-                    .thenReturn("您有什么饮食禁忌或过敏的食物吗？");
+            when(aiService.generateQuestion2(anyString(), anyString()))
+                    .thenReturn(ChatResult.of("您有什么饮食禁忌或过敏的食物吗？"));
 
             String content = messageTagParser.getQuestionContent("restriction", state);
             assertEquals("您有什么饮食禁忌或过敏的食物吗？", content);
@@ -192,8 +198,8 @@ class MessageTagParserTest {
                 state.saveParamValue(p, "test");
             }
 
-            when(aiService.generateQuestion(anyString(), anyString()))
-                    .thenReturn("抱歉，AI服务暂时不可用");
+            when(aiService.generateQuestion2(anyString(), anyString()))
+                    .thenReturn(ChatResult.of("抱歉，AI服务暂时不可用"));
 
             String content = messageTagParser.getQuestionContent("restriction", state);
             // AI 返回了"抱歉"开头的内容，应使用默认 fallback
@@ -206,8 +212,8 @@ class MessageTagParserTest {
             state.enterFreeFormStage();
             state.saveParamValue("time", "晚上");
 
-            when(aiService.generateQuestion(anyString(), anyString()))
-                    .thenReturn("还有什么想补充的吗？");
+            when(aiService.generateQuestion2(anyString(), anyString()))
+                    .thenReturn(ChatResult.of("还有什么想补充的吗？"));
 
             String content = messageTagParser.getQuestionContent("preference", state);
             assertNotNull(content);
