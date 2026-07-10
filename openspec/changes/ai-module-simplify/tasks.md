@@ -77,7 +77,7 @@
 
 - **Type**: impl
 - **File**: `backend/ai-food-common/src/main/java/com/ai/food/common/model/QaRecord.java`
-- **Dependencies**: A.3（Flyway 先于实体）
+- **Dependencies**: A.3（逻辑依赖：Flyway 建 user_id 列后实体映射才生效）
 - **Spec 引用**: §3.2.5 + §10.3.1
 - **Action**: 加 `private Long userId;` + `@TableField("user_id")`
 - **Verify**:
@@ -236,6 +236,7 @@
   - `checkAndReject(long userId, int estimatedTokens) → String`：超限返回"今日 token 额度已用完"，null=放行
   - `recordUsage(long userId, int totalTokens, String model, String sessionId, String paramName)`：写入 QaRecord
   - 时区用 `LocalDate.now(ZoneId.of("Asia/Shanghai"))`（P2-10 修订）
+  - `TokenQuotaService` 构造函数接收 `Clock`（默认 `Clock.systemDefaultZone()`），内部用 `LocalDate.now(clock)` 而非 `LocalDate.now()`，支持时间注入
 - **Verify**:
   - command: `mvn -pl ai-food-app compile`
   - expected: BUILD SUCCESS
@@ -419,7 +420,7 @@
   - `Records.vue:293`：`displayReason` fallback 改静态字符串，不用 `record.mode`
   - `chatStore`：`recommendationResult` 从 `any` 改为 typed interface（4 字段：foodName, reason, category, flavorTags）
 - **Verify**:
-  - command: `cd frontend && npx vue-tsc --noEmit && npm run build`
+  - command: `cd frontend && npm run build`（npm run build 内已含 vue-tsc）
   - expected: 0 error
 - **Risk**: R6（类型改动传播到其他 view）
 - **Estimate**: 20min
@@ -435,8 +436,7 @@
 - **Dependencies**: A.9（后端不再接受 mode 参数）
 - **Spec 引用**: §3.5
 - **Action**:
-  - `index.vue`：删 `mode` 列（L70）、`similarityScore` 列（L72-76）、`mode` 下拉筛选器（L52-56）
-  - `recommendation.ts`：请求中不传 `mode` 参数
+  - `index.vue`：删 `mode` 列（L70）、`similarityScore` 列（L72-76）、`mode` 下拉筛选器（L52-56）；删 L14 `query.mode` 声明、L23 `params.mode` 传递、L39 query 重置中的 `mode`
 - **Verify**:
   - command: `cd frontend/admin-web && npx vite build`
   - expected: 0 error
@@ -517,7 +517,7 @@
   | T15 | 集成手测 token 限额 | SQL预插 + WS 验证 | 达限额后 WS 发 system 错误，AI 不调用 |
   | T16 | 集成手测 admin-web 限额管理 | 浏览器 | 改全局/单用户 → 立即生效 |
   | T17 | 回归异常退出 | 浏览器 + SQL | 关浏览器 → qa_record 无该 session 记录 |
-  | T18 | 新增跨日限额测试 | `mvn -pl ai-food-app test -Dtest=TokenQuotaServiceTest#testCrossDay` | 23:59 800K → 00:01 800K，新日从 0 重计 |
+  | T18 | 新增跨日限额测试 | `mvn -pl ai-food-app test -Dtest=TokenQuotaServiceTest#testCrossDay` | 用 `@MockBean Clock` 模拟 23:59→00:01，验证限额跨日归零 |
 - **Verify**:
   - command: `mvn -pl ai-food-app test && mvn -pl admin-server test && cd frontend && npm run build && npx vue-tsc --noEmit && cd ../admin-web && npx vite build`
   - expected: 全部通过
