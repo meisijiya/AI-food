@@ -12,6 +12,7 @@ import com.ai.food.dto.ConversationState;
 import com.ai.food.dto.WebSocketMessage;
 import com.ai.food.service.ai.AiService;
 import com.ai.food.service.bloom.BloomFilterService;
+import com.ai.food.service.token.TokenQuotaService;
 import com.ai.food.validator.MessageValidator;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -57,6 +58,7 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
     private final RecommendationResultMapper recommendationResultMapper;
     private final StringRedisTemplate redisTemplate;
     private final BloomFilterService bloomFilterService;
+    private final TokenQuotaService tokenQuotaService;
 
     @Value("${ai.conversation.min-questions:7}")
     private int minQuestions;
@@ -122,6 +124,18 @@ public class ConversationService extends ServiceImpl<ConversationSessionMapper, 
         log.info("[{}] processAnswer: '{}' (param={}, q={}/{})",
                 sessionId, answer, state.getCurrentParam(),
                 state.getCurrentQuestionCount(), state.getTotalQuestions());
+
+        // B.4: token 限额检查（userId null 时降级放行）
+        Long userId = state.getUserId();
+        if (userId != null) {
+            String rejectReason = tokenQuotaService.checkAndReject(userId, 500);
+            if (rejectReason != null) {
+                WebSocketMessage errorMsg = new WebSocketMessage();
+                errorMsg.setType("system");
+                errorMsg.setContent(rejectReason);
+                return List.of(errorMsg);
+            }
+        }
 
         List<WebSocketMessage> result = new ArrayList<>();
         String currentParam = state.getCurrentParam();

@@ -13,6 +13,7 @@ import com.ai.food.common.mapper.QaRecordMapper;
 import com.ai.food.common.mapper.RecommendationResultMapper;
 import com.ai.food.service.ai.AiService;
 import com.ai.food.service.bloom.BloomFilterService;
+import com.ai.food.service.token.TokenQuotaService;
 import com.ai.food.service.match.ParamNormalizationService;
 import com.ai.food.validator.MessageValidator;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,6 +75,9 @@ class ConversationServiceTest {
     private BloomFilterService bloomFilterService;
 
     @Mock
+    private TokenQuotaService tokenQuotaService;
+
+    @Mock
     private ParamNormalizationService paramNormalizationService;
 
     private ConversationService conversationService;
@@ -95,7 +99,8 @@ class ConversationServiceTest {
                 paramService, aiSubService,
                 aiService, messageValidator, messageTagParser,
                 qaRecordMapper, collectedParamMapper,
-                recommendationResultMapper, redisTemplate, bloomFilterService
+                recommendationResultMapper, redisTemplate, bloomFilterService,
+                tokenQuotaService
         );
         ReflectionTestUtils.setField(conversationService, "baseMapper", conversationSessionMapper);
         ReflectionTestUtils.setField(conversationService, "minQuestions", 7);
