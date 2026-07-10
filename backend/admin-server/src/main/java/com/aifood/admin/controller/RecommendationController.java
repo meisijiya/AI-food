@@ -18,10 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>单一端点:
  * <ul>
- *   <li>GET /admin/api/recommendations?page=&size=&sessionId=&mode=</li>
+ *   <li>GET /admin/api/recommendations?page=&size=&sessionId=</li>
  * </ul>
  *
- * <p>{@code sessionId} / {@code mode} 可选,用于按会话或模式过滤;
+ * <p>{@code sessionId} 可选,用于按会话过滤;
  * 实体未包含 userId/accepted 字段(由 session 维度间接表达),不提供对应筛选。</p>
  *
  * <p>由 {@link com.aifood.admin.common.AdminWebConfig} 拦截器统一鉴权,
@@ -42,7 +42,6 @@ public class RecommendationController {
      * @param page      页码,默认 1
      * @param size      页大小,默认 20
      * @param sessionId 会话 id 可选过滤(RecommendationResult 用 sessionId 关联而非 userId)
-     * @param mode      模式(random / similarity 等)可选过滤
      * @param foodName  食物名模糊匹配可选过滤
      * @return 分页结果
      */
@@ -51,12 +50,10 @@ public class RecommendationController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String sessionId,
-            @RequestParam(required = false) String mode,
             @RequestParam(required = false) String foodName) {
         Page<RecommendationResult> p = new Page<>(page, size);
         LambdaQueryWrapper<RecommendationResult> w = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(sessionId)) w.eq(RecommendationResult::getSessionId, sessionId);
-        if (StringUtils.hasText(mode)) w.eq(RecommendationResult::getMode, mode);
         if (StringUtils.hasText(foodName)) w.like(RecommendationResult::getFoodName, foodName);
         w.orderByDesc(RecommendationResult::getCreatedAt);
         return ApiResponse.success(recommendationMapper.selectPage(p, w));
