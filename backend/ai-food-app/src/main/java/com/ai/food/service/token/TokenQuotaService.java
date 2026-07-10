@@ -28,8 +28,8 @@ public class TokenQuotaService {
     private final SystemConfigMapper systemConfigMapper;
     private final UserTokenQuotaMapper userTokenQuotaMapper;
 
-    // P1-2 修订: 注入 Clock 支持跨日测试
-    private final Clock clock = Clock.systemDefaultZone();
+    // P1-2 修订: 注入 Clock 支持跨日测试（@RequiredArgsConstructor 构造注入）
+    private final Clock clock;
 
     /**
      * 查有效限额（per-user 覆盖 > 全局 > 默认 1M）

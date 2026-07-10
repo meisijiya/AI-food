@@ -10,6 +10,9 @@ import java.util.Map;
 @Data
 public class ConversationState {
 
+    // OOM 防御: 防止 pendingMessages 无限增长
+    private static final int MAX_PENDING_MESSAGES = 10;
+
     private String sessionId;
     private Boolean aiProcessing = false;
     private List<String> pendingMessages = new ArrayList<>();
@@ -24,6 +27,8 @@ public class ConversationState {
     private String currentParam;
     private boolean inFreeFormStage = false;
     private boolean cancelled = false;
+    private Long userId;             // P0-3: handleStart 中注入
+    private boolean gracefulExit;    // P0-1: 命名避开 isCompleted() 7 问语义
 
     public ConversationState(String sessionId, Integer totalQuestions, String mode) {
         this.sessionId = sessionId;
@@ -32,7 +37,9 @@ public class ConversationState {
     }
 
     public void addPendingMessage(String message) {
-        this.pendingMessages.add(message);
+        if (this.pendingMessages.size() < MAX_PENDING_MESSAGES) {
+            this.pendingMessages.add(message);
+        }
     }
 
     public void clearPendingMessages() {
